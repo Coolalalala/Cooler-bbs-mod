@@ -22,6 +22,7 @@ public class ParticleComponentMotionCollision extends ParticleComponentBase impl
     public MolangExpression enabled = MolangParser.ONE;
     public float collisionDrag = 0;
     public float bounciness = 1;
+    public float collisionFriction = 0;
     public float radius = 0.01F;
     public boolean expireOnImpact;
 
@@ -42,6 +43,7 @@ public class ParticleComponentMotionCollision extends ParticleComponentBase impl
         if (!MolangExpression.isOne(this.enabled)) object.put("enabled", this.enabled.toData());
         if (this.collisionDrag != 0) object.putFloat("collision_drag", this.collisionDrag);
         if (this.bounciness != 1) object.putFloat("coefficient_of_restitution", this.bounciness);
+        if (this.collisionFriction != 0) object.putFloat("collision_friction", this.collisionFriction);
         if (this.radius != 0.01F) object.putFloat("collision_radius", this.radius);
         if (this.expireOnImpact) object.putBool("expire_on_contact", true);
 
@@ -61,6 +63,7 @@ public class ParticleComponentMotionCollision extends ParticleComponentBase impl
         if (map.has("enabled")) this.enabled = parser.parseDataSilently(map.get("enabled"));
         if (map.has("collision_drag")) this.collisionDrag = map.getFloat("collision_drag");
         if (map.has("coefficient_of_restitution")) this.bounciness = map.getFloat("coefficient_of_restitution");
+        if (map.has("collision_friction")) this.collisionFriction = map.getFloat("collision_friction");
         if (map.has("collision_radius")) this.radius = map.getFloat("collision_radius");
         if (map.has("expire_on_contact")) this.expireOnImpact = map.getBool("expire_on_contact");
 
@@ -116,17 +119,23 @@ public class ParticleComponentMotionCollision extends ParticleComponentBase impl
 
                 if (vec.y != y)
                 {
-                    particle.accelerationFactor.y *= -this.bounciness;
+                    particle.speed.y *= -this.bounciness;
+                    particle.speed.x *= 1F - this.collisionFriction;
+                    particle.speed.z *= 1F - this.collisionFriction;
                 }
 
                 if (vec.x != x)
                 {
-                    particle.accelerationFactor.x *= -this.bounciness;
+                    particle.speed.x *= -this.bounciness;
+                    particle.speed.y *= 1F - this.collisionFriction;
+                    particle.speed.z *= 1F - this.collisionFriction;
                 }
 
                 if (vec.z != z)
                 {
-                    particle.accelerationFactor.z *= -this.bounciness;
+                    particle.speed.z *= -this.bounciness;
+                    particle.speed.x *= 1F - this.collisionFriction;
+                    particle.speed.y *= 1F - this.collisionFriction;
                 }
 
                 particle.collisions += 1;

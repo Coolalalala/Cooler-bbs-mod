@@ -45,7 +45,7 @@ public class Particle
 
     public Vector3f speed = new Vector3f();
     public Vector3f acceleration = new Vector3f();
-    public Vector3f accelerationFactor = new Vector3f(1, 1, 1);
+    public Vector3f bounceFactor = new Vector3f(1, 1, 1);
     public int collisions = 0;
     public float drag = 0;
     public float dragFactor = 0;
@@ -129,12 +129,13 @@ public class Particle
             this.rotation = this.initialRotation + this.rotationVelocity * this.age;
 
             /* Position */
-            Vector3f vec = new Vector3f(this.speed);
-            vec.mul(-(this.drag + this.dragFactor));
+            Vector3f drag = new Vector3f(this.speed);
+            drag.mul(-(this.drag + this.dragFactor));
 
-            this.acceleration.add(vec);
+            this.acceleration.add(drag);
             this.acceleration.div(20F);
 
+            Vector3f velocity = new Vector3f(this.speed);
             if (this.relativeVelocity)
             {
                 if (this.age == 0)
@@ -143,36 +144,25 @@ public class Particle
                 }
 
                 this.speed.add(this.acceleration);
-
-                vec.set(this.speed);
-
-                vec.x *= this.accelerationFactor.x;
-                vec.y *= this.accelerationFactor.y;
-                vec.z *= this.accelerationFactor.z;
             }
             else
             {
                 this.speed.add(this.acceleration);
 
-                vec.set(this.speed);
-                vec.x *= this.accelerationFactor.x;
-                vec.y *= this.accelerationFactor.y;
-                vec.z *= this.accelerationFactor.z;
-
                 if (this.relativePosition || this.relativeRotation)
                 {
-                    this.matrix.transform(vec);
+                    this.matrix.transform(velocity);
                 }
             }
 
             if (this.age == 0)
             {
-                vec.mul(1F + this.offset);
+                velocity.mul(1F + this.offset);
             }
 
-            this.position.x += vec.x / 20F;
-            this.position.y += vec.y / 20F;
-            this.position.z += vec.z / 20F;
+            this.position.x += velocity.x / 20F;
+            this.position.y += velocity.y / 20F;
+            this.position.z += velocity.z / 20F;
         }
 
         if (this.lifetime >= 0 && this.age >= this.lifetime)

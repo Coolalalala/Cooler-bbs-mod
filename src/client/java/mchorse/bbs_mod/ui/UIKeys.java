@@ -651,6 +651,7 @@ public class UIKeys
     public static final IKey SNOWSTORM_APPEARANCE_UV_Y = L10n.lang("bbs.ui.snowstorm.appearance.uv_y");
     public static final IKey SNOWSTORM_APPEARANCE_WIDTH = L10n.lang("bbs.ui.snowstorm.appearance.width");
     public static final IKey SNOWSTORM_COLLISION_BOUNCINESS = L10n.lang("bbs.ui.snowstorm.collision.bounciness");
+    public static final IKey SNOWSTORM_COLLISION_FRICTION = L10n.lang("bbs.ui.snowstorm.collision.friction");
     public static final IKey SNOWSTORM_COLLISION_DRAG = L10n.lang("bbs.ui.snowstorm.collision.drag");
     public static final IKey SNOWSTORM_COLLISION_ENABLED = L10n.lang("bbs.ui.snowstorm.collision.enabled");
     public static final IKey SNOWSTORM_COLLISION_EXPIRE = L10n.lang("bbs.ui.snowstorm.collision.expire");

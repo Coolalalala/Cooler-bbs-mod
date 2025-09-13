@@ -14,6 +14,7 @@ public class UIParticleSchemeCollisionSection extends UIParticleSchemeComponentS
     public UIToggle enabled;
     public UITrackpad drag;
     public UITrackpad bounciness;
+    public UITrackpad collisionFriction;
     public UITrackpad radius;
     public UIToggle expire;
 
@@ -36,6 +37,12 @@ public class UIParticleSchemeCollisionSection extends UIParticleSchemeComponentS
             this.editor.dirty();
         });
         this.bounciness.tooltip(UIKeys.SNOWSTORM_COLLISION_BOUNCINESS);
+        this.collisionFriction = new UITrackpad((value) ->
+        {
+            this.component.collisionFriction = value.floatValue();
+            this.editor.dirty();
+        });
+        this.collisionFriction.tooltip(UIKeys.SNOWSTORM_COLLISION_FRICTION);
         this.radius = new UITrackpad((value) ->
         {
             this.component.radius = value.floatValue();
@@ -48,7 +55,7 @@ public class UIParticleSchemeCollisionSection extends UIParticleSchemeComponentS
             this.editor.dirty();
         });
 
-        this.fields.add(this.enabled, this.drag, this.bounciness, this.radius, this.expire);
+        this.fields.add(this.enabled, this.drag, this.bounciness, this.collisionFriction, this.radius, this.expire);
     }
 
     @Override
@@ -77,6 +84,7 @@ public class UIParticleSchemeCollisionSection extends UIParticleSchemeComponentS
         this.enabled.setValue(this.wasPresent);
         this.drag.setValue(this.component.collisionDrag);
         this.bounciness.setValue(this.component.bounciness);
+        this.collisionFriction.setValue(this.component.collisionFriction);
         this.radius.setValue(this.component.radius);
         this.expire.setValue(this.component.expireOnImpact);
     }

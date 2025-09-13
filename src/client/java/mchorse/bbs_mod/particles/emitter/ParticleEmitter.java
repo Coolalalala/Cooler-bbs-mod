@@ -100,9 +100,6 @@ public class ParticleEmitter
     private Variable varVelocityZ;
     private Variable varVelocity;
     private Variable varOffset;
-    private Variable varAccFactorX;
-    private Variable varAccFactorY;
-    private Variable varAccFactorZ;
     private Variable varCollisions;
 
     private Variable varEmitterAge;
@@ -194,9 +191,6 @@ public class ParticleEmitter
         this.varVelocityZ = this.scheme.parser.variables.get("variable.particle_vz");
         this.varVelocity = this.scheme.parser.variables.get("variable.particle_velocity");
         this.varOffset = this.scheme.parser.variables.get("variable.particle_offset");
-        this.varAccFactorX = this.scheme.parser.variables.get("variable.particle_accfactor_x");
-        this.varAccFactorY = this.scheme.parser.variables.get("variable.particle_accfactor_y");
-        this.varAccFactorZ = this.scheme.parser.variables.get("variable.particle_accfactor_z");
         this.varCollisions = this.scheme.parser.variables.get("variable.particle_collisions");
 
         this.varEmitterAge = this.scheme.parser.variables.get("variable.emitter_age");
@@ -241,9 +235,6 @@ public class ParticleEmitter
         if (this.varOffset != null) this.varOffset.set(particle.offset);
 
         // Collisions
-        if (this.varAccFactorX != null) this.varAccFactorX.set(particle.accelerationFactor.x);
-        if (this.varAccFactorY != null) this.varAccFactorY.set(particle.accelerationFactor.y);
-        if (this.varAccFactorZ != null) this.varAccFactorZ.set(particle.accelerationFactor.z);
         if (this.varCollisions != null) this.varCollisions.set(particle.collisions);
 
         this.scheme.updateCurves();
