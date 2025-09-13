@@ -75,7 +75,7 @@ public class ParticleComponentMotionCollision extends ParticleComponentBase impl
             return;
         }
 
-        if (!particle.manual && !Operation.equals(this.enabled.get(), 0))
+        if (!Operation.equals(this.enabled.get(), 0))
         {
             float r = this.radius;
 
@@ -103,7 +103,6 @@ public class ParticleComponentMotionCollision extends ParticleComponentBase impl
                 if (this.expireOnImpact)
                 {
                     particle.setDead();
-
                     return;
                 }
 
