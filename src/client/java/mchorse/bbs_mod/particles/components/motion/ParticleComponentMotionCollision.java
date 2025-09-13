@@ -129,6 +129,7 @@ public class ParticleComponentMotionCollision extends ParticleComponentBase impl
                     particle.accelerationFactor.z *= -this.bounciness;
                 }
 
+                particle.collisions += 1;
                 particle.position.set(now);
                 particle.dragFactor += this.collisionDrag;
             }

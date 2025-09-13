@@ -94,6 +94,16 @@ public class ParticleEmitter
     private Variable varPositionX;
     private Variable varPositionY;
     private Variable varPositionZ;
+    private Variable varDisplacement;
+    private Variable varVelocityX;
+    private Variable varVelocityY;
+    private Variable varVelocityZ;
+    private Variable varVelocity;
+    private Variable varOffset;
+    private Variable varAccFactorX;
+    private Variable varAccFactorY;
+    private Variable varAccFactorZ;
+    private Variable varCollisions;
 
     private Variable varEmitterAge;
     private Variable varEmitterLifetime;
@@ -107,6 +117,9 @@ public class ParticleEmitter
     private Variable varEmitterUser4;
     private Variable varEmitterUser5;
     private Variable varEmitterUser6;
+    private Variable varEmitterPositionX;
+    private Variable varEmitterPositionY;
+    private Variable varEmitterPositionZ;
 
     public double getAge()
     {
@@ -175,6 +188,16 @@ public class ParticleEmitter
         this.varPositionX = this.scheme.parser.variables.get("variable.particle_x");
         this.varPositionY = this.scheme.parser.variables.get("variable.particle_y");
         this.varPositionZ = this.scheme.parser.variables.get("variable.particle_z");
+        this.varDisplacement = this.scheme.parser.variables.get("variable.particle_displacement");
+        this.varVelocityX = this.scheme.parser.variables.get("variable.particle_vx");
+        this.varVelocityY = this.scheme.parser.variables.get("variable.particle_vy");
+        this.varVelocityZ = this.scheme.parser.variables.get("variable.particle_vz");
+        this.varVelocity = this.scheme.parser.variables.get("variable.particle_velocity");
+        this.varOffset = this.scheme.parser.variables.get("variable.particle_offset");
+        this.varAccFactorX = this.scheme.parser.variables.get("variable.particle_accfactor_x");
+        this.varAccFactorY = this.scheme.parser.variables.get("variable.particle_accfactor_y");
+        this.varAccFactorZ = this.scheme.parser.variables.get("variable.particle_accfactor_z");
+        this.varCollisions = this.scheme.parser.variables.get("variable.particle_collisions");
 
         this.varEmitterAge = this.scheme.parser.variables.get("variable.emitter_age");
         this.varEmitterLifetime = this.scheme.parser.variables.get("variable.emitter_lifetime");
@@ -188,12 +211,16 @@ public class ParticleEmitter
         this.varEmitterUser4 = this.scheme.parser.variables.get("variable.emitter_user_4");
         this.varEmitterUser5 = this.scheme.parser.variables.get("variable.emitter_user_5");
         this.varEmitterUser6 = this.scheme.parser.variables.get("variable.emitter_user_6");
+        this.varEmitterPositionX = this.scheme.parser.variables.get("variable.emitter_x");
+        this.varEmitterPositionY = this.scheme.parser.variables.get("variable.emitter_y");
+        this.varEmitterPositionZ = this.scheme.parser.variables.get("variable.emitter_z");
     }
 
     public void setParticleVariables(Particle particle, float transition)
     {
         this.scheme.particle = particle;
 
+        // General variables
         if (this.varIndex != null) this.varIndex.set(particle.index);
         if (this.varAge != null) this.varAge.set(particle.getAge(transition));
         if (this.varLifetime != null) this.varLifetime.set(particle.lifetime / 20.0);
@@ -201,9 +228,23 @@ public class ParticleEmitter
         if (this.varRandom2 != null) this.varRandom2.set(particle.random2);
         if (this.varRandom3 != null) this.varRandom3.set(particle.random3);
         if (this.varRandom4 != null) this.varRandom4.set(particle.random4);
+
+        // Movements
         if (this.varPositionX != null) this.varPositionX.set(Lerps.lerp(particle.prevPosition.x, particle.position.x, transition));
         if (this.varPositionY != null) this.varPositionY.set(Lerps.lerp(particle.prevPosition.y, particle.position.y, transition));
         if (this.varPositionZ != null) this.varPositionZ.set(Lerps.lerp(particle.prevPosition.z, particle.position.z, transition));
+        if (this.varDisplacement != null) this.varDisplacement.set(particle.position.length());
+        if (this.varVelocityX != null) this.varVelocityX.set(particle.speed.x);
+        if (this.varVelocityY != null) this.varVelocityY.set(particle.speed.y);
+        if (this.varVelocityZ != null) this.varVelocityZ.set(particle.speed.z);
+        if (this.varVelocity != null) this.varVelocity.set(particle.speed.length());
+        if (this.varOffset != null) this.varOffset.set(particle.offset);
+
+        // Collisions
+        if (this.varAccFactorX != null) this.varAccFactorX.set(particle.accelerationFactor.x);
+        if (this.varAccFactorY != null) this.varAccFactorY.set(particle.accelerationFactor.y);
+        if (this.varAccFactorZ != null) this.varAccFactorZ.set(particle.accelerationFactor.z);
+        if (this.varCollisions != null) this.varCollisions.set(particle.collisions);
 
         this.scheme.updateCurves();
     }
@@ -224,6 +265,11 @@ public class ParticleEmitter
         if (this.varEmitterUser4 != null) this.varEmitterUser4.set(this.user4);
         if (this.varEmitterUser5 != null) this.varEmitterUser5.set(this.user5);
         if (this.varEmitterUser6 != null) this.varEmitterUser6.set(this.user6);
+
+        // Position
+        if (this.varEmitterPositionX != null) this.varEmitterPositionX.set(this.lastGlobal.x);
+        if (this.varEmitterPositionY != null) this.varEmitterPositionY.set(this.lastGlobal.y);
+        if (this.varEmitterPositionZ != null) this.varEmitterPositionZ.set(this.lastGlobal.z);
 
         this.scheme.updateCurves();
     }

@@ -46,6 +46,7 @@ public class Particle
     public Vector3f speed = new Vector3f();
     public Vector3f acceleration = new Vector3f();
     public Vector3f accelerationFactor = new Vector3f(1, 1, 1);
+    public int collisions = 0;
     public float drag = 0;
     public float dragFactor = 0;
 

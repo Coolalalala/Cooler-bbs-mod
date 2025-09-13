@@ -105,6 +105,32 @@ public class ParticleScheme extends ValueGroup
         this.parser.register("variable.emitter_random_2");
         this.parser.register("variable.emitter_random_3");
         this.parser.register("variable.emitter_random_4");
+
+        /* BBS extra variables */
+        this.parser.register("variable.particle_index");
+        this.parser.register("variable.particle_x");
+        this.parser.register("variable.particle_y");
+        this.parser.register("variable.particle_z");
+        this.parser.register("variable.particle_displacement");
+        this.parser.register("variable.particle_vx");
+        this.parser.register("variable.particle_vy");
+        this.parser.register("variable.particle_vz");
+        this.parser.register("variable.particle_velocity");
+        this.parser.register("variable.particle_offset");
+        this.parser.register("variable.particle_accfactor_x");
+        this.parser.register("variable.particle_accfactor_y");
+        this.parser.register("variable.particle_accfactor_z");
+        this.parser.register("variable.particle_collisions");
+
+        this.parser.register("variable.emitter_user_1");
+        this.parser.register("variable.emitter_user_2");
+        this.parser.register("variable.emitter_user_3");
+        this.parser.register("variable.emitter_user_4");
+        this.parser.register("variable.emitter_user_5");
+        this.parser.register("variable.emitter_user_6");
+        this.parser.register("variable.emitter_x");
+        this.parser.register("variable.emitter_y");
+        this.parser.register("variable.emitter_z");
     }
 
     public void setup()
