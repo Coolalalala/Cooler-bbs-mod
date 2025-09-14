@@ -720,6 +720,8 @@ public class UIKeys
     public static final IKey SNOWSTORM_MOTION_ROTATION_DRAG = L10n.lang("bbs.ui.snowstorm.motion.rotation_drag");
     public static final IKey SNOWSTORM_MOTION_ROTATION_SPEED = L10n.lang("bbs.ui.snowstorm.motion.rotation_speed");
     public static final IKey SNOWSTORM_MOTION_TITLE = L10n.lang("bbs.ui.snowstorm.motion.title");
+    public static final IKey SNOWSTORM_PARALLEL_PROCESSING = L10n.lang("bbs.ui.snowstorm.parallel_processing");
+    public static final IKey SNOWSTORM_PARALLEL_PROCESSING_TOOLTIP = L10n.lang("bbs.ui.snowstorm.parallel_processing_tooltip");
     public static final IKey SNOWSTORM_RATE_AMOUNT = L10n.lang("bbs.ui.snowstorm.rate.amount");
     public static final IKey SNOWSTORM_RATE_INSTANT = L10n.lang("bbs.ui.snowstorm.rate.instant");
     public static final IKey SNOWSTORM_RATE_MAX_PARTICLES = L10n.lang("bbs.ui.snowstorm.rate.max_particles");

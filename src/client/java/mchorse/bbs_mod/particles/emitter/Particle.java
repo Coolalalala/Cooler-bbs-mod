@@ -129,13 +129,13 @@ public class Particle
             this.rotation = this.initialRotation + this.rotationVelocity * this.age;
 
             /* Position */
-            Vector3f drag = new Vector3f(this.speed);
-            drag.mul(-(this.drag + this.dragFactor));
+            Vector3f vecTemp = new Vector3f(this.speed);
+            vecTemp.mul(-(this.drag + this.dragFactor));
 
-            this.acceleration.add(drag);
+            this.acceleration.add(vecTemp);
             this.acceleration.div(20F);
 
-            Vector3f velocity = new Vector3f(this.speed);
+            vecTemp.set(this.speed);
             if (this.relativeVelocity)
             {
                 if (this.age == 0)
@@ -151,18 +151,18 @@ public class Particle
 
                 if (this.relativePosition || this.relativeRotation)
                 {
-                    this.matrix.transform(velocity);
+                    this.matrix.transform(vecTemp);
                 }
             }
 
             if (this.age == 0)
             {
-                velocity.mul(1F + this.offset);
+                vecTemp.mul(1F + this.offset);
             }
 
-            this.position.x += velocity.x / 20F;
-            this.position.y += velocity.y / 20F;
-            this.position.z += velocity.z / 20F;
+            this.position.x += vecTemp.x / 20F;
+            this.position.y += vecTemp.y / 20F;
+            this.position.z += vecTemp.z / 20F;
         }
 
         if (this.lifetime >= 0 && this.age >= this.lifetime)

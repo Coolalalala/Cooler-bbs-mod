@@ -36,6 +36,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 public class ParticleEmitter
 {
@@ -212,7 +213,7 @@ public class ParticleEmitter
 
     public void setParticleVariables(Particle particle, float transition)
     {
-        this.scheme.particle = particle;
+        this.scheme.particle = particle; // Whcih particle is currently processing
 
         // General variables
         if (this.varIndex != null) this.varIndex.set(particle.index);
@@ -349,7 +350,11 @@ public class ParticleEmitter
         }
 
         this.setEmitterVariables(0);
-        this.updateParticles();
+        if (this.scheme.parallel) {
+            this.updateParticlesParallel();
+        } else {
+            this.updateParticles();
+        }
 
         if (!this.paused)
         {
@@ -377,17 +382,36 @@ public class ParticleEmitter
         }
     }
 
+    private void updateParticlesParallel() {
+        this.particles = this.particles.parallelStream()
+                .filter(particle -> {
+                    evaluationContext.set(particle);
+                    this.updateParticleParallel(particle);
+                    evaluationContext.remove();
+                    return !particle.isDead();
+                })
+                .collect(Collectors.toList());
+    }
+
     /**
      * Update a single particle
      */
     private void updateParticle(Particle particle)
     {
         particle.update(this);
-
         this.setParticleVariables(particle, 0);
 
         for (IComponentParticleUpdate component : this.scheme.particleUpdates)
         {
+            component.update(this, particle);
+        }
+    }
+
+    public static ThreadLocal<Particle> evaluationContext = new ThreadLocal<>();
+    public void updateParticleParallel(Particle particle) {
+        particle.update(this);
+
+        for (IComponentParticleUpdate component : this.scheme.particleUpdates) {
             component.update(this, particle);
         }
     }
@@ -529,7 +553,11 @@ public class ParticleEmitter
             for (Particle particle : this.particles)
             {
                 this.setEmitterVariables(transition);
-                this.setParticleVariables(particle, transition);
+                if (this.scheme.parallel) {
+                    evaluationContext.set(particle);
+                } else {
+                    this.setParticleVariables(particle, transition);
+                }
 
                 for (IComponentParticleRender component : renders)
                 {
@@ -538,7 +566,7 @@ public class ParticleEmitter
             }
 
             RenderSystem.setShader(program);
-            RenderSystem.disableBlend();
+            // RenderSystem.disableBlend();
             RenderSystem.disableCull();
             BufferRenderer.drawWithGlobalProgram(builder.end());
             RenderSystem.enableCull();

@@ -19,7 +19,7 @@ import java.util.Collections;
 
 public class ParticleComponentMotionCollision extends ParticleComponentBase implements IComponentParticleUpdate
 {
-    public MolangExpression enabled = MolangParser.ONE;
+    public boolean enabled = false;
     public float collisionDrag = 0;
     public float bounciness = 1;
     public float collisionFriction = 0;
@@ -35,12 +35,12 @@ public class ParticleComponentMotionCollision extends ParticleComponentBase impl
     {
         MapType object = new MapType();
 
-        if (MolangExpression.isZero(this.enabled))
+        if (!this.enabled)
         {
             return object;
         }
 
-        if (!MolangExpression.isOne(this.enabled)) object.put("enabled", this.enabled.toData());
+        object.putBool("enabled", true);
         if (this.collisionDrag != 0) object.putFloat("collision_drag", this.collisionDrag);
         if (this.bounciness != 1) object.putFloat("coefficient_of_restitution", this.bounciness);
         if (this.collisionFriction != 0) object.putFloat("collision_friction", this.collisionFriction);
@@ -60,7 +60,7 @@ public class ParticleComponentMotionCollision extends ParticleComponentBase impl
 
         MapType map = data.asMap();
 
-        if (map.has("enabled")) this.enabled = parser.parseDataSilently(map.get("enabled"));
+        if (map.has("enabled")) this.enabled = map.getBool("enabled");
         if (map.has("collision_drag")) this.collisionDrag = map.getFloat("collision_drag");
         if (map.has("coefficient_of_restitution")) this.bounciness = map.getFloat("coefficient_of_restitution");
         if (map.has("collision_friction")) this.collisionFriction = map.getFloat("collision_friction");
@@ -73,75 +73,72 @@ public class ParticleComponentMotionCollision extends ParticleComponentBase impl
     @Override
     public void update(ParticleEmitter emitter, Particle particle)
     {
-        if (emitter.world == null)
+        if (emitter.world == null || !this.enabled)
         {
             return;
         }
 
-        if (!Operation.equals(this.enabled.get(), 0))
+        float r = this.radius;
+
+        this.previous.set(particle.getGlobalPosition(emitter, particle.prevPosition));
+        this.current.set(particle.getGlobalPosition(emitter));
+
+        Vector3d prev = this.previous;
+        Vector3d now = this.current;
+
+        double x = now.x - prev.x;
+        double y = now.y - prev.y;
+        double z = now.z - prev.z;
+        boolean veryBig = Math.abs(x) > 10 || Math.abs(y) > 10 || Math.abs(z) > 10;
+
+        if (veryBig)
         {
-            float r = this.radius;
+            return;
+        }
 
-            this.previous.set(particle.getGlobalPosition(emitter, particle.prevPosition));
-            this.current.set(particle.getGlobalPosition(emitter));
+        Box box = new Box(prev.x - r, prev.y - r, prev.z - r, prev.x + r, prev.y + r, prev.z + r);
+        Vec3d vec = Entity.adjustMovementForCollisions(null, new Vec3d(x, y, z), box, emitter.world, Collections.emptyList());
 
-            Vector3d prev = this.previous;
-            Vector3d now = this.current;
-
-            double x = now.x - prev.x;
-            double y = now.y - prev.y;
-            double z = now.z - prev.z;
-            boolean veryBig = Math.abs(x) > 10 || Math.abs(y) > 10 || Math.abs(z) > 10;
-
-            if (veryBig)
+        if (vec.x != x || vec.y != y || vec.z != z)
+        {
+            if (this.expireOnImpact)
             {
+                particle.setDead();
                 return;
             }
 
-            Box box = new Box(prev.x - r, prev.y - r, prev.z - r, prev.x + r, prev.y + r, prev.z + r);
-            Vec3d vec = Entity.adjustMovementForCollisions(null, new Vec3d(x, y, z), box, emitter.world, Collections.emptyList());
-
-            if (vec.x != x || vec.y != y || vec.z != z)
+            if (particle.relativePosition)
             {
-                if (this.expireOnImpact)
-                {
-                    particle.setDead();
-                    return;
-                }
-
-                if (particle.relativePosition)
-                {
-                    particle.relativePosition = false;
-                    particle.prevPosition.set(prev);
-                }
-
-                now.set(prev).add(vec.x, vec.y, vec.z);
-
-                if (vec.y != y)
-                {
-                    particle.speed.y *= -this.bounciness;
-                    particle.speed.x *= 1F - this.collisionFriction;
-                    particle.speed.z *= 1F - this.collisionFriction;
-                }
-
-                if (vec.x != x)
-                {
-                    particle.speed.x *= -this.bounciness;
-                    particle.speed.y *= 1F - this.collisionFriction;
-                    particle.speed.z *= 1F - this.collisionFriction;
-                }
-
-                if (vec.z != z)
-                {
-                    particle.speed.z *= -this.bounciness;
-                    particle.speed.x *= 1F - this.collisionFriction;
-                    particle.speed.y *= 1F - this.collisionFriction;
-                }
-
-                particle.collisions += 1;
-                particle.position.set(now);
-                particle.dragFactor += this.collisionDrag;
+                particle.relativePosition = false;
+                particle.prevPosition.set(prev);
             }
+
+            now.set(prev).add(vec.x, vec.y, vec.z);
+
+            if (vec.y != y)
+            {
+                particle.speed.y *= -this.bounciness;
+                particle.speed.x *= 1F - this.collisionFriction;
+                particle.speed.z *= 1F - this.collisionFriction;
+            }
+
+            if (vec.x != x)
+            {
+                particle.speed.x *= -this.bounciness;
+                particle.speed.y *= 1F - this.collisionFriction;
+                particle.speed.z *= 1F - this.collisionFriction;
+            }
+
+            if (vec.z != z)
+            {
+                particle.speed.z *= -this.bounciness;
+                particle.speed.x *= 1F - this.collisionFriction;
+                particle.speed.y *= 1F - this.collisionFriction;
+            }
+
+            particle.collisions += 1;
+            particle.position.set(now);
+            particle.dragFactor += this.collisionDrag;
         }
     }
 

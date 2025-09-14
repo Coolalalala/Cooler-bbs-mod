@@ -35,6 +35,7 @@ public class ParticleScheme extends ValueGroup
     /* Particle description */
     public ParticleMaterial material = ParticleMaterial.OPAQUE;
     public Link texture = DEFAULT_TEXTURE;
+    public boolean parallel = false;
 
     /* Particle's curves */
     public Map<String, ParticleCurve> curves = new HashMap<>();
@@ -51,6 +52,7 @@ public class ParticleScheme extends ValueGroup
     public final ParticleMolangParser parser;
     public Particle particle;
     public ParticleEmitter emitter;
+
 
     public static ParticleScheme parse(String json)
     {

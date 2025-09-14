@@ -877,6 +877,8 @@
     "bbs.ui.snowstorm.motion.rotation_drag": "旋转阻力",
     "bbs.ui.snowstorm.motion.rotation_speed": "初始旋转速度",
     "bbs.ui.snowstorm.motion.title": "运动",
+    "bbs.ui.snowstorm.parallel_processing": "多线程处理",
+    "bbs.ui.snowstorm.parallel_processing_tooltip": "使用多个线程加速粒子运算",
     "bbs.ui.snowstorm.rate.amount": "数量",
     "bbs.ui.snowstorm.rate.instant": "瞬时",
     "bbs.ui.snowstorm.rate.max_particles": "同时存在的粒子数量",

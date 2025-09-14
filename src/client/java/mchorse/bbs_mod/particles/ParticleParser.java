@@ -184,6 +184,10 @@ public class ParticleParser
                 scheme.texture = Link.assets(scheme.texture.path);
             }
         }
+
+        if (parameters.has("parallel")) {
+            scheme.parallel = parameters.getBool("parallel");
+        }
     }
 
     /**
@@ -276,6 +280,7 @@ public class ParticleParser
 
         render.putString("material", scheme.material.id);
         render.putString("texture", "textures/particle/particles");
+        render.putBool("parallel", scheme.parallel);
 
         if (scheme.texture != null && !scheme.texture.equals(ParticleScheme.DEFAULT_TEXTURE))
         {

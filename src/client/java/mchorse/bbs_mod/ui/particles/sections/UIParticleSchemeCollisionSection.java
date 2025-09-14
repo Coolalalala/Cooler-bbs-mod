@@ -24,7 +24,11 @@ public class UIParticleSchemeCollisionSection extends UIParticleSchemeComponentS
     {
         super(parent);
 
-        this.enabled = new UIToggle(UIKeys.SNOWSTORM_COLLISION_ENABLED, (b) -> this.editor.dirty());
+        this.enabled = new UIToggle(UIKeys.SNOWSTORM_COLLISION_ENABLED, (b) ->
+        {
+            this.component.enabled = b.getValue();
+            this.editor.dirty();
+        });
         this.drag = new UITrackpad((value) ->
         {
             this.component.collisionDrag = value.floatValue();
@@ -65,12 +69,6 @@ public class UIParticleSchemeCollisionSection extends UIParticleSchemeComponentS
     }
 
     @Override
-    public void beforeSave(ParticleScheme scheme)
-    {
-        this.component.enabled = this.enabled.getValue() ? MolangParser.ONE : MolangParser.ZERO;
-    }
-
-    @Override
     protected ParticleComponentMotionCollision getComponent(ParticleScheme scheme)
     {
         this.wasPresent = this.scheme.get(ParticleComponentMotionCollision.class) != null;
@@ -81,7 +79,7 @@ public class UIParticleSchemeCollisionSection extends UIParticleSchemeComponentS
     @Override
     protected void fillData()
     {
-        this.enabled.setValue(this.wasPresent);
+        this.enabled.setValue(this.component.enabled);
         this.drag.setValue(this.component.collisionDrag);
         this.bounciness.setValue(this.component.bounciness);
         this.collisionFriction.setValue(this.component.collisionFriction);

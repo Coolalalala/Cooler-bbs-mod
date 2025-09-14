@@ -10,6 +10,7 @@ import mchorse.bbs_mod.resources.Link;
 import mchorse.bbs_mod.ui.UIKeys;
 import mchorse.bbs_mod.ui.framework.elements.buttons.UIButton;
 import mchorse.bbs_mod.ui.framework.elements.buttons.UICirculate;
+import mchorse.bbs_mod.ui.framework.elements.buttons.UIToggle;
 import mchorse.bbs_mod.ui.framework.elements.input.UITexturePicker;
 import mchorse.bbs_mod.ui.framework.elements.input.text.UITextbox;
 import mchorse.bbs_mod.ui.particles.UIParticleSchemePanel;
@@ -20,6 +21,7 @@ public class UIParticleSchemeGeneralSection extends UIParticleSchemeSection
     public UITextbox identifier;
     public UIButton pick;
     public UICirculate material;
+    public UIToggle parallel;
 
     public UIParticleSchemeGeneralSection(UIParticleSchemePanel parent)
     {
@@ -57,6 +59,14 @@ public class UIParticleSchemeGeneralSection extends UIParticleSchemeSection
         this.material.addLabel(UIKeys.SNOWSTORM_GENERAL_PARTICLES_BLEND);
 
         this.fields.add(this.identifier, UI.row(5, 0, 20, this.pick, this.material));
+
+        this.parallel = new UIToggle(UIKeys.SNOWSTORM_PARALLEL_PROCESSING, (b) ->
+        {
+            this.scheme.parallel = b.getValue();
+            this.editor.dirty();
+        });
+        this.parallel.tooltip(UIKeys.SNOWSTORM_PARALLEL_PROCESSING_TOOLTIP);
+        this.fields.add(this.parallel);
     }
 
     private void setTextureSize(Link link)
@@ -87,5 +97,6 @@ public class UIParticleSchemeGeneralSection extends UIParticleSchemeSection
 
         this.identifier.setText(scheme.identifier);
         this.material.setValue(scheme.material.ordinal());
+        this.parallel.setValue(scheme.parallel);
     }
 }

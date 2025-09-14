@@ -5,6 +5,7 @@ import mchorse.bbs_mod.math.MathBuilder;
 import mchorse.bbs_mod.math.functions.NNFunction;
 import mchorse.bbs_mod.particles.ParticleMolangParser;
 import mchorse.bbs_mod.particles.emitter.Particle;
+import mchorse.bbs_mod.particles.emitter.ParticleEmitter;
 
 public class SetParticleVariable extends NNFunction
 {
@@ -26,13 +27,18 @@ public class SetParticleVariable extends NNFunction
     @Override
     public double doubleValue()
     {
-        if (this.builder instanceof ParticleMolangParser parser && parser.scheme.particle != null)
+        if (this.builder instanceof ParticleMolangParser parser)
         {
             int offset = this.args.length > 2 ? 1 : 0;
             String name = this.args[offset].stringValue();
             double value = this.args[offset + 1].doubleValue();
 
-            Particle particle = parser.scheme.particle;
+            Particle particle = null;
+            if (parser.scheme.parallel) {
+                particle = ParticleEmitter.evaluationContext.get();
+            } else {
+                particle = parser.scheme.particle;
+            }
 
             if (this.args.length > 2)
             {
