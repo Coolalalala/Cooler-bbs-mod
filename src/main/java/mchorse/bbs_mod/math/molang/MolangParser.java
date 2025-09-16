@@ -32,8 +32,8 @@ public class MolangParser extends MathBuilder
     public static final MolangExpression ONE = new MolangValue(null, new Constant(1));
     public static final String RETURN = "return ";
 
-    private MolangMultiStatement currentStatement;
-    private boolean registerAsGlobals;
+    protected MolangMultiStatement currentStatement;
+    protected boolean registerAsGlobals;
 
     public MolangParser()
     {
@@ -312,7 +312,7 @@ public class MolangParser extends MathBuilder
     /**
      * Wrapper around {@link #parseSymbols(List)} to throw {@link MolangException}
      */
-    private IExpression parseSymbolsMolang(List<Object> symbols) throws MolangException
+    protected IExpression parseSymbolsMolang(List<Object> symbols) throws MolangException
     {
         try
         {
