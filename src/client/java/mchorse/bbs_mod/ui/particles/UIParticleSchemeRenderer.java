@@ -83,7 +83,7 @@ public class UIParticleSchemeRenderer extends UIModelRenderer
     }
 
     private void renderPlane(UIContext context, float a, float b, float c, float d)
-    {
+    { // render in the morph choosing menu
         Matrix4f matrix = context.batcher.getContext().getMatrices().peek().getPositionMatrix();
         BufferBuilder builder = Tessellator.getInstance().getBuffer();
         final float alpha = 0.5F;
