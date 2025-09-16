@@ -32,7 +32,7 @@ public class GetParticleVariable extends SNFunction
             String name = this.args[this.args.length > 1 ? 1 : 0].stringValue();
             Particle particle = null;
             if (parser.scheme.parallel) {
-                particle = ParticleEmitter.evaluationContext.get();
+                particle = ParticleEmitter.evaluationParticle.get();
             } else {
                 particle = parser.scheme.particle;
             }

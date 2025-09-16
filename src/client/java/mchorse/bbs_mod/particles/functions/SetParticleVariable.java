@@ -35,7 +35,7 @@ public class SetParticleVariable extends NNFunction
 
             Particle particle = null;
             if (parser.scheme.parallel) {
-                particle = ParticleEmitter.evaluationContext.get();
+                particle = ParticleEmitter.evaluationParticle.get();
             } else {
                 particle = parser.scheme.particle;
             }

@@ -118,6 +118,7 @@ public class ParticleEmitter
     private Variable varEmitterPositionX;
     private Variable varEmitterPositionY;
     private Variable varEmitterPositionZ;
+    private Variable varEmitterDisplacement;
 
     public double getAge()
     {
@@ -209,6 +210,7 @@ public class ParticleEmitter
         this.varEmitterPositionX = this.scheme.parser.variables.get("variable.emitter_x");
         this.varEmitterPositionY = this.scheme.parser.variables.get("variable.emitter_y");
         this.varEmitterPositionZ = this.scheme.parser.variables.get("variable.emitter_z");
+        this.varEmitterDisplacement = this.scheme.parser.variables.get("variable.emitter_displacement");
     }
 
     public void setParticleVariables(Particle particle, float transition)
@@ -262,6 +264,7 @@ public class ParticleEmitter
         if (this.varEmitterPositionX != null) this.varEmitterPositionX.set(this.lastGlobal.x);
         if (this.varEmitterPositionY != null) this.varEmitterPositionY.set(this.lastGlobal.y);
         if (this.varEmitterPositionZ != null) this.varEmitterPositionZ.set(this.lastGlobal.z);
+        if (this.varEmitterDisplacement != null) this.varEmitterDisplacement.set(this.lastGlobal.length());
 
         this.scheme.updateCurves();
     }
@@ -385,9 +388,7 @@ public class ParticleEmitter
     private void updateParticlesParallel() {
         this.particles = this.particles.parallelStream()
                 .filter(particle -> {
-                    evaluationContext.set(particle);
                     this.updateParticleParallel(particle);
-                    evaluationContext.remove();
                     return !particle.isDead();
                 })
                 .collect(Collectors.toList());
@@ -407,13 +408,15 @@ public class ParticleEmitter
         }
     }
 
-    public static ThreadLocal<Particle> evaluationContext = new ThreadLocal<>();
+    public static final ThreadLocal<Particle> evaluationParticle = new ThreadLocal<>();
     public void updateParticleParallel(Particle particle) {
         particle.update(this);
 
+        evaluationParticle.set(particle);
         for (IComponentParticleUpdate component : this.scheme.particleUpdates) {
             component.update(this, particle);
         }
+        evaluationParticle.remove();
     }
 
     public Particle getParticleByIndex(int index)
@@ -554,7 +557,7 @@ public class ParticleEmitter
             {
                 this.setEmitterVariables(transition);
                 if (this.scheme.parallel) {
-                    evaluationContext.set(particle);
+                    evaluationParticle.set(particle);
                 } else {
                     this.setParticleVariables(particle, transition);
                 }

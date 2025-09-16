@@ -1,6 +1,5 @@
 package mchorse.bbs_mod.particles;
 
-import mchorse.bbs_mod.math.IExpression;
 import mchorse.bbs_mod.math.Variable;
 import mchorse.bbs_mod.particles.emitter.Particle;
 import mchorse.bbs_mod.particles.emitter.ParticleEmitter;
@@ -15,12 +14,12 @@ public class ParticleVariable extends Variable {
     }
 
     public ParticleVariable(String name) {
-        super(name, getParticleVariableValue(name, ParticleEmitter.evaluationContext.get()));
+        super(name, getParticleVariableValue(name, ParticleEmitter.evaluationParticle.get()));
     }
 
     @Override
     public double doubleValue() {
-        return getParticleVariableValue(this.getName(), ParticleEmitter.evaluationContext.get());
+        return getParticleVariableValue(this.getName(), ParticleEmitter.evaluationParticle.get());
     }
 
     private static double getParticleVariableValue(String name, Particle particle) {
