@@ -133,6 +133,7 @@ public class ParticleScheme extends ValueGroup
         this.parser.register("variable.emitter_x");
         this.parser.register("variable.emitter_y");
         this.parser.register("variable.emitter_z");
+        this.parser.register("variable.emitter_displacement");
     }
 
     public void setup()
