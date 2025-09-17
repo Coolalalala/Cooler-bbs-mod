@@ -45,7 +45,6 @@ public class Particle
 
     public Vector3f speed = new Vector3f();
     public Vector3f acceleration = new Vector3f();
-    public Vector3f bounceFactor = new Vector3f(1, 1, 1);
     public int collisions = 0;
     public float drag = 0;
     public float dragFactor = 0;
@@ -159,6 +158,8 @@ public class Particle
             {
                 vecTemp.mul(1F + this.offset);
             }
+
+            // if (!relativePosition && relativeRotation) vecTemp.mul(emitter.rotation);
 
             this.position.x += vecTemp.x / 20F;
             this.position.y += vecTemp.y / 20F;
