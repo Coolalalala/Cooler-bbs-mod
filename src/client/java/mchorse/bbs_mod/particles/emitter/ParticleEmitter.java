@@ -7,6 +7,7 @@ import mchorse.bbs_mod.graphics.texture.Texture;
 import mchorse.bbs_mod.math.IExpression;
 import mchorse.bbs_mod.math.Variable;
 import mchorse.bbs_mod.particles.ParticleScheme;
+import mchorse.bbs_mod.particles.ParticleVariable;
 import mchorse.bbs_mod.particles.components.IComponentEmitterInitialize;
 import mchorse.bbs_mod.particles.components.IComponentEmitterUpdate;
 import mchorse.bbs_mod.particles.components.IComponentParticleInitialize;
@@ -25,11 +26,9 @@ import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.world.World;
-import org.joml.Matrix3f;
-import org.joml.Matrix4f;
-import org.joml.Vector3d;
-import org.joml.Vector3f;
+import org.joml.*;
 
+import java.lang.Math;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -119,6 +118,9 @@ public class ParticleEmitter
     private Variable varEmitterPositionY;
     private Variable varEmitterPositionZ;
     private Variable varEmitterDisplacement;
+    private Variable varEmitterRotationX;
+    private Variable varEmitterRotationY;
+    private Variable varEmitterRotationZ;
 
     public double getAge()
     {
@@ -211,6 +213,9 @@ public class ParticleEmitter
         this.varEmitterPositionY = this.scheme.parser.variables.get("variable.emitter_y");
         this.varEmitterPositionZ = this.scheme.parser.variables.get("variable.emitter_z");
         this.varEmitterDisplacement = this.scheme.parser.variables.get("variable.emitter_displacement");
+        this.varEmitterRotationX = this.scheme.parser.variables.get("variable.emitter_rx");
+        this.varEmitterRotationY = this.scheme.parser.variables.get("variable.emitter_ry");
+        this.varEmitterRotationZ = this.scheme.parser.variables.get("variable.emitter_rz");
     }
 
     public void setParticleVariables(Particle particle, float transition)
@@ -226,10 +231,27 @@ public class ParticleEmitter
         if (this.varRandom3 != null) this.varRandom3.set(particle.random3);
         if (this.varRandom4 != null) this.varRandom4.set(particle.random4);
 
+        // Transform
+        Vector3d prevPosition = new Vector3d(particle.prevPosition);
+        Vector3d position = new Vector3d(particle.position);
+        if (particle.age != 0 && !(particle.relativePosition && particle.relativeRotation)) {
+            prevPosition.sub(this.lastGlobal);
+            position.sub(this.lastGlobal);
+        }
+        if (!particle.relativePosition && particle.relativeRotation) {
+            Matrix3f inverseRotation = new Matrix3f(particle.matrix).invert();
+            Vector3f tempVec = new Vector3f();
+            tempVec.set(prevPosition);
+            inverseRotation.transform(tempVec);
+            prevPosition.set(tempVec);
+            tempVec.set(position);
+            inverseRotation.transform(tempVec);
+            position.set(tempVec);
+        }
         // Movements
-        if (this.varPositionX != null) this.varPositionX.set(Lerps.lerp(particle.prevPosition.x, particle.position.x, transition));
-        if (this.varPositionY != null) this.varPositionY.set(Lerps.lerp(particle.prevPosition.y, particle.position.y, transition));
-        if (this.varPositionZ != null) this.varPositionZ.set(Lerps.lerp(particle.prevPosition.z, particle.position.z, transition));
+        if (this.varPositionX != null) this.varPositionX.set(Lerps.lerp(prevPosition.x, position.x, transition));
+        if (this.varPositionY != null) this.varPositionY.set(Lerps.lerp(prevPosition.y, position.y, transition));
+        if (this.varPositionZ != null) this.varPositionZ.set(Lerps.lerp(prevPosition.z, position.z, transition));
         if (this.varDisplacement != null) this.varDisplacement.set(particle.position.length());
         if (this.varVelocityX != null) this.varVelocityX.set(particle.speed.x);
         if (this.varVelocityY != null) this.varVelocityY.set(particle.speed.y);
@@ -265,6 +287,10 @@ public class ParticleEmitter
         if (this.varEmitterPositionY != null) this.varEmitterPositionY.set(this.lastGlobal.y);
         if (this.varEmitterPositionZ != null) this.varEmitterPositionZ.set(this.lastGlobal.z);
         if (this.varEmitterDisplacement != null) this.varEmitterDisplacement.set(this.lastGlobal.length());
+        Vector3f rot = this.rotation.getEulerAnglesZYX(new Vector3f());
+        if (this.varEmitterRotationX != null) this.varEmitterRotationX.set(rot.x);
+        if (this.varEmitterRotationY != null) this.varEmitterRotationY.set(rot.y);
+        if (this.varEmitterRotationZ != null) this.varEmitterRotationZ.set(rot.z);
 
         this.scheme.updateCurves();
     }
@@ -354,6 +380,7 @@ public class ParticleEmitter
 
         this.setEmitterVariables(0);
         if (this.scheme.parallel) {
+            ParticleVariable.emitter = this;
             this.updateParticlesParallel();
         } else {
             this.updateParticles();
@@ -413,6 +440,7 @@ public class ParticleEmitter
         particle.update(this);
 
         evaluationParticle.set(particle);
+        scheme.updateCurves();
         for (IComponentParticleUpdate component : this.scheme.particleUpdates) {
             component.update(this, particle);
         }
