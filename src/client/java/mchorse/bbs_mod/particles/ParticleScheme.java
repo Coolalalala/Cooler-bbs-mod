@@ -119,9 +119,6 @@ public class ParticleScheme extends ValueGroup
         this.parser.register("variable.particle_vz");
         this.parser.register("variable.particle_velocity");
         this.parser.register("variable.particle_offset");
-        this.parser.register("variable.particle_accfactor_x");
-        this.parser.register("variable.particle_accfactor_y");
-        this.parser.register("variable.particle_accfactor_z");
         this.parser.register("variable.particle_collisions");
 
         this.parser.register("variable.emitter_user_1");
@@ -134,6 +131,9 @@ public class ParticleScheme extends ValueGroup
         this.parser.register("variable.emitter_y");
         this.parser.register("variable.emitter_z");
         this.parser.register("variable.emitter_displacement");
+        this.parser.register("variable.emitter_rx");
+        this.parser.register("variable.emitter_ry");
+        this.parser.register("variable.emitter_rz");
     }
 
     public void setup()
