@@ -5,19 +5,16 @@ import mchorse.bbs_mod.math.molang.MolangException;
 import mchorse.bbs_mod.math.molang.MolangParser;
 import mchorse.bbs_mod.math.molang.expressions.MolangAssignment;
 import mchorse.bbs_mod.math.molang.expressions.MolangExpression;
+import mchorse.bbs_mod.math.molang.expressions.MolangMultiStatement;
 import mchorse.bbs_mod.math.molang.expressions.MolangValue;
-import mchorse.bbs_mod.particles.emitter.Particle;
 import mchorse.bbs_mod.particles.functions.GetParticleVariable;
 import mchorse.bbs_mod.particles.functions.SetParticleVariable;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class ParticleMolangParser extends MolangParser
 {
     public final ParticleScheme scheme;
-    public final Map<Map<String, Variable>, Particle> particleLocals = new HashMap<>();
 
     public ParticleMolangParser(ParticleScheme scheme)
     {
@@ -34,9 +31,33 @@ public class ParticleMolangParser extends MolangParser
             if (name.startsWith("v.particle") || name.startsWith("variable.particle")) {
                 return new ParticleVariable(name); // bro i spent so much time figuring out i can just do this
             }
+            return getVariableParallel(name);
         }
 
         return super.getVariable(name);
+    }
+
+    private Variable getVariableParallel(String name)
+    {
+        if (name.startsWith("v.")) {
+            name = name.replace("v.", "variable.");
+        }
+
+        MolangMultiStatement currentStatement = this.currentStatement;
+        Variable variable = currentStatement == null ? null : currentStatement.locals.get(name);
+
+        if (variable == null)
+        {
+            variable = this.variables.get(name);
+        }
+
+        if (variable == null)
+        {
+            variable = new ParticleMultithreadVariable(name, 0);
+            this.register(variable);
+        }
+
+        return variable;
     }
 
     @Override
@@ -89,5 +110,25 @@ public class ParticleMolangParser extends MolangParser
         {
             throw new MolangException("Couldn't parse '" + expression + "' expression!");
         }
+    }
+
+    @Override
+    public Variable getOrCreateVariable(String key)
+    {
+        if (!scheme.parallel) return super.getOrCreateVariable(key);
+
+        Variable variable = this.variables.get(key);
+
+        if (variable == null)
+        {
+            variable = new ParticleMultithreadVariable(key, 0);
+            this.register(variable);
+        } else if (!(variable instanceof ParticleMultithreadVariable)) {
+            variable = new ParticleMultithreadVariable(variable);
+            this.variables.remove(key);
+            this.register(variable);
+        }
+
+        return variable;
     }
 }
