@@ -67,6 +67,15 @@ public class ParticleMolangParser extends MolangParser
 
         expression = expression.trim();
 
+        if (expression.startsWith("//")) // comment
+        {
+            int index = expression.indexOf("\n");
+            if (index != -1)
+            {
+                expression = expression.substring(index);
+            }
+        }
+
         if (expression.startsWith(RETURN))
         {
             try
