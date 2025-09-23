@@ -7,8 +7,7 @@ import mchorse.bbs_mod.math.molang.expressions.MolangAssignment;
 import mchorse.bbs_mod.math.molang.expressions.MolangExpression;
 import mchorse.bbs_mod.math.molang.expressions.MolangMultiStatement;
 import mchorse.bbs_mod.math.molang.expressions.MolangValue;
-import mchorse.bbs_mod.particles.functions.GetParticleVariable;
-import mchorse.bbs_mod.particles.functions.SetParticleVariable;
+import mchorse.bbs_mod.particles.functions.*;
 
 import java.util.List;
 
@@ -22,6 +21,10 @@ public class ParticleMolangParser extends MolangParser
 
         this.functions.put("v.set", SetParticleVariable.class);
         this.functions.put("v.get", GetParticleVariable.class);
+        this.functions.put("v.put_ref", SetEmitterReference.class);
+        this.functions.put("v.get_ref", GetEmitterReference.class);
+        this.functions.put("list.set", SetListVariable.class);
+        this.functions.put("list.get", GetListVariable.class);
     }
 
     @Override
@@ -63,18 +66,18 @@ public class ParticleMolangParser extends MolangParser
     @Override
     protected MolangExpression parseOneLine(String expression) throws MolangException
     {
-        if (!scheme.parallel) super.parseOneLine(expression);
-
         expression = expression.trim();
-
         if (expression.startsWith("//")) // comment
         {
             int index = expression.indexOf("\n");
             if (index != -1)
             {
-                expression = expression.substring(index);
+                return parseOneLine(expression.substring(index + 1));
             }
+            return MolangParser.ZERO;
         }
+
+        if (!scheme.parallel) super.parseOneLine(expression);
 
         if (expression.startsWith(RETURN))
         {

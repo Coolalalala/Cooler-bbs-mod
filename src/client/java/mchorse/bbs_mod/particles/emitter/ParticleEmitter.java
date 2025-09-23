@@ -41,7 +41,8 @@ public class ParticleEmitter
 {
     public ParticleScheme scheme;
     public List<Particle> particles = new ArrayList<>();
-    public Map<String, IExpression> variables;
+    public Map<String, IExpression> variables = new HashMap<>();
+    public Map<String, ArrayList<Double>> listVariables = new HashMap<>();
 
     public Link texture;
     public LivingEntity target;
@@ -84,6 +85,9 @@ public class ParticleEmitter
     public float user6;
 
     /* Cached variable references to avoid hash look-ups */
+    private Variable varInitX;
+    private Variable varInitY;
+    private Variable varInitZ;
     private Variable varIndex;
     private Variable varAge;
     private Variable varLifetime;
@@ -179,6 +183,9 @@ public class ParticleEmitter
 
     public void setupVariables()
     {
+        this.varInitX = this.scheme.parser.variables.get("variable.particle_init_x");
+        this.varInitY = this.scheme.parser.variables.get("variable.particle_init_y");
+        this.varInitZ = this.scheme.parser.variables.get("variable.particle_random_1");
         this.varIndex = this.scheme.parser.variables.get("variable.particle_index");
         this.varAge = this.scheme.parser.variables.get("variable.particle_age");
         this.varLifetime = this.scheme.parser.variables.get("variable.particle_lifetime");
@@ -249,6 +256,9 @@ public class ParticleEmitter
             position.set(tempVec);
         }
         // Movements
+        if (this.varInitX != null) this.varInitX.set(particle.initialPosition.x);
+        if (this.varInitY != null) this.varInitY.set(particle.initialPosition.y);
+        if (this.varInitZ != null) this.varInitZ.set(particle.initialPosition.z);
         if (this.varPositionX != null) this.varPositionX.set(Lerps.lerp(prevPosition.x, position.x, transition));
         if (this.varPositionY != null) this.varPositionY.set(Lerps.lerp(prevPosition.y, position.y, transition));
         if (this.varPositionZ != null) this.varPositionZ.set(Lerps.lerp(prevPosition.z, position.z, transition));
@@ -297,8 +307,6 @@ public class ParticleEmitter
 
     public void parseVariables(Map<String, String> variables)
     {
-        this.variables = new HashMap<>();
-
         for (Map.Entry<String, String> entry : variables.entrySet())
         {
             this.parseVariable(entry.getKey(), entry.getValue());

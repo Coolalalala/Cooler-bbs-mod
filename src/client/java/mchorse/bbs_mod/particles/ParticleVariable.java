@@ -39,6 +39,9 @@ public class ParticleVariable extends Variable {
             }
         }
         return switch (name) {
+            case "variable.particle_init_x" -> particle.initialPosition.x;
+            case "variable.particle_init_y" -> particle.initialPosition.y;
+            case "variable.particle_init_z" -> particle.initialPosition.z;
             case "variable.particle_index" -> particle.index;
             case "variable.particle_age" -> particle.getAge(0);
             case "variable.particle_lifetime" -> particle.lifetime / 20.0;

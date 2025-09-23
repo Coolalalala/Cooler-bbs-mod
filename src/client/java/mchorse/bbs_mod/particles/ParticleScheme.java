@@ -109,6 +109,9 @@ public class ParticleScheme extends ValueGroup
         this.parser.register("variable.emitter_random_4");
 
         /* BBS extra variables */
+        this.parser.register("variable.particle_init_x");
+        this.parser.register("variable.particle_init_y");
+        this.parser.register("variable.particle_init_z");
         this.parser.register("variable.particle_index");
         this.parser.register("variable.particle_x");
         this.parser.register("variable.particle_y");
