@@ -16,6 +16,7 @@ import mchorse.bbs_mod.utils.pose.Transform;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -112,11 +113,7 @@ public class BOBJModel implements IModel
                 continue;
             }
 
-            if (pose.staticPose)
-            {
-                bone.transform.identity();
-            }
-            else if (transform.fix > 0F)
+            if (transform.fix > 0F)
             {
                 bone.transform.lerp(Transform.DEFAULT, transform.fix);
             }
@@ -182,7 +179,13 @@ public class BOBJModel implements IModel
     @Override
     public Collection<ModelGroup> getAllGroups()
     {
-        return List.of();
+        return Collections.emptyList();
+    }
+
+    @Override
+    public Collection<BOBJBone> getAllBOBJBones()
+    {
+        return Collections.unmodifiableList(this.armature.orderedBones);
     }
 
     @Override

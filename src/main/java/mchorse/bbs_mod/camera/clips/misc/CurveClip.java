@@ -5,7 +5,7 @@ import mchorse.bbs_mod.camera.data.Position;
 import mchorse.bbs_mod.camera.values.ValueChannels;
 import mchorse.bbs_mod.data.types.BaseType;
 import mchorse.bbs_mod.data.types.MapType;
-import mchorse.bbs_mod.settings.values.ValueString;
+import mchorse.bbs_mod.settings.values.core.ValueString;
 import mchorse.bbs_mod.utils.clips.Clip;
 import mchorse.bbs_mod.utils.clips.ClipContext;
 import mchorse.bbs_mod.utils.keyframes.KeyframeChannel;
@@ -46,7 +46,10 @@ public class CurveClip extends CameraClip
 
         for (KeyframeChannel<Double> channel : this.channels.getChannels())
         {
-            values.put(channel.getId(), channel.interpolate(context.relativeTick + context.transition));
+            if (!channel.isEmpty())
+            {
+                values.put(channel.getId(), channel.interpolate(context.relativeTick + context.transition));
+            }
         }
     }
 

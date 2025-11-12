@@ -12,15 +12,17 @@ import mchorse.bbs_mod.forms.entities.IEntity;
 import mchorse.bbs_mod.forms.entities.MCEntity;
 import mchorse.bbs_mod.forms.entities.StubEntity;
 import mchorse.bbs_mod.forms.forms.Form;
-import mchorse.bbs_mod.forms.properties.AnchorProperty;
+import mchorse.bbs_mod.forms.forms.utils.Anchor;
 import mchorse.bbs_mod.forms.renderers.FormRenderType;
 import mchorse.bbs_mod.forms.renderers.FormRenderingContext;
 import mchorse.bbs_mod.graphics.Draw;
 import mchorse.bbs_mod.mixin.client.ClientPlayerEntityAccessor;
+import mchorse.bbs_mod.morphing.Morph;
 import mchorse.bbs_mod.ui.framework.UIBaseMenu;
 import mchorse.bbs_mod.utils.CollectionUtils;
 import mchorse.bbs_mod.utils.MathUtils;
 import mchorse.bbs_mod.utils.MatrixStackUtils;
+import mchorse.bbs_mod.utils.Pair;
 import mchorse.bbs_mod.utils.StringUtils;
 import mchorse.bbs_mod.utils.interps.Lerps;
 import mchorse.bbs_mod.utils.joml.Matrices;
@@ -47,7 +49,6 @@ import org.joml.Matrix4f;
 import org.joml.Vector3d;
 import org.joml.Vector3f;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -84,52 +85,29 @@ public abstract class BaseFilmController
             Lerps.lerp(entity.getPrevZ(), entity.getZ(), transition)
         );
 
-        AnchorProperty.Anchor value = form.anchor.get();
-        Matrix4f target = null;
         double cx = camera.getPos().x;
         double cy = camera.getPos().y;
         double cz = camera.getPos().z;
+
+        boolean relative = context.replay != null && context.relative;
+
+        if (relative)
+        {
+            cx = context.replay.keyframes.x.interpolate(0F) + context.replay.relativeOffset.get().x;
+            cy = context.replay.keyframes.y.interpolate(0F) + context.replay.relativeOffset.get().y;
+            cz = context.replay.keyframes.z.interpolate(0F) + context.replay.relativeOffset.get().z;
+        }
+
+        Matrix4f target = null;
         Matrix4f defaultMatrix = getMatrixForRenderWithRotation(entity, cx, cy, cz, transition);
         float opacity = 1F;
 
-        boolean same = value.previousActor == -2
-            || (value.actor == value.previousActor && Objects.equals(value.attachment, value.previousAttachment));
-
-        if (same)
+        if (!relative)
         {
-            Matrix4f matrix = getEntityMatrix(entities, cx, cy, cz, value.actor, value.attachment, value.translate, value.scale, defaultMatrix, transition);
+            Pair<Matrix4f, Float> pair = getTotalMatrix(entities, form.anchor.get(), defaultMatrix, cx, cy, cz, transition, 0);
 
-            if (matrix != defaultMatrix)
-            {
-                target = matrix;
-                opacity = 0F;
-            }
-        }
-        else if (value.x <= 0F && value.previousActor >= -1)
-        {
-            Matrix4f matrix = getEntityMatrix(entities, cx, cy, cz, value.previousActor, value.previousAttachment, value.previousTranslate, value.previousScale, defaultMatrix, transition);
-
-            if (matrix != defaultMatrix)
-            {
-                target = matrix;
-                opacity = 0F;
-            }
-        }
-        else
-        {
-            Matrix4f matrix = getEntityMatrix(entities, cx, cy, cz, value.actor, value.attachment, value.translate, value.scale, defaultMatrix, transition);
-            Matrix4f lastMatrix = getEntityMatrix(entities, cx, cy, cz, value.previousActor, value.previousAttachment, value.previousTranslate, value.previousScale, defaultMatrix, transition);
-
-            if (matrix != lastMatrix)
-            {
-                float factor = value.x;
-
-                target = factor >= 1F ? matrix : Matrices.lerp(lastMatrix, matrix, factor);
-
-                if (value.actor == -1 && value.previousActor >= 0) opacity = factor;
-                else if (value.actor >= 0 && value.previousActor == -1) opacity = 1F - factor;
-                else opacity = 0F;
-            }
+            target = pair.a;
+            opacity = pair.b;
         }
 
         if (target != null)
@@ -140,6 +118,10 @@ public abstract class BaseFilmController
             position.x += v.x - v2.x;
             position.y += v.y - v2.y;
             position.z += v.z - v2.z;
+        }
+        else
+        {
+            target = defaultMatrix;
         }
 
         BlockPos pos = BlockPos.ofFloored(position.x, position.y + 0.5D, position.z);
@@ -155,16 +137,20 @@ public abstract class BaseFilmController
             .color(context.color);
 
         stack.push();
-        MatrixStackUtils.multiply(stack, target == null ? defaultMatrix : target);
+
+        if (relative)
+        {
+            stack.peek().getPositionMatrix().identity();
+            stack.peek().getNormalMatrix().identity();
+        }
+
+        MatrixStackUtils.multiply(stack, target);
         FormUtilsClient.render(form, formContext);
 
         if (context.bone != null && UIBaseMenu.renderAxes)
         {
             Form root = FormUtils.getRoot(form);
-            MatrixStack tempStack = new MatrixStack();
-            Map<String, Matrix4f> map = new HashMap<>();
-
-            FormUtilsClient.getRenderer(root).collectMatrices(entity, context.local ? null : context.bone, tempStack, map, "", transition);
+            Map<String, Matrix4f> map = FormUtilsClient.getRenderer(root).collectMatrices(entity, context.local ? null : context.bone, transition);
 
             Matrix4f matrix = map.get(context.bone);
 
@@ -180,7 +166,7 @@ public abstract class BaseFilmController
 
         stack.pop();
 
-        if (context.map == null && opacity > 0F && context.shadowRadius > 0F)
+        if (!relative && context.map == null && opacity > 0F && context.shadowRadius > 0F)
         {
             stack.push();
             stack.translate(position.x - cx, position.y - cy, position.z - cz);
@@ -190,7 +176,7 @@ public abstract class BaseFilmController
             stack.pop();
         }
 
-        if (!context.nameTag.isEmpty() && context.map == null)
+        if (!relative && !context.nameTag.isEmpty() && context.map == null)
         {
             stack.push();
             stack.translate(position.x - cx, position.y - cy, position.z - cz);
@@ -201,6 +187,119 @@ public abstract class BaseFilmController
         }
 
         RenderSystem.enableDepthTest();
+    }
+
+    public static Pair<Matrix4f, Float> getTotalMatrix(IntObjectMap<IEntity> entities, Anchor value, Matrix4f defaultMatrix, double cx, double cy, double cz, float transition, int i)
+    {
+        /* Stupid recursion stop, I don't think anyone would need more than that */
+        if (i > 5)
+        {
+            return new Pair<>(defaultMatrix, 1F);
+        }
+
+        boolean same = value.previous == null || Objects.equals(value, value.previous);
+        boolean only = value.x <= 0F && value.previous != null;
+        Pair<Matrix4f, Float> result = new Pair<>(null, 1F);
+
+        if (same || only)
+        {
+            Matrix4f matrix = getEntityMatrix(entities, cx, cy, cz, same ? value : value.previous, defaultMatrix, transition, i);
+
+            if (matrix != defaultMatrix)
+            {
+                result.a = matrix;
+                result.b = 0F;
+            }
+        }
+        else
+        {
+            Matrix4f matrix = getEntityMatrix(entities, cx, cy, cz, value, defaultMatrix, transition, i);
+            Matrix4f lastMatrix = getEntityMatrix(entities, cx, cy, cz, value.previous, defaultMatrix, transition, i);
+
+            result.a = value.x >= 1F ? matrix : Matrices.lerp(lastMatrix, matrix, value.x);
+
+            if (value.isFadeOut()) result.b = value.x;
+            else if (value.isFadeIn()) result.b = 1F - value.x;
+            else result.b = 0F;
+        }
+
+        return result;
+    }
+
+    public static Matrix4f getEntityMatrix(IntObjectMap<IEntity> entities, double cameraX, double cameraY, double cameraZ, Anchor anchor, Matrix4f defaultMatrix, float transition)
+    {
+        return getEntityMatrix(entities, cameraX, cameraY, cameraZ, anchor, defaultMatrix, transition, 0);
+    }
+
+    public static Matrix4f getEntityMatrix(IntObjectMap<IEntity> entities, double cameraX, double cameraY, double cameraZ, Anchor anchor, Matrix4f defaultMatrix, float transition, int i)
+    {
+        IEntity entity = entities.get(anchor.replay);
+
+        if (entity != null)
+        {
+            Matrix4f basic = getMatrixForRenderWithRotation(entity, cameraX, cameraY, cameraZ, transition);
+
+            Form form = entity.getForm();
+
+            if (form != null)
+            {
+                Pair<Matrix4f, Float> totalMatrix = getTotalMatrix(entities, form.anchor.get(), basic, cameraX, cameraY, cameraZ, transition, i + 1);
+
+                if (totalMatrix.a != null)
+                {
+                    basic = totalMatrix.a;
+                }
+
+                Map<String, Matrix4f> map = FormUtilsClient.getRenderer(form).collectMatrices(entity, null, transition);
+                Matrix4f matrix = map.get(anchor.attachment);
+
+                if (matrix != null)
+                {
+                    basic.mul(matrix);
+
+                    if (anchor.scale)
+                    {
+                        Matrix3f mat = new Matrix3f();
+                        Vector3f v = new Vector3f();
+                        basic.get3x3(mat);
+
+                        mat.getColumn(0, v); v.normalize(); mat.setColumn(0, v);
+                        mat.getColumn(1, v); v.normalize(); mat.setColumn(1, v);
+                        mat.getColumn(2, v); v.normalize(); mat.setColumn(2, v);
+
+                        basic.set3x3(mat);
+                    }
+
+                    if (anchor.translate)
+                    {
+                        Vector3f t = new Vector3f();
+                        basic.getTranslation(t);
+                        basic.set(defaultMatrix);
+                        basic.setTranslation(t);
+                    }
+                }
+            }
+
+            return basic;
+        }
+
+        return defaultMatrix;
+    }
+
+    public static Matrix4f getMatrixForRenderWithRotation(IEntity entity, double cameraX, double cameraY, double cameraZ, float tickDelta)
+    {
+        double x = Lerps.lerp(entity.getPrevX(), entity.getX(), tickDelta) - cameraX;
+        double y = Lerps.lerp(entity.getPrevY(), entity.getY(), tickDelta) - cameraY;
+        double z = Lerps.lerp(entity.getPrevZ(), entity.getZ(), tickDelta) - cameraZ;
+
+        Matrix4f matrix = new Matrix4f();
+
+        float bodyYaw = Lerps.lerp(entity.getPrevBodyYaw(), entity.getBodyYaw(), tickDelta);
+
+        matrix.translate((float) x, (float) y, (float) z);
+        matrix.rotateY(MathUtils.toRad(-bodyYaw));
+
+        return matrix;
     }
 
     private static void renderNameTag(IEntity entity, Text text, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light)
@@ -228,81 +327,6 @@ public abstract class BaseFilmController
         }
 
         matrices.pop();
-    }
-
-    public static Matrix4f getEntityMatrix(IntObjectMap<IEntity> entities, double cameraX, double cameraY, double cameraZ, int actor, String attachment, boolean translate, boolean scale, Matrix4f defaultMatrix, float transition)
-    {
-        IEntity entity = entities.get(actor);
-
-        if (entity != null)
-        {
-            Matrix4f basic = new Matrix4f(getMatrixForRenderWithRotation(entity, cameraX, cameraY, cameraZ, transition));
-
-            Map<String, Matrix4f> map = new HashMap<>();
-            MatrixStack stack = new MatrixStack();
-
-            Form form = entity.getForm();
-
-            if (form != null)
-            {
-                FormUtilsClient.getRenderer(form).collectMatrices(entity, null, stack, map, "", transition);
-
-                Matrix4f matrix = map.get(attachment);
-
-                if (matrix != null)
-                {
-                    basic.mul(matrix);
-
-                    if (scale)
-                    {
-                        Matrix3f mat = Matrices.TEMP_3F;
-                        Vector3f vec = Vectors.TEMP_3F;
-
-                        basic.get3x3(mat);
-                        mat.getRow(0, vec);
-                        vec.normalize();
-                        mat.setRow(0, vec);
-
-                        mat.getRow(1, vec);
-                        vec.normalize();
-                        mat.setRow(1, vec);
-
-                        mat.getRow(2, vec);
-                        vec.normalize();
-                        mat.setRow(2, vec);
-
-                        basic.set3x3(mat);
-                    }
-
-                    if (translate)
-                    {
-                        basic.getTranslation(Vectors.TEMP_3F);
-                        basic.set(Matrices.TEMP_3F.set(defaultMatrix));
-                        basic.setTranslation(Vectors.TEMP_3F);
-                    }
-                }
-            }
-
-            return basic;
-        }
-
-        return defaultMatrix;
-    }
-
-    public static Matrix4f getMatrixForRenderWithRotation(IEntity entity, double cameraX, double cameraY, double cameraZ, float tickDelta)
-    {
-        double x = Lerps.lerp(entity.getPrevX(), entity.getX(), tickDelta) - cameraX;
-        double y = Lerps.lerp(entity.getPrevY(), entity.getY(), tickDelta) - cameraY;
-        double z = Lerps.lerp(entity.getPrevZ(), entity.getZ(), tickDelta) - cameraZ;
-
-        Matrix4f matrix = new Matrix4f();
-
-        float bodyYaw = Lerps.lerp(entity.getPrevBodyYaw(), entity.getBodyYaw(), tickDelta);
-
-        matrix.translate((float) x, (float) y, (float) z);
-        matrix.rotateY(MathUtils.toRad(-bodyYaw));
-
-        return matrix;
     }
 
     /* Film controller */
@@ -341,7 +365,7 @@ public abstract class BaseFilmController
                 IEntity entity = new StubEntity(world);
 
                 entity.setForm(FormUtils.copy(replay.form.get()));
-                replay.applyFrame(0, entity);
+                replay.keyframes.apply(0, entity);
                 entity.setPrevX(entity.getX());
                 entity.setPrevY(entity.getY());
                 entity.setPrevZ(entity.getZ());
@@ -504,7 +528,7 @@ public abstract class BaseFilmController
 
     protected void applyReplay(Replay replay, int ticks, IEntity entity)
     {
-        replay.applyFrame(ticks, entity, null);
+        replay.keyframes.apply(ticks, entity);
         replay.applyClientActions(ticks, entity, this.film);
     }
 
@@ -525,7 +549,8 @@ public abstract class BaseFilmController
             int tick = replay.getTick(this.getTick());
 
             /* Apply property */
-            replay.applyProperties(tick + delta, entity.getForm());
+            Form form1 = entity.getForm();
+            replay.properties.applyProperties(form1, tick + delta);
 
             Map<String, Integer> actors = this.getActors();
 
@@ -539,10 +564,19 @@ public abstract class BaseFilmController
 
                     if (anEntity instanceof ActorEntity actor)
                     {
-                        replay.applyProperties(tick + delta, actor.getForm());
+                        Form form = actor.getForm();
+                        replay.properties.applyProperties(form, tick + delta);
                     }
                     else if (anEntity instanceof PlayerEntity player)
                     {
+                        Morph morph = Morph.getMorph(player);
+
+                        if (morph != null)
+                        {
+                            Form form = morph.getForm();
+                            replay.properties.applyProperties(form, tick + delta);
+                        }
+
                         float yawHead = replay.keyframes.headYaw.interpolate(tick + delta).floatValue();
                         float yawBody = replay.keyframes.bodyYaw.interpolate(tick + delta).floatValue();
                         float pitch = replay.keyframes.pitch.interpolate(tick + delta).floatValue();
@@ -610,9 +644,10 @@ public abstract class BaseFilmController
     protected FilmControllerContext getFilmControllerContext(WorldRenderContext context, Replay replay, IEntity entity)
     {
         return FilmControllerContext.instance
-            .setup(this.entities, entity, context)
+            .setup(this.entities, entity, replay, context)
             .shadow(replay.shadow.get(), replay.shadowSize.get())
-            .nameTag(replay.nameTag.get());
+            .nameTag(replay.nameTag.get())
+            .relative(replay.relative.get());
     }
 
     public void shutdown()

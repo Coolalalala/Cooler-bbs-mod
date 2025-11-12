@@ -23,6 +23,7 @@ public class ShaderCurves
 
     public static final String BRIGHTNESS = "brightness";
     public static final String SUN_ROTATION = "sun_rotation";
+    public static final String WEATHER = "weather";
 
     public static final String UNIFORM_IDENTIFIER = "bbs_";
 
@@ -134,7 +135,7 @@ public class ShaderCurves
     private static Map<String, ShaderVariable> parseVariables(String source)
     {
         Map<String, ShaderVariable> variables = new HashMap<>();
-        Pattern definePattern = Pattern.compile("^\\s*(?!//)\\s*#define +([\\w_]+) +([\\d.]+) *// *\\[");
+        Pattern definePattern = Pattern.compile("^\\s*(?!//)\\s*#define +([\\w_]+) +([\\d.]+) *// *(\\[|OptionAnnotatedSource)");
         int index = 0;
 
         while ((index = source.indexOf("#define", index)) != -1)

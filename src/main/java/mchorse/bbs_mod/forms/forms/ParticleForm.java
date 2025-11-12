@@ -1,39 +1,39 @@
 package mchorse.bbs_mod.forms.forms;
 
-import mchorse.bbs_mod.forms.properties.BooleanProperty;
-import mchorse.bbs_mod.forms.properties.FloatProperty;
-import mchorse.bbs_mod.forms.properties.LinkProperty;
-import mchorse.bbs_mod.forms.properties.StringProperty;
+import mchorse.bbs_mod.settings.values.numeric.ValueBoolean;
+import mchorse.bbs_mod.settings.values.numeric.ValueFloat;
+import mchorse.bbs_mod.settings.values.core.ValueLink;
+import mchorse.bbs_mod.settings.values.core.ValueString;
 
 public class ParticleForm extends Form
 {
-    public final StringProperty effect = new StringProperty(this, "effect", null);
-    public final BooleanProperty paused = new BooleanProperty(this, "paused", false);
-    public final LinkProperty texture = new LinkProperty(this, "texture", null);
+    public final ValueString effect = new ValueString("effect", null);
+    public final ValueBoolean paused = new ValueBoolean("paused", false);
+    public final ValueLink texture = new ValueLink("texture", null);
 
-    public final FloatProperty user1 = new FloatProperty(this, "user1", 0F);
-    public final FloatProperty user2 = new FloatProperty(this, "user2", 0F);
-    public final FloatProperty user3 = new FloatProperty(this, "user3", 0F);
-    public final FloatProperty user4 = new FloatProperty(this, "user4", 0F);
-    public final FloatProperty user5 = new FloatProperty(this, "user5", 0F);
-    public final FloatProperty user6 = new FloatProperty(this, "user6", 0F);
+    public final ValueFloat user1 = new ValueFloat("user1", 0F);
+    public final ValueFloat user2 = new ValueFloat("user2", 0F);
+    public final ValueFloat user3 = new ValueFloat("user3", 0F);
+    public final ValueFloat user4 = new ValueFloat("user4", 0F);
+    public final ValueFloat user5 = new ValueFloat("user5", 0F);
+    public final ValueFloat user6 = new ValueFloat("user6", 0F);
 
     public ParticleForm()
     {
         super();
 
-        this.effect.cantAnimate();
+        this.effect.invisible();
 
-        this.register(this.effect);
-        this.register(this.paused);
-        this.register(this.texture);
+        this.add(this.effect);
+        this.add(this.paused);
+        this.add(this.texture);
 
-        this.register(this.user1);
-        this.register(this.user2);
-        this.register(this.user3);
-        this.register(this.user4);
-        this.register(this.user5);
-        this.register(this.user6);
+        this.add(this.user1);
+        this.add(this.user2);
+        this.add(this.user3);
+        this.add(this.user4);
+        this.add(this.user5);
+        this.add(this.user6);
     }
 
     @Override

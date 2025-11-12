@@ -2,7 +2,7 @@ package mchorse.bbs_mod.ui.film.clips;
 
 import mchorse.bbs_mod.BBSSettings;
 import mchorse.bbs_mod.actions.types.AttackActionClip;
-import mchorse.bbs_mod.actions.types.FormTriggerClientActionClip;
+import mchorse.bbs_mod.actions.types.DamageActionClip;
 import mchorse.bbs_mod.actions.types.SwipeActionClip;
 import mchorse.bbs_mod.actions.types.blocks.BreakBlockActionClip;
 import mchorse.bbs_mod.actions.types.blocks.InteractBlockActionClip;
@@ -25,7 +25,6 @@ import mchorse.bbs_mod.camera.clips.modifiers.OrbitClip;
 import mchorse.bbs_mod.camera.clips.modifiers.RemapperClip;
 import mchorse.bbs_mod.camera.clips.modifiers.ShakeClip;
 import mchorse.bbs_mod.camera.clips.modifiers.TranslateClip;
-import mchorse.bbs_mod.camera.clips.overwrite.CircularClip;
 import mchorse.bbs_mod.camera.clips.overwrite.DollyClip;
 import mchorse.bbs_mod.camera.clips.overwrite.IdleClip;
 import mchorse.bbs_mod.camera.clips.overwrite.KeyframeClip;
@@ -34,14 +33,14 @@ import mchorse.bbs_mod.camera.data.Position;
 import mchorse.bbs_mod.camera.utils.TimeUtils;
 import mchorse.bbs_mod.data.types.MapType;
 import mchorse.bbs_mod.l10n.keys.IKey;
-import mchorse.bbs_mod.settings.values.ValueGroup;
+import mchorse.bbs_mod.settings.values.core.ValueGroup;
 import mchorse.bbs_mod.ui.UIKeys;
 import mchorse.bbs_mod.ui.film.IUIClipsDelegate;
 import mchorse.bbs_mod.ui.film.clips.actions.UIAttackActionClip;
 import mchorse.bbs_mod.ui.film.clips.actions.UIBreakBlockActionClip;
 import mchorse.bbs_mod.ui.film.clips.actions.UIChatActionClip;
 import mchorse.bbs_mod.ui.film.clips.actions.UICommandActionClip;
-import mchorse.bbs_mod.ui.film.clips.actions.UIFormTriggerActionClip;
+import mchorse.bbs_mod.ui.film.clips.actions.UIDamageActionClip;
 import mchorse.bbs_mod.ui.film.clips.actions.UIInteractBlockActionClip;
 import mchorse.bbs_mod.ui.film.clips.actions.UIItemDropActionClip;
 import mchorse.bbs_mod.ui.film.clips.actions.UIPlaceBlockActionClip;
@@ -88,7 +87,6 @@ public abstract class UIClip <T extends Clip> extends UIElement
     {
         register(IdleClip.class, UIIdleClip::new);
         register(DollyClip.class, UIDollyClip::new);
-        register(CircularClip.class, UICircularClip::new);
         register(PathClip.class, UIPathClip::new);
         register(KeyframeClip.class, UIKeyframeClip::new);
         register(TranslateClip.class, UITranslateClip::new);
@@ -113,9 +111,9 @@ public abstract class UIClip <T extends Clip> extends UIElement
         register(UseItemActionClip.class, UIUseItemActionClip::new);
         register(UseBlockItemActionClip.class, UIUseBlockItemActionClip::new);
         register(AttackActionClip.class, UIAttackActionClip::new);
+        register(DamageActionClip.class, UIDamageActionClip::new);
         register(ItemDropActionClip.class, UIItemDropActionClip::new);
         register(SwipeActionClip.class, UISwipeActionClip::new);
-        register(FormTriggerClientActionClip.class, UIFormTriggerActionClip::new);
     }
 
     public static <T extends Clip> void register(Class<T> clazz, IUIClipFactory<T> factory)

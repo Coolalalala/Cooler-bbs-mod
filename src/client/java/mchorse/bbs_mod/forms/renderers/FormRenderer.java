@@ -5,7 +5,7 @@ import mchorse.bbs_mod.forms.FormUtilsClient;
 import mchorse.bbs_mod.forms.entities.IEntity;
 import mchorse.bbs_mod.forms.forms.BodyPart;
 import mchorse.bbs_mod.forms.forms.Form;
-import mchorse.bbs_mod.graphics.texture.Texture;
+import mchorse.bbs_mod.settings.values.core.ValueTransform;
 import mchorse.bbs_mod.ui.framework.UIContext;
 import mchorse.bbs_mod.ui.framework.elements.utils.FontRenderer;
 import mchorse.bbs_mod.ui.utils.keys.KeyCodes;
@@ -17,11 +17,14 @@ import mchorse.bbs_mod.utils.interps.Lerps;
 import mchorse.bbs_mod.utils.pose.Transform;
 import net.minecraft.client.gl.GlUniform;
 import net.minecraft.client.gl.ShaderProgram;
+import net.minecraft.client.network.AbstractClientPlayerEntity;
 import net.minecraft.client.render.LightmapTextureManager;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.util.Hand;
 import org.joml.Matrix4f;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -43,11 +46,6 @@ public abstract class FormRenderer <T extends Form>
     public List<String> getBones()
     {
         return Collections.emptyList();
-    }
-
-    protected Texture getTexture()
-    {
-        return null;
     }
 
     public final void renderUI(UIContext context, int x1, int y1, int x2, int y2)
@@ -81,12 +79,19 @@ public abstract class FormRenderer <T extends Form>
 
     protected abstract void renderInUI(UIContext context, int x1, int y1, int x2, int y2);
 
+    public boolean renderArm(MatrixStack matrices, int light, AbstractClientPlayerEntity player, Hand hand)
+    {
+        return false;
+    }
+
     public final void render(FormRenderingContext context)
     {
         if (!this.form.shaderShadow.get() && BBSRendering.isIrisShadowPass())
         {
             return;
         }
+
+        this.form.applyStates(context.transition);
 
         int light = context.light;
         boolean visible = this.form.visible.get();
@@ -120,6 +125,8 @@ public abstract class FormRenderer <T extends Form>
         context.stack.pop();
 
         context.light = light;
+
+        this.form.unapplyStates();
     }
 
     protected void applyTransforms(MatrixStack stack, float transition)
@@ -135,15 +142,24 @@ public abstract class FormRenderer <T extends Form>
     protected Transform createTransform()
     {
         Transform transform = new Transform();
-        Transform overlay = this.form.transformOverlay.get();
 
         transform.copy(this.form.transform.get());
+        this.applyTransform(transform, this.form.transformOverlay.get());
+
+        for (ValueTransform t : this.form.additionalTransforms)
+        {
+            this.applyTransform(transform, t.get());
+        }
+
+        return transform;
+    }
+
+    private void applyTransform(Transform transform, Transform overlay)
+    {
         transform.translate.add(overlay.translate);
         transform.scale.add(overlay.scale).sub(1, 1, 1);
         transform.rotate.add(overlay.rotate);
         transform.rotate2.add(overlay.rotate2);
-
-        return transform;
     }
 
     protected Supplier<ShaderProgram> getShader(FormRenderingContext context, Supplier<ShaderProgram> normal, Supplier<ShaderProgram> picking)
@@ -180,7 +196,7 @@ public abstract class FormRenderer <T extends Form>
 
     public void renderBodyParts(FormRenderingContext context)
     {
-        for (BodyPart part : this.form.parts.getAll())
+        for (BodyPart part : this.form.parts.getAllTyped())
         {
             this.renderBodyPart(part, context);
         }
@@ -190,12 +206,12 @@ public abstract class FormRenderer <T extends Form>
     {
         IEntity oldEntity = context.entity;
 
-        context.entity = part.useTarget ? oldEntity : part.getEntity();
+        context.entity = part.useTarget.get() ? oldEntity : part.getEntity();
 
         if (part.getForm() != null)
         {
             context.stack.push();
-            MatrixStackUtils.applyTransform(context.stack, part.getTransform());
+            MatrixStackUtils.applyTransform(context.stack, part.transform.get());
 
             FormUtilsClient.render(part.getForm(), context);
 
@@ -203,6 +219,16 @@ public abstract class FormRenderer <T extends Form>
         }
 
         context.entity = oldEntity;
+    }
+
+    public Map<String, Matrix4f> collectMatrices(IEntity entity, String target, float transition)
+    {
+        Map<String, Matrix4f> map = new HashMap<>();
+        MatrixStack stack = new MatrixStack();
+
+        this.collectMatrices(entity, target, stack, map, "", transition);
+
+        return map;
     }
 
     public void collectMatrices(IEntity entity, String target, MatrixStack stack, Map<String, Matrix4f> matrices, String prefix, float transition)
@@ -214,14 +240,14 @@ public abstract class FormRenderer <T extends Form>
 
         int i = 0;
 
-        for (BodyPart part : this.form.parts.getAll())
+        for (BodyPart part : this.form.parts.getAllTyped())
         {
             Form form = part.getForm();
 
             if (form != null)
             {
                 stack.push();
-                MatrixStackUtils.applyTransform(stack, part.getTransform());
+                MatrixStackUtils.applyTransform(stack, part.transform.get());
 
                 FormUtilsClient.getRenderer(form).collectMatrices(entity, target, stack, matrices, StringUtils.combinePaths(prefix, String.valueOf(i)), transition);
 

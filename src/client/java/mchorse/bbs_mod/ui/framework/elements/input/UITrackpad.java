@@ -4,9 +4,9 @@ import mchorse.bbs_mod.BBSSettings;
 import mchorse.bbs_mod.graphics.window.Window;
 import mchorse.bbs_mod.l10n.keys.IKey;
 import mchorse.bbs_mod.math.MathBuilder;
-import mchorse.bbs_mod.settings.values.ValueDouble;
-import mchorse.bbs_mod.settings.values.ValueFloat;
-import mchorse.bbs_mod.settings.values.ValueInt;
+import mchorse.bbs_mod.settings.values.numeric.ValueDouble;
+import mchorse.bbs_mod.settings.values.numeric.ValueFloat;
+import mchorse.bbs_mod.settings.values.numeric.ValueInt;
 import mchorse.bbs_mod.ui.UIKeys;
 import mchorse.bbs_mod.ui.framework.UIContext;
 import mchorse.bbs_mod.ui.framework.elements.events.UITrackpadDragEndEvent;
@@ -62,6 +62,7 @@ public class UITrackpad extends UIBaseTextbox
     public boolean onlyNumbers;
 
     public boolean relative;
+    public boolean allowCanceling = true;
     public IKey forcedLabel;
 
     /* Value dragging fields */
@@ -210,6 +211,13 @@ public class UITrackpad extends UIBaseTextbox
         return this;
     }
 
+    public UITrackpad disableCanceling()
+    {
+        this.allowCanceling = false;
+
+        return this;
+    }
+
     /* Values presets */
 
     public UITrackpad degrees()
@@ -330,6 +338,17 @@ public class UITrackpad extends UIBaseTextbox
     @Override
     public boolean subMouseClicked(UIContext context)
     {
+        if (this.allowCanceling && context.mouseButton == 1 && this.isDragging())
+        {
+            this.setValueAndNotify(this.lastValue);
+
+            this.wasInside = false;
+            this.dragging = false;
+            this.shiftX = 0;
+
+            return true;
+        }
+
         if (context.mouseButton == 2 && this.area.isInside(context))
         {
             this.setValueAndNotify(-this.value);
@@ -380,6 +399,17 @@ public class UITrackpad extends UIBaseTextbox
     @Override
     public boolean subMouseReleased(UIContext context)
     {
+        if (context.mouseButton == 1 && this.isDragging())
+        {
+            this.setValueAndNotify(this.lastValue);
+
+            this.wasInside = false;
+            this.dragging = false;
+            this.shiftX = 0;
+
+            return true;
+        }
+
         this.textbox.mouseReleased(context.mouseX, context.mouseY, context.mouseButton);
 
         if (context.mouseButton == 0 && !this.isDraggingTime() && !this.textbox.isFocused())

@@ -1,5 +1,6 @@
 package mchorse.bbs_mod.ui.forms.editors.forms;
 
+import mchorse.bbs_mod.data.types.MapType;
 import mchorse.bbs_mod.forms.FormUtils;
 import mchorse.bbs_mod.forms.FormUtilsClient;
 import mchorse.bbs_mod.forms.forms.Form;
@@ -17,10 +18,8 @@ import mchorse.bbs_mod.utils.Direction;
 import mchorse.bbs_mod.utils.MathUtils;
 import mchorse.bbs_mod.utils.colors.Colors;
 import mchorse.bbs_mod.utils.joml.Matrices;
-import net.minecraft.client.util.math.MatrixStack;
 import org.joml.Matrix4f;
 
-import java.util.HashMap;
 import java.util.Map;
 
 public abstract class UIForm <T extends Form> extends UIPanelBase<UIFormPanel<T>>
@@ -54,11 +53,7 @@ public abstract class UIForm <T extends Form> extends UIPanelBase<UIFormPanel<T>
     protected Matrix4f getOrigin(float transition, String path, boolean local)
     {
         Form root = FormUtils.getRoot(this.form);
-        MatrixStack stack = new MatrixStack();
-        Map<String, Matrix4f> map = new HashMap<>();
-
-        FormUtilsClient.getRenderer(root).collectMatrices(this.editor.renderer.getTargetEntity(), local ? null : path, stack, map, "", transition);
-
+        Map<String, Matrix4f> map = FormUtilsClient.getRenderer(root).collectMatrices(this.editor.renderer.getTargetEntity(), local ? null : path, transition);
         Matrix4f matrix = map.get(path);
 
         return matrix == null ? Matrices.EMPTY_4F : matrix;
@@ -106,5 +101,23 @@ public abstract class UIForm <T extends Form> extends UIPanelBase<UIFormPanel<T>
     protected void renderBackground(UIContext context, int x, int y, int w, int h)
     {
         context.batcher.box(x, y, x + w, y + h, Colors.A100);
+    }
+
+    @Override
+    public void collectUndoData(MapType data)
+    {
+        super.collectUndoData(data);
+
+        data.putInt("panel", this.panels.indexOf(this.view));
+        data.putDouble("scroll", this.view.options.scroll.getScroll());
+    }
+
+    @Override
+    public void applyUndoData(MapType data)
+    {
+        super.applyUndoData(data);
+
+        this.setPanel(this.panels.get(data.getInt("panel")));
+        this.view.options.scroll.setScroll(data.getDouble("scroll"));
     }
 }

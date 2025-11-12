@@ -2,12 +2,14 @@ package mchorse.bbs_mod.utils.keyframes;
 
 import mchorse.bbs_mod.data.types.BaseType;
 import mchorse.bbs_mod.data.types.MapType;
-import mchorse.bbs_mod.settings.values.ValueGroup;
+import mchorse.bbs_mod.settings.values.base.BaseValue;
 import mchorse.bbs_mod.utils.interps.Interpolation;
 import mchorse.bbs_mod.utils.interps.Interpolations;
 import mchorse.bbs_mod.utils.keyframes.factories.IKeyframeFactory;
 
-public class Keyframe <T> extends ValueGroup
+import java.util.Objects;
+
+public class Keyframe <T> extends BaseValue
 {
     private float tick;
     private T value;
@@ -58,11 +60,11 @@ public class Keyframe <T> extends ValueGroup
 
     public void setTick(float tick, boolean dirty)
     {
-        if (dirty) this.preNotifyParent();
+        if (dirty) this.preNotify();
 
         this.tick = tick;
 
-        if (dirty) this.postNotifyParent();
+        if (dirty) this.postNotify();
     }
 
     public float getDuration()
@@ -72,9 +74,9 @@ public class Keyframe <T> extends ValueGroup
 
     public void setDuration(float duration)
     {
-        this.preNotifyParent();
+        this.preNotify();
         this.duration = Math.max(0, duration);
-        this.postNotifyParent();
+        this.postNotify();
     }
 
     public T getValue()
@@ -94,11 +96,11 @@ public class Keyframe <T> extends ValueGroup
 
     public void setValue(T value, boolean dirty)
     {
-        if (dirty) this.preNotifyParent();
+        if (dirty) this.preNotify();
 
         this.value = value;
 
-        if (dirty) this.postNotifyParent();
+        if (dirty) this.postNotify();
     }
 
     public Interpolation getInterpolation()
@@ -115,14 +117,37 @@ public class Keyframe <T> extends ValueGroup
     }
 
     @Override
+    public boolean equals(Object obj)
+    {
+        if (super.equals(obj))
+        {
+            return true;
+        }
+
+        if (obj instanceof Keyframe<?> kf)
+        {
+            return this.tick == kf.tick
+                && Objects.equals(this.value, kf.value)
+                && this.lx == kf.lx
+                && this.ly == kf.ly
+                && this.rx == kf.rx
+                && this.ry == kf.ry
+                && this.duration == kf.duration
+                && Objects.equals(this.interp, kf.interp);
+        }
+
+        return false;
+    }
+
+    @Override
     public BaseType toData()
     {
         MapType data = new MapType();
 
         data.putFloat("tick", this.tick);
-        data.putFloat("duration", this.duration);
         data.put("value", this.factory.toData(this.value));
-        data.put("interp", this.interp.toData());
+        if (this.duration != 0F) data.putFloat("duration", this.duration);
+        if (this.interp.getInterp() != Interpolations.LINEAR) data.put("interp", this.interp.toData());
         if (this.lx != 5F) data.putFloat("lx", this.lx);
         if (this.ly != 0F) data.putFloat("ly", this.ly);
         if (this.rx != 5F) data.putFloat("rx", this.rx);

@@ -24,6 +24,7 @@ import mchorse.bbs_mod.ui.framework.elements.buttons.UIIcon;
 import mchorse.bbs_mod.ui.framework.elements.overlay.UIMessageFolderOverlayPanel;
 import mchorse.bbs_mod.ui.framework.elements.overlay.UIMessageOverlayPanel;
 import mchorse.bbs_mod.ui.framework.elements.overlay.UIOverlay;
+import mchorse.bbs_mod.ui.framework.elements.utils.EventPropagation;
 import mchorse.bbs_mod.ui.utils.Area;
 import mchorse.bbs_mod.ui.utils.UI;
 import mchorse.bbs_mod.ui.utils.UIUtils;
@@ -142,7 +143,7 @@ public class UIFilmPreview extends UIElement
                 return;
             }
 
-            if (!FFMpegUtils.checkFFMpeg())
+            if (!FFMpegUtils.checkFFMPEG())
             {
                 UIMessageOverlayPanel panel = new UIMessageOverlayPanel(UIKeys.GENERAL_WARNING, UIKeys.GENERAL_FFMPEG_ERROR_DESCRIPTION);
                 UIIcon guide = new UIIcon(Icons.HELP, (bb) -> UIUtils.openWebLink(UIKeys.GENERAL_FFMPEG_ERROR_GUIDE_LINK.get()));
@@ -192,7 +193,9 @@ public class UIFilmPreview extends UIElement
 
     public void openReplays()
     {
-        UIOverlay.addOverlayLeft(this.getContext(), this.panel.replayEditor.replays, 200);
+        UIOverlay overlay = UIOverlay.addOverlayLeft(this.getContext(), this.panel.replayEditor.replays, 360);
+
+        overlay.eventPropagataion(EventPropagation.PASS);
     }
 
     public void openOnionSkin()
@@ -318,7 +321,7 @@ public class UIFilmPreview extends UIElement
             RunnerCameraController runner = this.panel.getRunner();
             int w = (int) (area.w * BBSSettings.audioWaveformWidth.get());
             int x = area.x(0.5F, w);
-            float tick = runner.isRunning() ? runner.ticks + context.getTransition() : runner.ticks;
+            float tick = this.panel.getCursor() + (runner.isRunning() ? context.getTransition() : 0);
 
             this.clips.clear();
 

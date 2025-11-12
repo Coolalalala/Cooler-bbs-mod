@@ -14,7 +14,7 @@ import mchorse.bbs_mod.particles.components.motion.ParticleComponentInitialSpeed
 import mchorse.bbs_mod.particles.emitter.Particle;
 import mchorse.bbs_mod.particles.emitter.ParticleEmitter;
 import mchorse.bbs_mod.resources.Link;
-import mchorse.bbs_mod.settings.values.ValueGroup;
+import mchorse.bbs_mod.settings.values.core.ValueGroup;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -24,8 +24,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-public class ParticleScheme extends ValueGroup
-{
+public class ParticleScheme extends ValueGroup {
     public static final Link DEFAULT_TEXTURE = Link.assets("textures/default_atlas.png");
     public static final ParticleParser PARSER = new ParticleParser();
 
@@ -53,28 +52,21 @@ public class ParticleScheme extends ValueGroup
     public Particle particle;
     public ParticleEmitter emitter;
 
-
-    public static ParticleScheme parse(String json)
-    {
+    public static ParticleScheme parse(String json) {
         return parse(DataToString.mapFromString(json));
     }
 
-    public static ParticleScheme parse(MapType json)
-    {
-        try
-        {
+    public static ParticleScheme parse(MapType json) {
+        try {
             return PARSER.fromData(json);
-        }
-        catch (Exception e)
-        {
+        } catch (Exception e) {
             e.printStackTrace();
         }
 
         return null;
     }
 
-    public static MapType toData(ParticleScheme scheme)
-    {
+    public static MapType toData(ParticleScheme scheme) {
         return PARSER.toData(scheme);
     }
 
@@ -82,13 +74,11 @@ public class ParticleScheme extends ValueGroup
      * Probably it's very expensive, but it's much easier than implementing copy methods
      * to every component in the particle system...
      */
-    public static ParticleScheme dupe(ParticleScheme scheme)
-    {
+    public static ParticleScheme dupe(ParticleScheme scheme) {
         return parse(toData(scheme));
     }
 
-    public ParticleScheme()
-    {
+    public ParticleScheme() {
         super("");
 
         this.parser = new ParticleMolangParser(this);
@@ -157,6 +147,12 @@ public class ParticleScheme extends ValueGroup
         }
     }
 
+    public void addComponent(ParticleComponentBase base)
+    {
+        this.remove(base.getClass());
+        this.components.add(base);
+    }
+
     public <T extends IComponentBase> List<T> getComponents(Class<T> clazz)
     {
         List<T> list = new ArrayList<>();
@@ -198,7 +194,7 @@ public class ParticleScheme extends ValueGroup
         {
             result = clazz.getConstructor().newInstance();
 
-            this.components.add(result);
+            this.addComponent(result);
             this.setup();
         }
         catch (Exception e)

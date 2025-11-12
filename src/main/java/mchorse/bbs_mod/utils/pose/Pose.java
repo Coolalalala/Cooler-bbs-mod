@@ -18,8 +18,6 @@ public class Pose implements IMapSerializable
     private static Set<String> keys = new HashSet<>();
     private static List<Pair<Pattern, String>> patterns = new ArrayList<>();
 
-    public boolean staticPose;
-
     public final Map<String, PoseTransform> transforms = new HashMap<>();
 
     static
@@ -47,6 +45,11 @@ public class Pose implements IMapSerializable
         {
             for (String key : this.transforms.keySet())
             {
+                if (key == null)
+                {
+                    continue;
+                }
+
                 for (Pair<Pattern, String> pair : patterns)
                 {
                     Matcher matcher = pair.a.matcher(key);
@@ -163,7 +166,7 @@ public class Pose implements IMapSerializable
                 if (b == null && !a.isDefault()) return false;
             }
 
-            return this.staticPose == pose.staticPose;
+            return true;
         }
 
         return false;
@@ -180,8 +183,6 @@ public class Pose implements IMapSerializable
 
     public void copy(Pose pose)
     {
-        this.staticPose = pose.staticPose;
-
         this.transforms.clear();
 
         if (pose.transforms.isEmpty())
@@ -201,8 +202,6 @@ public class Pose implements IMapSerializable
     @Override
     public void toData(MapType data)
     {
-        data.putBool("static", this.staticPose);
-
         if (this.transforms.isEmpty())
         {
             return;
@@ -224,7 +223,6 @@ public class Pose implements IMapSerializable
     @Override
     public void fromData(MapType data)
     {
-        this.staticPose = data.getBool("static");
         this.transforms.clear();
 
         MapType pose = data.getMap("pose");

@@ -90,6 +90,11 @@ public class UIOverlay extends UIElement
 
     public static void setupPanel(UIContext context, UIOverlay overlay, UIOverlayPanel panel)
     {
+        if (panel.hasParent())
+        {
+            return;
+        }
+
         Flex flex = panel.getFlex();
         Vector2i offset = offsets.get(panel.getClass().getSimpleName());
 
@@ -154,17 +159,6 @@ public class UIOverlay extends UIElement
         this.closeItself();
 
         return super.subMouseClicked(context);
-    }
-
-    @Override
-    public boolean subKeyPressed(UIContext context)
-    {
-        if (context.isPressed(GLFW.GLFW_KEY_ESCAPE))
-        {
-            this.closeItself();
-        }
-
-        return super.subKeyPressed(context);
     }
 
     @Override

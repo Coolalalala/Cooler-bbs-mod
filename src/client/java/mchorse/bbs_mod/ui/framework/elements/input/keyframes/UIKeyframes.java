@@ -5,6 +5,7 @@ import mchorse.bbs_mod.data.types.ListType;
 import mchorse.bbs_mod.data.types.MapType;
 import mchorse.bbs_mod.graphics.window.Window;
 import mchorse.bbs_mod.l10n.keys.IKey;
+import mchorse.bbs_mod.math.Operation;
 import mchorse.bbs_mod.settings.values.IValueListener;
 import mchorse.bbs_mod.ui.Keys;
 import mchorse.bbs_mod.ui.UIKeys;
@@ -143,14 +144,14 @@ public class UIKeyframes extends UIElement
                             continue;
                         }
 
-                        sheet.channel.preNotifyParent();
+                        sheet.channel.preNotify();
 
                         for (Keyframe kf : selected)
                         {
                             kf.setTick(Math.round(kf.getTick()), false);
                         }
 
-                        sheet.channel.postNotifyParent();
+                        sheet.channel.postNotify();
                     }
                 });
                 menu.action(Icons.REMOVE, UIKeys.KEYFRAMES_CONTEXT_REMOVE, () -> this.currentGraph.removeSelected());
@@ -227,7 +228,7 @@ public class UIKeyframes extends UIElement
                 continue;
             }
 
-            sheet.channel.preNotifyParent();
+            sheet.channel.preNotify();
 
             int index = last ? selected.size() - 1 : 0;
             int previous = last ? selected.size() - 2 : 1;
@@ -244,7 +245,7 @@ public class UIKeyframes extends UIElement
                 keyframe.setValue(factory.yToValue(factory.getY(keyframe.getValue()) + difference));
             }
 
-            sheet.channel.postNotifyParent();
+            sheet.channel.postNotify();
         }
     }
 
@@ -475,7 +476,7 @@ public class UIKeyframes extends UIElement
             int count = max - min;
             float distance = (maxKf.getTick() - minKf.getTick()) / count;
 
-            sheet.channel.preNotifyParent();
+            sheet.channel.preNotify();
 
             for (int i = 1; i < count; i++)
             {
@@ -485,7 +486,7 @@ public class UIKeyframes extends UIElement
                 kf.setTick(minKf.getTick() + i * distance);
             }
 
-            sheet.channel.postNotifyParent();
+            sheet.channel.postNotify();
 
             sheet.selection.clear();
 
@@ -549,7 +550,7 @@ public class UIKeyframes extends UIElement
             pair.b.channel.fromData(pair.a);
             pair.b.selection.clear();
             pair.b.selection.addAll(selection.get(pair.b).a);
-            pair.b.channel.preNotifyParent(IValueListener.FLAG_UNMERGEABLE);
+            pair.b.channel.preNotify(IValueListener.FLAG_UNMERGEABLE);
         }
 
         for (Pair<BaseType, UIKeyframeSheet> pair : cache.data)
@@ -557,7 +558,7 @@ public class UIKeyframes extends UIElement
             pair.b.channel.fromData(pair.a);
             pair.b.selection.clear();
             pair.b.selection.addAll(selection.get(pair.b).b);
-            pair.b.channel.postNotifyParent(IValueListener.FLAG_UNMERGEABLE);
+            pair.b.channel.postNotify(IValueListener.FLAG_UNMERGEABLE);
         }
 
         this.cache = null;
@@ -657,8 +658,24 @@ public class UIKeyframes extends UIElement
         }
         else
         {
+            float min = Float.MAX_VALUE;
+
             for (Map.Entry<String, PastedKeyframes> entry : keyframes.entrySet())
             {
+                if (entry.getValue().keyframes.isEmpty())
+                {
+                    continue;
+                }
+
+                entry.getValue().keyframes.sort((a, b) -> Float.compare(a.getTick(), b.getTick()));
+
+                min = Math.min(min, entry.getValue().keyframes.get(0).getTick());
+            }
+
+            for (Map.Entry<String, PastedKeyframes> entry : keyframes.entrySet())
+            {
+                float entryMin = entry.getValue().keyframes.get(0).getTick();
+
                 for (UIKeyframeSheet property : sheets)
                 {
                     if (!property.id.equals(entry.getKey()))
@@ -666,7 +683,9 @@ public class UIKeyframes extends UIElement
                         continue;
                     }
 
-                    this.pasteKeyframesTo(property, entry.getValue(), offset);
+                    float d = min == Float.MAX_VALUE ? 0F : entryMin - min;
+
+                    this.pasteKeyframesTo(property, entry.getValue(), offset + d);
                 }
             }
         }
@@ -843,9 +862,18 @@ public class UIKeyframes extends UIElement
     @Override
     public void resize()
     {
+        /* Save horizontal view range, and restore it after resize */
+        double minValue = this.xAxis.getMinValue();
+        double maxValue = this.xAxis.getMaxValue();
+
         super.resize();
 
         this.currentGraph.resize();
+
+        if (!Operation.equals(minValue, maxValue))
+        {
+            this.xAxis.view(minValue, maxValue);
+        }
     }
 
     @Override

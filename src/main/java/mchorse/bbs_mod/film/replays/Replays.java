@@ -1,6 +1,7 @@
 package mchorse.bbs_mod.film.replays;
 
-import mchorse.bbs_mod.settings.values.ValueList;
+import mchorse.bbs_mod.settings.values.core.ValueList;
+import mchorse.bbs_mod.utils.CollectionUtils;
 
 public class Replays extends ValueList<Replay>
 {
@@ -13,19 +14,24 @@ public class Replays extends ValueList<Replay>
     {
         Replay replay = new Replay(String.valueOf(this.list.size()));
 
-        this.preNotifyParent();
+        this.preNotify();
         this.add(replay);
-        this.postNotifyParent();
+        this.postNotify();
 
         return replay;
     }
 
     public void remove(Replay replay)
     {
-        this.preNotifyParent();
-        this.list.remove(replay);
-        this.sync();
-        this.postNotifyParent();
+        int index = CollectionUtils.getIndex(this.list, replay);
+
+        if (CollectionUtils.inRange(this.list, index))
+        {
+            this.preNotify();
+            this.list.remove(index);
+            this.sync();
+            this.postNotify();
+        }
     }
 
     @Override

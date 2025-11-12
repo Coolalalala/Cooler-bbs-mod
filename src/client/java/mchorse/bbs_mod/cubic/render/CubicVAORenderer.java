@@ -12,6 +12,7 @@ import mchorse.bbs_mod.utils.interps.Lerps;
 import net.minecraft.client.gl.ShaderProgram;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.LightmapTextureManager;
+import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.util.math.MatrixStack;
 
 public class CubicVAORenderer extends CubicCubeRenderer
@@ -32,7 +33,7 @@ public class CubicVAORenderer extends CubicCubeRenderer
     {
         ModelVAO modelVAO = this.model.getVaos().get(group);
 
-        if (modelVAO != null)
+        if (modelVAO != null && group.visible)
         {
             float r = this.r * group.color.r;
             float g = this.g * group.color.g;

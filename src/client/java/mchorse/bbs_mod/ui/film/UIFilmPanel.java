@@ -25,8 +25,8 @@ import mchorse.bbs_mod.graphics.window.Window;
 import mchorse.bbs_mod.l10n.keys.IKey;
 import mchorse.bbs_mod.network.ClientNetwork;
 import mchorse.bbs_mod.settings.values.IValueListener;
-import mchorse.bbs_mod.settings.values.ValueEditorLayout;
 import mchorse.bbs_mod.settings.values.base.BaseValue;
+import mchorse.bbs_mod.settings.values.ui.ValueEditorLayout;
 import mchorse.bbs_mod.ui.ContentType;
 import mchorse.bbs_mod.ui.Keys;
 import mchorse.bbs_mod.ui.UIKeys;
@@ -78,7 +78,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
-public class UIFilmPanel extends UIDataDashboardPanel<Film> implements IFlightSupported, IUIOrbitKeysHandler
+public class UIFilmPanel extends UIDataDashboardPanel<Film> implements IFlightSupported, IUIOrbitKeysHandler, ICursor
 {
     private RunnerCameraController runner;
     private boolean lastRunning;
@@ -332,6 +332,11 @@ public class UIFilmPanel extends UIDataDashboardPanel<Film> implements IFlightSu
 
                 UIOverlay.addOverlay(this.getContext(), panel);
             });
+
+            menu.action(Icons.LINE, UIKeys.FILM_REPLACE_INVENTORY, () ->
+            {
+                BaseValue.edit(this.getData().inventory, (inv) -> inv.fromPlayer(MinecraftClient.getInstance().player));
+            });
         });
 
         this.fill(null);
@@ -498,7 +503,7 @@ public class UIFilmPanel extends UIDataDashboardPanel<Film> implements IFlightSu
             Film data = new Film();
             Position position = new Position();
             IdleClip idle = new IdleClip();
-            int tick = this.runner.ticks;
+            int tick = this.getCursor();
 
             position.set(this.getCamera());
             idle.duration.set(BBSSettings.getDefaultDuration());
@@ -596,17 +601,17 @@ public class UIFilmPanel extends UIDataDashboardPanel<Film> implements IFlightSu
 
         if (rp != null)
         {
-            BaseValue.edit(rp, (replay) ->
+            BaseValue.edit(film, (f) ->
             {
-                replay.keyframes.copyOver(recorder.keyframes, 0);
+                rp.keyframes.copyOver(recorder.keyframes, 0);
 
-                Form form = replay.form.get();
+                Form form = rp.form.get();
 
                 if (form != null)
                 {
                     for (Map.Entry<String, KeyframeChannel> entry : recorder.properties.properties.entrySet())
                     {
-                        KeyframeChannel channel = replay.properties.getOrCreate(form, entry.getKey());
+                        KeyframeChannel channel = rp.properties.getOrCreate(form, entry.getKey());
 
                         if (channel != null && entry.getValue() != null)
                         {
@@ -614,6 +619,12 @@ public class UIFilmPanel extends UIDataDashboardPanel<Film> implements IFlightSu
                         }
                     }
                 }
+
+                f.inventory.fromData(recorder.inventory.toData());
+                f.hp.set(recorder.hp);
+                f.hunger.set(recorder.hunger);
+                f.xpLevel.set(recorder.xpLevel);
+                f.xpProgress.set(recorder.xpProgress);
             });
         }
     }
@@ -813,7 +824,7 @@ public class UIFilmPanel extends UIDataDashboardPanel<Film> implements IFlightSu
             /* Marking the latest undo as unmergeable */
             if (this.undoHandler != null && !flight)
             {
-                this.undoHandler.markLastUndoNoMerging();
+                this.undoHandler.getUndoManager().markLastUndoNoMerging();
             }
             else
             {
@@ -1063,7 +1074,7 @@ public class UIFilmPanel extends UIDataDashboardPanel<Film> implements IFlightSu
         }
 
         String id = this.data.getId();
-        int tick = this.runner.ticks;
+        int tick = this.getCursor();
 
         ClientNetwork.sendActionState(id, state, tick);
     }
@@ -1083,11 +1094,13 @@ public class UIFilmPanel extends UIDataDashboardPanel<Film> implements IFlightSu
         return BBSModClient.getCameraController();
     }
 
+    @Override
     public int getCursor()
     {
         return this.runner.ticks;
     }
 
+    @Override
     public void setCursor(int value)
     {
         this.flightEditTime.mark();
@@ -1112,11 +1125,11 @@ public class UIFilmPanel extends UIDataDashboardPanel<Film> implements IFlightSu
 
         if (this.runner.isRunning())
         {
-            this.cameraEditor.clips.scale.shiftIntoMiddle(this.runner.ticks);
+            this.cameraEditor.clips.scale.shiftIntoMiddle(this.getCursor());
 
             if (this.replayEditor.keyframeEditor != null)
             {
-                this.replayEditor.keyframeEditor.view.getXAxis().shiftIntoMiddle(this.runner.ticks);
+                this.replayEditor.keyframeEditor.view.getXAxis().shiftIntoMiddle(this.getCursor());
             }
         }
     }
@@ -1188,5 +1201,11 @@ public class UIFilmPanel extends UIDataDashboardPanel<Film> implements IFlightSu
 
         data.putInt("panel", this.getPanelIndex());
         data.putInt("tick", this.getCursor());
+    }
+
+    @Override
+    protected boolean canSave(UIContext context)
+    {
+        return !this.recorder.isRecording();
     }
 }

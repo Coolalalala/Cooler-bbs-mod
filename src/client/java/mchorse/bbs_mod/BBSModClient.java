@@ -1,7 +1,8 @@
 package mchorse.bbs_mod;
 
-import mchorse.bbs_mod.actions.types.FormTriggerClientActionClip;
+import com.mojang.blaze3d.systems.RenderSystem;
 import mchorse.bbs_mod.audio.SoundManager;
+import mchorse.bbs_mod.blocks.entities.ModelProperties;
 import mchorse.bbs_mod.camera.clips.ClipFactoryData;
 import mchorse.bbs_mod.camera.clips.misc.AudioClientClip;
 import mchorse.bbs_mod.camera.clips.misc.CurveClientClip;
@@ -18,12 +19,9 @@ import mchorse.bbs_mod.film.Films;
 import mchorse.bbs_mod.film.Recorder;
 import mchorse.bbs_mod.film.replays.Replay;
 import mchorse.bbs_mod.forms.FormCategories;
-import mchorse.bbs_mod.forms.FormUtilsClient;
 import mchorse.bbs_mod.forms.categories.UserFormCategory;
 import mchorse.bbs_mod.forms.forms.Form;
-import mchorse.bbs_mod.forms.forms.ModelForm;
-import mchorse.bbs_mod.forms.renderers.ModelFormRenderer;
-import mchorse.bbs_mod.forms.triggers.StateTrigger;
+import mchorse.bbs_mod.graphics.Draw;
 import mchorse.bbs_mod.graphics.FramebufferManager;
 import mchorse.bbs_mod.graphics.texture.TextureManager;
 import mchorse.bbs_mod.items.GunProperties;
@@ -31,6 +29,7 @@ import mchorse.bbs_mod.items.GunZoom;
 import mchorse.bbs_mod.l10n.L10n;
 import mchorse.bbs_mod.morphing.Morph;
 import mchorse.bbs_mod.network.ClientNetwork;
+import mchorse.bbs_mod.network.ServerNetwork;
 import mchorse.bbs_mod.particles.ParticleManager;
 import mchorse.bbs_mod.resources.AssetProvider;
 import mchorse.bbs_mod.resources.Link;
@@ -52,6 +51,7 @@ import mchorse.bbs_mod.ui.utils.keys.KeybindSettings;
 import mchorse.bbs_mod.utils.MathUtils;
 import mchorse.bbs_mod.utils.ScreenshotRecorder;
 import mchorse.bbs_mod.utils.VideoRecorder;
+import mchorse.bbs_mod.utils.colors.Color;
 import mchorse.bbs_mod.utils.colors.Colors;
 import mchorse.bbs_mod.utils.resources.MinecraftSourcePack;
 import net.fabricmc.api.ClientModInitializer;
@@ -65,11 +65,20 @@ import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.fabricmc.fabric.impl.client.rendering.BlockEntityRendererRegistryImpl;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.option.KeyBinding;
+import net.minecraft.client.render.BufferBuilder;
+import net.minecraft.client.render.BufferRenderer;
+import net.minecraft.client.render.GameRenderer;
+import net.minecraft.client.render.Tessellator;
+import net.minecraft.client.render.VertexFormat;
+import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.client.util.Window;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.Hand;
 import org.lwjgl.glfw.GLFW;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
@@ -216,6 +225,25 @@ public class BBSModClient implements ClientModInitializer
         return Math.max(originalFramebufferScale, 1);
     }
 
+    public static ModelProperties getItemStackProperties(ItemStack stack)
+    {
+        ModelBlockItemRenderer.Item item = modelBlockItemRenderer.get(stack);
+
+        if (item != null)
+        {
+            return item.entity.getProperties();
+        }
+
+        GunItemRenderer.Item gunItem = gunItemRenderer.get(stack);
+
+        if (gunItem != null)
+        {
+            return gunItem.properties;
+        }
+
+        return null;
+    }
+
     public static void onEndKey(long window, int key, int scancode, int action, int modifiers, CallbackInfo info)
     {
         if (action != GLFW.GLFW_PRESS)
@@ -223,24 +251,36 @@ public class BBSModClient implements ClientModInitializer
             return;
         }
 
-        Morph morph = Morph.getMorph(MinecraftClient.getInstance().player);
+        ClientPlayerEntity player = MinecraftClient.getInstance().player;
+        Morph morph = Morph.getMorph(player);
 
-        /* State trigger */
-        if (morph != null && morph.getForm() instanceof ModelForm modelForm)
+        /* Animation state trigger */
+        if (morph != null && morph.getForm() != null && morph.getForm().findState(key, (form, state) ->
         {
-            for (StateTrigger trigger : modelForm.triggers.triggers)
+            ClientNetwork.sendFormTrigger(state.id.get(), ServerNetwork.STATE_TRIGGER_MORPH);
+            form.playState(state);
+        }))
+            return;
+
+        /* Animation state trigger for items*/
+        if (player != null)
+        {
+            ModelProperties main = getItemStackProperties(player.getStackInHand(Hand.MAIN_HAND));
+            ModelProperties offhand = getItemStackProperties(player.getStackInHand(Hand.OFF_HAND));
+
+            if (main != null && main.getForm() != null && main.getForm().findState(key, (form, state) ->
             {
-                if (trigger.hotkey == key)
-                {
-                    ModelFormRenderer renderer = (ModelFormRenderer) FormUtilsClient.getRenderer(modelForm);
+                ClientNetwork.sendFormTrigger(state.id.get(), ServerNetwork.STATE_TRIGGER_MAIN_HAND_ITEM);
+                form.playState(state);
+            }))
+                return;
 
-                    BBSModClient.getFilms().recordTrigger(modelForm, trigger);
-                    renderer.triggerState(trigger);
-                    ClientNetwork.sendFormTrigger(trigger.id);
-
-                    return;
-                }
-            }
+            if (offhand != null && offhand.getForm() != null && offhand.getForm().findState(key, (form, state) ->
+            {
+                ClientNetwork.sendFormTrigger(state.id.get(), ServerNetwork.STATE_TRIGGER_OFF_HAND_ITEM);
+                form.playState(state);
+            }))
+                return;
         }
 
         /* Change form based on the hotkey */
@@ -292,7 +332,7 @@ public class BBSModClient implements ClientModInitializer
         selectors.read();
         films = new Films();
 
-        BBSResources.init(parentFile);
+        BBSResources.init();
 
         URLRepository repository = new URLRepository(new File(parentFile, "url_cache"));
 
@@ -334,10 +374,6 @@ public class BBSModClient implements ClientModInitializer
             .register(Link.bbs("tracker"), TrackerClientClip.class, new ClipFactoryData(Icons.USER, 0x4cedfc))
             .register(Link.bbs("curve"), CurveClientClip.class, new ClipFactoryData(Icons.ARC, 0xff1493));
 
-        /* Replace form trigger action clip with client version that plays animation */
-        BBSMod.getFactoryActionClips()
-            .register(Link.bbs("form_trigger"), FormTriggerClientActionClip.class, new ClipFactoryData(Icons.KEY_CAP, Colors.PINK));
-
         /* Keybinds */
         keyDashboard = this.createKey("dashboard", GLFW.GLFW_KEY_0);
         keyItemEditor = this.createKey("item_editor", GLFW.GLFW_KEY_HOME);
@@ -357,6 +393,48 @@ public class BBSModClient implements ClientModInitializer
             {
                 BBSRendering.renderCoolStuff(context);
             }
+
+            if (BBSSettings.chromaSkyEnabled.get())
+            {
+                float d = BBSSettings.chromaSkyBillboard.get();
+
+                if (d > 0)
+                {
+                    MatrixStack stack = context.matrixStack();
+                    Color color = Colors.COLOR.set(BBSSettings.chromaSkyColor.get());
+
+                    stack.push();
+
+                    MatrixStack.Entry peek = stack.peek();
+
+                    peek.getPositionMatrix().identity();
+                    peek.getNormalMatrix().identity();
+                    stack.translate(0F, 0F, -d);
+
+                    RenderSystem.enableDepthTest();
+                    BufferBuilder builder = Tessellator.getInstance().getBuffer();
+
+                    builder.begin(VertexFormat.DrawMode.TRIANGLES, VertexFormats.POSITION_COLOR);
+
+                    float fov = MinecraftClient.getInstance().options.getFov().getValue();
+                    float dd = d * (float) Math.pow(fov / 40F, 2F);
+
+                    Draw.fillQuad(builder, stack,
+                        -dd, -dd, 0,
+                        dd, -dd, 0,
+                        dd, dd, 0,
+                        -dd, dd, 0,
+                        color.r, color.g, color.b, 1F
+                    );
+
+                    RenderSystem.setShader(GameRenderer::getPositionColorProgram);
+
+                    BufferRenderer.drawWithGlobalProgram(builder.end());
+                    RenderSystem.disableDepthTest();
+
+                    stack.pop();
+                }
+            }
         });
 
         WorldRenderEvents.LAST.register((context) ->
@@ -373,7 +451,6 @@ public class BBSModClient implements ClientModInitializer
             films = new Films();
 
             ClientNetwork.resetHandshake();
-            BBSResources.reset();
             films.reset();
             cameraController.reset();
         });
@@ -391,6 +468,8 @@ public class BBSModClient implements ClientModInitializer
             {
                 films.updateEndWorld();
             }
+
+            BBSResources.tick();
         });
 
         ClientTickEvents.END_CLIENT_TICK.register((client) ->
@@ -411,8 +490,6 @@ public class BBSModClient implements ClientModInitializer
                 gunItemRenderer.update();
                 textures.update();
             }
-
-            BBSResources.update();
 
             while (keyDashboard.wasPressed()) UIScreen.open(getDashboard());
             while (keyItemEditor.wasPressed()) this.keyOpenModelBlockEditor(mc);
@@ -632,14 +709,7 @@ public class BBSModClient implements ClientModInitializer
         }
         else
         {
-            UIFilmPanel panel = dashboard.getPanel(UIFilmPanel.class);
-
-            dashboard.setPanel(panel);
-
-            if (!panel.overlay.canBeSeen())
-            {
-                panel.openOverlay.clickItself();
-            }
+            dashboard.setPanel(dashboard.getPanel(UIFilmPanel.class));
         }
     }
 

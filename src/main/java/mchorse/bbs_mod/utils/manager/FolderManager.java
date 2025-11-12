@@ -1,6 +1,6 @@
 package mchorse.bbs_mod.utils.manager;
 
-import mchorse.bbs_mod.settings.values.ValueGroup;
+import mchorse.bbs_mod.settings.values.core.ValueGroup;
 
 import java.io.File;
 import java.util.Collection;
@@ -146,7 +146,7 @@ public abstract class FolderManager <T extends ValueGroup> implements IManager<T
             {
                 set.add(prefix + name.substring(0, name.lastIndexOf(".")));
             }
-            else if (file.isDirectory())
+            else if (file.isDirectory() && !file.getName().startsWith("_"))
             {
                 File[] files = file.listFiles();
 

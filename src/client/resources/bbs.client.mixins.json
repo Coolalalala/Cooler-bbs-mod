@@ -36,7 +36,11 @@
         "iris.IrisMixin",
         "iris.SliderElementWidgetMixin",
         "iris.StringElementWidgetInvoker",
-        "SimpleOptionMixin"
+        "SimpleOptionMixin",
+        "BlockEntityRenderDispatcherMixin",
+        "WorldMixin",
+        "LivingEntityRendererInvoker",
+        "EntityRenderDispatcherMixin"
     ],
     "injectors": {
         "defaultRequire": 1

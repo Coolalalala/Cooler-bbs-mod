@@ -3,7 +3,7 @@ package mchorse.bbs_mod;
 import mchorse.bbs_mod.actions.ActionHandler;
 import mchorse.bbs_mod.actions.ActionManager;
 import mchorse.bbs_mod.actions.types.AttackActionClip;
-import mchorse.bbs_mod.actions.types.FormTriggerActionClip;
+import mchorse.bbs_mod.actions.types.DamageActionClip;
 import mchorse.bbs_mod.actions.types.SwipeActionClip;
 import mchorse.bbs_mod.actions.types.blocks.BreakBlockActionClip;
 import mchorse.bbs_mod.actions.types.blocks.InteractBlockActionClip;
@@ -38,7 +38,6 @@ import mchorse.bbs_mod.camera.clips.modifiers.RemapperClip;
 import mchorse.bbs_mod.camera.clips.modifiers.ShakeClip;
 import mchorse.bbs_mod.camera.clips.modifiers.TrackerClip;
 import mchorse.bbs_mod.camera.clips.modifiers.TranslateClip;
-import mchorse.bbs_mod.camera.clips.overwrite.CircularClip;
 import mchorse.bbs_mod.camera.clips.overwrite.DollyClip;
 import mchorse.bbs_mod.camera.clips.overwrite.IdleClip;
 import mchorse.bbs_mod.camera.clips.overwrite.KeyframeClip;
@@ -65,8 +64,6 @@ import mchorse.bbs_mod.network.ServerNetwork;
 import mchorse.bbs_mod.resources.AssetProvider;
 import mchorse.bbs_mod.resources.ISourcePack;
 import mchorse.bbs_mod.resources.Link;
-import mchorse.bbs_mod.resources.cache.CacheAssetsSourcePack;
-import mchorse.bbs_mod.resources.cache.ResourceTracker;
 import mchorse.bbs_mod.resources.packs.DynamicSourcePack;
 import mchorse.bbs_mod.resources.packs.ExternalAssetsSourcePack;
 import mchorse.bbs_mod.resources.packs.InternalAssetsSourcePack;
@@ -161,6 +158,7 @@ public class BBSMod implements ModInitializer
         FabricEntityTypeBuilder.create(SpawnGroup.CREATURE, GunProjectileEntity::new)
             .dimensions(EntityDimensions.fixed(0.25F, 0.25F))
             .trackRangeChunks(24)
+            .trackedUpdateRate(1)
             .build());
 
     public static final Block MODEL_BLOCK = new ModelBlock(FabricBlockSettings.create()
@@ -227,8 +225,6 @@ public class BBSMod implements ModInitializer
 
     private static File worldFolder;
 
-    private static ResourceTracker resourceTracker;
-
     private static Block createChromaBlock()
     {
         return new Block(FabricBlockSettings.create()
@@ -280,11 +276,7 @@ public class BBSMod implements ModInitializer
     {
         ISourcePack sourcePack = getDynamicSourcePack().getSourcePack();
 
-        if (sourcePack instanceof CacheAssetsSourcePack pack)
-        {
-            return pack.getFolder();
-        }
-        else if (sourcePack instanceof ExternalAssetsSourcePack pack)
+        if (sourcePack instanceof ExternalAssetsSourcePack pack)
         {
             return pack.getFolder();
         }
@@ -366,11 +358,6 @@ public class BBSMod implements ModInitializer
         return factoryActionClips;
     }
 
-    public static ResourceTracker getResourceTracker()
-    {
-        return resourceTracker;
-    }
-
     @Override
     public void onInitialize()
     {
@@ -417,8 +404,6 @@ public class BBSMod implements ModInitializer
                 .withConverter(Link.bbs("idle"), IdleConverter.CONVERTER)
                 .withConverter(Link.bbs("path"), new DollyToPathConverter())
                 .withConverter(Link.bbs("keyframe"), new DollyToKeyframeConverter()))
-            .register(Link.bbs("circular"), CircularClip.class, new ClipFactoryData(Icons.OUTLINE_SPHERE, 0x4ba03e)
-                .withConverter(Link.bbs("idle"), IdleConverter.CONVERTER))
             .register(Link.bbs("path"), PathClip.class, new ClipFactoryData(Icons.GALLERY, 0x6820ad)
                 .withConverter(Link.bbs("idle"), IdleConverter.CONVERTER)
                 .withConverter(Link.bbs("dolly"), new PathToDollyConverter())
@@ -449,8 +434,8 @@ public class BBSMod implements ModInitializer
             .register(Link.bbs("use_block_item"), UseBlockItemActionClip.class, new ClipFactoryData(Icons.BUCKET, Colors.CYAN))
             .register(Link.bbs("drop_item"), ItemDropActionClip.class, new ClipFactoryData(Icons.ARROW_DOWN, Colors.DEEP_PINK))
             .register(Link.bbs("attack"), AttackActionClip.class, new ClipFactoryData(Icons.DROP, Colors.RED))
-            .register(Link.bbs("swipe"), SwipeActionClip.class, new ClipFactoryData(Icons.LIMB, Colors.ORANGE))
-            .register(Link.bbs("form_trigger"), FormTriggerActionClip.class, new ClipFactoryData(Icons.KEY_CAP, Colors.PINK));
+            .register(Link.bbs("damage"), DamageActionClip.class, new ClipFactoryData(Icons.SKULL, Colors.CURSOR))
+            .register(Link.bbs("swipe"), SwipeActionClip.class, new ClipFactoryData(Icons.LIMB, Colors.ORANGE));
 
         setupConfig(Icons.PROCESSOR, "bbs", new File(settingsFolder, "bbs.json"), BBSSettings::register);
 
@@ -503,7 +488,6 @@ public class BBSMod implements ModInitializer
             }
         });
 
-        ServerLifecycleEvents.SERVER_STARTING.register((event) -> resourceTracker = new ResourceTracker(event));
         ServerLifecycleEvents.SERVER_STARTED.register((event) -> worldFolder = event.getSavePath(WorldSavePath.ROOT).toFile());
         ServerPlayConnectionEvents.JOIN.register((a, b, c) -> ServerNetwork.sendHandshake(c, b));
 
@@ -522,7 +506,6 @@ public class BBSMod implements ModInitializer
             }
 
             runnables.clear();
-            resourceTracker.tick();
         });
 
         ServerLifecycleEvents.SERVER_STOPPED.register((server) ->

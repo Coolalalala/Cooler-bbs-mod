@@ -1,5 +1,6 @@
 package mchorse.bbs_mod.cubic.data.model;
 
+import mchorse.bbs_mod.bobj.BOBJBone;
 import mchorse.bbs_mod.cubic.CubicModelAnimator;
 import mchorse.bbs_mod.cubic.IModel;
 import mchorse.bbs_mod.cubic.MolangHelper;
@@ -15,6 +16,7 @@ import mchorse.bbs_mod.utils.pose.PoseTransform;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -138,11 +140,7 @@ public class Model implements IMapSerializable, IModel
                 continue;
             }
 
-            if (pose.staticPose)
-            {
-                group.current.copy(group.initial);
-            }
-            else if (transform.fix > 0F)
+            if (transform.fix > 0F)
             {
                 group.current.lerp(group.initial, transform.fix);
             }
@@ -206,6 +204,12 @@ public class Model implements IMapSerializable, IModel
     public Collection<ModelGroup> getAllGroups()
     {
         return this.namedGroups.values();
+    }
+
+    @Override
+    public Collection<BOBJBone> getAllBOBJBones()
+    {
+        return Collections.emptyList();
     }
 
     @Override

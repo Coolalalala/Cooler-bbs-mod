@@ -1,10 +1,10 @@
 package mchorse.bbs_mod.network;
 
-import mchorse.bbs_mod.BBSMod;
 import mchorse.bbs_mod.BBSModClient;
-import mchorse.bbs_mod.BBSResources;
 import mchorse.bbs_mod.actions.ActionState;
 import mchorse.bbs_mod.blocks.entities.ModelBlockEntity;
+import mchorse.bbs_mod.blocks.entities.ModelProperties;
+import mchorse.bbs_mod.client.BBSRendering;
 import mchorse.bbs_mod.data.DataStorageUtils;
 import mchorse.bbs_mod.data.types.BaseType;
 import mchorse.bbs_mod.data.types.MapType;
@@ -13,18 +13,9 @@ import mchorse.bbs_mod.entity.IEntityFormProvider;
 import mchorse.bbs_mod.film.Film;
 import mchorse.bbs_mod.film.Films;
 import mchorse.bbs_mod.forms.FormUtils;
-import mchorse.bbs_mod.forms.FormUtilsClient;
 import mchorse.bbs_mod.forms.forms.Form;
-import mchorse.bbs_mod.forms.forms.ModelForm;
-import mchorse.bbs_mod.forms.renderers.ModelFormRenderer;
-import mchorse.bbs_mod.forms.triggers.StateTrigger;
 import mchorse.bbs_mod.items.GunProperties;
 import mchorse.bbs_mod.morphing.Morph;
-import mchorse.bbs_mod.resources.ISourcePack;
-import mchorse.bbs_mod.resources.Link;
-import mchorse.bbs_mod.resources.cache.CacheAssetsSourcePack;
-import mchorse.bbs_mod.resources.cache.ResourceCache;
-import mchorse.bbs_mod.resources.cache.ResourceEntry;
 import mchorse.bbs_mod.settings.values.base.BaseValue;
 import mchorse.bbs_mod.ui.UIKeys;
 import mchorse.bbs_mod.ui.dashboard.UIDashboard;
@@ -40,21 +31,15 @@ import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.network.PacketByteBuf;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.RandomAccessFile;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
 
@@ -64,12 +49,10 @@ public class ClientNetwork
     private static Map<Integer, Consumer<BaseType>> callbacks = new HashMap<>();
     private static ClientPacketCrusher crusher = new ClientPacketCrusher();
 
-    private static String serverId;
     private static boolean isBBSModOnServer;
 
     public static void resetHandshake()
     {
-        serverId = "";
         isBBSModOnServer = false;
         crusher.reset();
     }
@@ -77,11 +60,6 @@ public class ClientNetwork
     public static boolean isIsBBSModOnServer()
     {
         return isBBSModOnServer;
-    }
-
-    public static String getServerId()
-    {
-        return serverId;
     }
 
     /* Network */
@@ -95,15 +73,16 @@ public class ClientNetwork
         ClientPlayNetworking.registerGlobalReceiver(ServerNetwork.CLIENT_STOP_FILM_PACKET, (client, handler, buf, responseSender) -> handleStopFilmPacket(client, buf));
         ClientPlayNetworking.registerGlobalReceiver(ServerNetwork.CLIENT_HANDSHAKE, (client, handler, buf, responseSender) -> handleHandshakePacket(client, buf));
         ClientPlayNetworking.registerGlobalReceiver(ServerNetwork.CLIENT_RECORDED_ACTIONS, (client, handler, buf, responseSender) -> handleRecordedActionsPacket(client, buf));
-        ClientPlayNetworking.registerGlobalReceiver(ServerNetwork.CLIENT_FORM_TRIGGER, (client, handler, buf, responseSender) -> handleFormTriggerPacket(client, buf));
-        ClientPlayNetworking.registerGlobalReceiver(ServerNetwork.CLIENT_ASSET, (client, handler, buf, responseSender) -> handleAssetPacket(client, buf));
-        ClientPlayNetworking.registerGlobalReceiver(ServerNetwork.CLIENT_REQUEST_ASSET, (client, handler, buf, responseSender) -> handleRequestAssetPacket(client, buf));
+        ClientPlayNetworking.registerGlobalReceiver(ServerNetwork.CLIENT_ANIMATION_STATE_TRIGGER, (client, handler, buf, responseSender) -> handleFormTriggerPacket(client, buf));
         ClientPlayNetworking.registerGlobalReceiver(ServerNetwork.CLIENT_CHEATS_PERMISSION, (client, handler, buf, responseSender) -> handleCheatsPermissionPacket(client, buf));
         ClientPlayNetworking.registerGlobalReceiver(ServerNetwork.CLIENT_SHARED_FORM, (client, handler, buf, responseSender) -> handleShareFormPacket(client, buf));
         ClientPlayNetworking.registerGlobalReceiver(ServerNetwork.CLIENT_ENTITY_FORM, (client, handler, buf, responseSender) -> handleEntityFormPacket(client, buf));
         ClientPlayNetworking.registerGlobalReceiver(ServerNetwork.CLIENT_ACTORS, (client, handler, buf, responseSender) -> handleActorsPacket(client, buf));
         ClientPlayNetworking.registerGlobalReceiver(ServerNetwork.CLIENT_GUN_PROPERTIES, (client, handler, buf, responseSender) -> handleGunPropertiesPacket(client, buf));
         ClientPlayNetworking.registerGlobalReceiver(ServerNetwork.CLIENT_PAUSE_FILM, (client, handler, buf, responseSender) -> handlePauseFilmPacket(client, buf));
+        ClientPlayNetworking.registerGlobalReceiver(ServerNetwork.CLIENT_SELECTED_SLOT, (client, handler, buf, responseSender) -> handleSelectedSlotPacket(client, buf));
+        ClientPlayNetworking.registerGlobalReceiver(ServerNetwork.CLIENT_ANIMATION_STATE_MODEL_BLOCK_TRIGGER, (client, handler, buf, responseSender) -> handleAnimationStateModelBlockPacket(client, buf));
+        ClientPlayNetworking.registerGlobalReceiver(ServerNetwork.CLIENT_REFRESH_MODEL_BLOCKS, (client, handler, buf, responseSender) -> handleRefreshModelBlocksPacket(client, buf));
     }
 
     /* Handlers */
@@ -203,23 +182,6 @@ public class ClientNetwork
     private static void handleHandshakePacket(MinecraftClient client, PacketByteBuf buf)
     {
         isBBSModOnServer = true;
-        serverId = buf.readString();
-
-        if (!serverId.isEmpty())
-        {
-            List<ResourceEntry> assets = new ArrayList<>();
-            int c = buf.readInt();
-
-            for (int i = 0; i < c; i++)
-            {
-                String path = buf.readString();
-                long l = buf.readLong();
-
-                assets.add(new ResourceEntry(path, l));
-            }
-
-            BBSResources.setup(client, serverId, new ResourceCache(assets));
-        }
     }
 
     private static void handleRecordedActionsPacket(MinecraftClient client, PacketByteBuf buf)
@@ -242,83 +204,29 @@ public class ClientNetwork
     {
         int id = buf.readInt();
         String triggerId = buf.readString();
+        int type = buf.readInt();
 
         client.execute(() ->
         {
             Entity entity = client.world.getEntityById(id);
             Morph morph = Morph.getMorph(entity);
 
-            if (morph.getForm() instanceof ModelForm modelForm)
+            if (morph != null && morph.getForm() != null)
             {
-                for (StateTrigger trigger : modelForm.triggers.triggers)
-                {
-                    if (trigger.id.equals(triggerId))
-                    {
-                        ((ModelFormRenderer) FormUtilsClient.getRenderer(modelForm)).triggerState(trigger);
+                morph.getForm().playState(triggerId);
+            }
 
-                        return;
-                    }
+            if (entity instanceof LivingEntity livingEntity && type > 0)
+            {
+                ItemStack stackInHand = livingEntity.getStackInHand(type == 1 ? Hand.MAIN_HAND : Hand.OFF_HAND);
+                ModelProperties properties = BBSModClient.getItemStackProperties(stackInHand);
+
+                if (properties != null && properties.getForm() != null)
+                {
+                    properties.getForm().playState(triggerId);
                 }
             }
         });
-    }
-
-    private static void handleAssetPacket(MinecraftClient client, PacketByteBuf buf)
-    {
-        String path = buf.readString();
-        long offset = buf.readLong();
-        int size = buf.readInt();
-        boolean last = buf.readBoolean();
-        byte[] bytes = new byte[size];
-
-        buf.readBytes(bytes);
-
-        ISourcePack sourcePack = BBSMod.getDynamicSourcePack().getSourcePack();
-
-        if (sourcePack instanceof CacheAssetsSourcePack pack)
-        {
-            File file = new File(pack.getFolder(), path);
-
-            file.getParentFile().mkdirs();
-
-            try (OutputStream stream = new FileOutputStream(file, offset != 0))
-            {
-                stream.write(bytes);
-            }
-            catch (Exception e)
-            {
-                e.printStackTrace();
-            }
-
-            if (!last)
-            {
-                client.execute(() -> sendRequestAsset(path, offset));
-            }
-            else
-            {
-                System.out.println("[Client] Received completely: " + path);
-
-                Set<String> requested = BBSResources.getRequested();
-
-                requested.remove(path);
-
-                if (requested.isEmpty())
-                {
-                    BBSResources.resetResources();
-                }
-            }
-
-            BBSResources.markUpdate();
-        }
-    }
-
-    private static void handleRequestAssetPacket(MinecraftClient client, PacketByteBuf buf)
-    {
-        String path = buf.readString();
-        Link link = Link.assets(path);
-        long offset = buf.readLong();
-
-        sendAsset(link, offset);
     }
 
     private static void handleCheatsPermissionPacket(MinecraftClient client, PacketByteBuf buf)
@@ -433,6 +341,58 @@ public class ClientNetwork
         client.execute(() ->
         {
             Films.togglePauseFilm(filmId);
+        });
+    }
+
+    private static void handleSelectedSlotPacket(MinecraftClient client, PacketByteBuf buf)
+    {
+        int slot = buf.readInt();
+
+        client.execute(() ->
+        {
+            client.player.getInventory().selectedSlot = slot;
+        });
+    }
+
+    private static void handleAnimationStateModelBlockPacket(MinecraftClient client, PacketByteBuf buf)
+    {
+        BlockPos pos = buf.readBlockPos();
+        String state = buf.readString();
+
+        client.execute(() ->
+        {
+            BlockEntity blockEntity = client.world.getBlockEntity(pos);
+
+            if (blockEntity instanceof ModelBlockEntity block)
+            {
+                if (block.getProperties().getForm() != null)
+                {
+                    block.getProperties().getForm().playState(state);
+                }
+            }
+        });
+    }
+
+    private static void handleRefreshModelBlocksPacket(MinecraftClient client, PacketByteBuf buf)
+    {
+        int range = buf.readInt();
+
+        client.execute(() ->
+        {
+            for (ModelBlockEntity mb : BBSRendering.capturedModelBlocks)
+            {
+                ModelProperties properties = mb.getProperties();
+                int random = (int) (Math.random() * range);
+
+                properties.setForm(FormUtils.copy(properties.getForm()));
+
+                while (random > 0)
+                {
+                    properties.update(mb.getEntity());
+
+                    random -= 1;
+                }
+            }
         });
     }
 
@@ -556,75 +516,14 @@ public class ClientNetwork
         ClientPlayNetworking.send(ServerNetwork.SERVER_PLAYER_TP, buf);
     }
 
-    public static void sendFormTrigger(String triggerId)
+    public static void sendFormTrigger(String triggerId, int type)
     {
         PacketByteBuf buf = PacketByteBufs.create();
 
         buf.writeString(triggerId);
+        buf.writeInt(type);
 
-        ClientPlayNetworking.send(ServerNetwork.SERVER_FORM_TRIGGER, buf);
-    }
-
-    public static void sendRequestAsset(String asset, long offset)
-    {
-        PacketByteBuf buf = PacketByteBufs.create();
-
-        buf.writeString(asset);
-        buf.writeLong(offset);
-
-        ClientPlayNetworking.send(ServerNetwork.SERVER_REQUEST_ASSET, buf);
-    }
-
-    public static void sendAsset(Link link, long offset)
-    {
-        if (offset < 0)
-        {
-            PacketByteBuf buf = PacketByteBufs.create();
-
-            buf.writeString(link.path);
-            buf.writeInt(-1);
-
-            ClientPlayNetworking.send(ServerNetwork.SERVER_ASSET, buf);
-
-            return;
-        }
-
-        try
-        {
-            File file = BBSMod.getDynamicSourcePack().getFile(link);
-            int placeholder = 1000;
-            int bufferSize = 32767 - placeholder;
-            PacketByteBuf buf = PacketByteBufs.create();
-            byte[] bytes = new byte[bufferSize];
-            int read;
-
-            if (file != null)
-            {
-                RandomAccessFile randomAccessFile = new RandomAccessFile(file, "r");
-
-                randomAccessFile.seek(offset);
-                read = randomAccessFile.read(bytes);
-            }
-            else
-            {
-                InputStream stream = BBSMod.getDynamicSourcePack().getAsset(link);
-
-                stream.skip(offset);
-                read = stream.read(bytes);
-            }
-
-            buf.writeString(link.path);
-            buf.writeLong(offset + read);
-            buf.writeInt(read);
-            buf.writeBoolean(read != bytes.length);
-            buf.writeBytes(bytes, 0, read);
-
-            ClientPlayNetworking.send(ServerNetwork.SERVER_ASSET, buf);
-        }
-        catch (IOException e)
-        {
-            System.err.println("Failed to read asset: " + link);
-        }
+        ClientPlayNetworking.send(ServerNetwork.SERVER_ANIMATION_STATE_TRIGGER, buf);
     }
 
     public static void sendSharedForm(Form form, UUID uuid)
