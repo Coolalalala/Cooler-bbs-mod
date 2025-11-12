@@ -179,11 +179,11 @@ public class MathBuilder
 
         for (String s : chars)
         {
-            if (s.equals("("))
+            if (s.equals("(") || s.equals("[") || s.equals("{"))
             {
                 left++;
             }
-            else if (s.equals(")"))
+            else if (s.equals(")") || s.equals("]") || s.equals("}"))
             {
                 right++;
             }

@@ -9,6 +9,7 @@ import mchorse.bbs_mod.math.molang.expressions.MolangMultiStatement;
 import mchorse.bbs_mod.math.molang.expressions.MolangValue;
 import mchorse.bbs_mod.particles.functions.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class ParticleMolangParser extends MolangParser
@@ -63,11 +64,109 @@ public class ParticleMolangParser extends MolangParser
         return variable;
     }
 
+    private static ArrayList<String> splitExpressions(String expressions)
+    {
+        ArrayList<String> lines = new ArrayList<>();
+        StringBuilder current = new StringBuilder();
+        int depth = 0;
+        for (char c : expressions.toLowerCase().trim().toCharArray())
+        {
+            if (c == '{')
+            {
+                depth++;
+            }
+            else if (c == '}')
+            {
+                depth--;
+                if (depth == 0)
+                {
+                    current.append(c);
+                    if (!current.toString().trim().isEmpty())
+                    {
+                        lines.add(current.toString().trim());
+                    }
+                    current = new StringBuilder();
+                    continue;
+                }
+            }
+            else if (c == ';' && depth == 0)
+            {
+                if (!current.toString().trim().isEmpty())
+                {
+                    lines.add(current.toString().trim());
+                }
+                current = new StringBuilder();
+                continue;
+            }
+            current.append(c);
+        }
+        if (!current.toString().trim().isEmpty())
+        {
+            lines.add(current.toString().trim());
+        }
+        return lines;
+    }
+
+    @Override
+    public MolangExpression parseExpression(String expression) throws MolangException
+    {
+        List<String> lines = splitExpressions(expression);
+
+        if (lines.isEmpty())
+        {
+            throw new MolangException("Molang expression cannot be blank!");
+        }
+
+        MolangMultiStatement parentStatement = this.currentStatement;
+        MolangMultiStatement result = new MolangMultiStatement(this);
+        if (parentStatement != null) result.locals.putAll(parentStatement.locals);
+        this.currentStatement = result;
+
+        try
+        {
+            for (String line : lines)
+            {
+                result.expressions.add(this.parseOneLine(line));
+            }
+        }
+        catch (Exception e)
+        {
+            this.currentStatement = null;
+
+            throw e;
+        }
+
+        this.currentStatement = parentStatement;
+
+        return result;
+    }
+
     @Override
     protected MolangExpression parseOneLine(String expression) throws MolangException
     {
         expression = expression.trim();
-        if (expression.startsWith("//")) // comment
+
+        if (expression.startsWith("if"))
+        {
+            int scopeStart = expression.indexOf('{');
+            int conditionStart = expression.indexOf('(');
+            int conditionEnd = expression.lastIndexOf(')', scopeStart - 1);
+            MolangMultiStatement subStatement = (MolangMultiStatement) parseExpression(expression.substring(scopeStart + 1, expression.length() - 1));
+            return subStatement.setCondition(parseOneLine(expression.substring(conditionStart + 1, conditionEnd)));
+        }
+        else if (expression.startsWith("while"))
+        {
+            int scopeStart = expression.indexOf('{');
+            int conditionStart = expression.indexOf('(');
+            int conditionEnd = expression.lastIndexOf(')', scopeStart - 1);
+            MolangMultiStatement subStatement = (MolangMultiStatement) parseExpression(expression.substring(scopeStart + 1, expression.length() - 1));
+            return subStatement.setWhileLoop(parseOneLine(expression.substring(conditionStart + 1, conditionEnd)));
+        }
+        else if (expression.startsWith("{"))
+        {
+            return parseExpression(expression.substring(1, expression.length() - 1));
+        }
+        else if (expression.startsWith("//")) // comment
         {
             int index = expression.indexOf("\n");
             if (index != -1)
@@ -77,7 +176,7 @@ public class ParticleMolangParser extends MolangParser
             return MolangParser.ZERO;
         }
 
-        if (!scheme.parallel) super.parseOneLine(expression);
+        if (!scheme.parallel) return super.parseOneLine(expression);
 
         if (expression.startsWith(RETURN))
         {

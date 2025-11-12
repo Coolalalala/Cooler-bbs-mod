@@ -189,7 +189,7 @@ public class MolangParser extends MathBuilder
                 {
                     return new MolangValue(this, new Constant(Double.parseDouble(string)));
                 }
-                catch (Exception e)
+                catch (Exception ignored)
                 {}
 
                 return this.parseExpression(string);

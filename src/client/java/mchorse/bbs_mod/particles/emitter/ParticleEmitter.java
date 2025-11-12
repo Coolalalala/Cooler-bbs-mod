@@ -125,6 +125,7 @@ public class ParticleEmitter
     private Variable varEmitterRotationX;
     private Variable varEmitterRotationY;
     private Variable varEmitterRotationZ;
+    private Variable varEmitterParicleCount;
 
     public double getAge()
     {
@@ -185,7 +186,7 @@ public class ParticleEmitter
     {
         this.varInitX = this.scheme.parser.variables.get("variable.particle_init_x");
         this.varInitY = this.scheme.parser.variables.get("variable.particle_init_y");
-        this.varInitZ = this.scheme.parser.variables.get("variable.particle_random_1");
+        this.varInitZ = this.scheme.parser.variables.get("variable.particle_init_z");
         this.varIndex = this.scheme.parser.variables.get("variable.particle_index");
         this.varAge = this.scheme.parser.variables.get("variable.particle_age");
         this.varLifetime = this.scheme.parser.variables.get("variable.particle_lifetime");
@@ -223,6 +224,7 @@ public class ParticleEmitter
         this.varEmitterRotationX = this.scheme.parser.variables.get("variable.emitter_rx");
         this.varEmitterRotationY = this.scheme.parser.variables.get("variable.emitter_ry");
         this.varEmitterRotationZ = this.scheme.parser.variables.get("variable.emitter_rz");
+        this.varEmitterParicleCount = this.scheme.parser.variables.get("variable.emitter_pcount");
     }
 
     public void setParticleVariables(Particle particle, float transition)
@@ -301,6 +303,7 @@ public class ParticleEmitter
         if (this.varEmitterRotationX != null) this.varEmitterRotationX.set(rot.x);
         if (this.varEmitterRotationY != null) this.varEmitterRotationY.set(rot.y);
         if (this.varEmitterRotationZ != null) this.varEmitterRotationZ.set(rot.z);
+        if (this.varEmitterParicleCount != null) this.varEmitterParicleCount.set(this.particles.size());
 
         this.scheme.updateCurves();
     }
