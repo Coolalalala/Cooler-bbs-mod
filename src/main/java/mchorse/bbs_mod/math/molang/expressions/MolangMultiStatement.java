@@ -16,7 +16,9 @@ public class MolangMultiStatement extends MolangExpression
     public List<MolangExpression> expressions = new ArrayList<>();
     public Map<String, Variable> locals = new HashMap<>();
 
-    public MolangExpression conditionalExpression = null;
+    public MolangExpression initialExpression = null;
+    public MolangExpression conditionExpression = null;
+    public MolangExpression incrementExpression = null;
     public boolean looping = false;
 
     public MolangMultiStatement(MolangParser context)
@@ -26,26 +28,40 @@ public class MolangMultiStatement extends MolangExpression
 
     public MolangMultiStatement setCondition(MolangExpression condition)
     {
-        this.conditionalExpression = condition;
+        this.conditionExpression = condition;
         return this;
     }
 
     public MolangMultiStatement setWhileLoop(MolangExpression condition)
     {
         this.looping = true;
-        this.conditionalExpression = condition;
+        this.conditionExpression = condition;
         return this;
     }
+
+    public MolangMultiStatement setForLoop(MolangExpression init, MolangExpression condition, MolangExpression increment)
+    {
+        this.looping = true;
+        this.initialExpression = init;
+        this.conditionExpression = condition;
+        this.incrementExpression = increment;
+        return this;
+    }
+
 
     @Override
     public double get()
     {
-        if (conditionalExpression == null)
+        if (conditionExpression == null)
         {
             return this.evaluate();
         }
 
-        if (conditionalExpression.get() != 1D)
+        if (initialExpression != null) {
+            initialExpression.get();
+        }
+
+        if (conditionExpression.get() != 1D)
         { // if failed condition
             return 0;
         }
@@ -54,14 +70,18 @@ public class MolangMultiStatement extends MolangExpression
         {
             int i = 0;
             double value = 0;
-            while(conditionalExpression.get() == 1D) {
+            while(conditionExpression.get() == 1D) {
                 value = this.evaluate();
                 i++;
                 if (i > 1000) {
-                    System.out.println("[BBS Snowstorm] Infinite loop detected (i > 1000)");
-                    this.conditionalExpression = null;
+                    System.out.println("[BBS Snowstorm] Maximum loop depth exceeded (i > 1000)");
+                    this.conditionExpression = null;
                     this.looping = false;
                     return 0;
+                }
+                // increment
+                if (incrementExpression != null) {
+                    incrementExpression.get();
                 }
             }
             return value;
@@ -107,12 +127,22 @@ public class MolangMultiStatement extends MolangExpression
         }
 
         String control = "";
-        if (this.conditionalExpression != null)
+        if (this.conditionExpression != null)
         {
-            control = "(" + this.conditionalExpression.toString() + ") ";
+            control = "(";
+            control += initialExpression != null ? initialExpression + ", " : "";
+            control += conditionExpression.toString();
+            control += incrementExpression != null ? ", " + incrementExpression : "";
+            control += ") ";
             if (this.looping)
             {
-                control = "while " + control;
+                if (this.initialExpression != null)
+                {
+                    control = "for " + control;
+                }
+                else {
+                    control = "while " + control;
+                }
             }
             else
             {

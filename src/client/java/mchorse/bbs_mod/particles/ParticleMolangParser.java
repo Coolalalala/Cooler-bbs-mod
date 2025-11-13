@@ -1,6 +1,7 @@
 package mchorse.bbs_mod.particles;
 
 import mchorse.bbs_mod.math.Variable;
+import mchorse.bbs_mod.math.functions.Function;
 import mchorse.bbs_mod.math.molang.MolangException;
 import mchorse.bbs_mod.math.molang.MolangParser;
 import mchorse.bbs_mod.math.molang.expressions.MolangAssignment;
@@ -33,7 +34,7 @@ public class ParticleMolangParser extends MolangParser
     {
         if (scheme.parallel) {
             if (name.startsWith("v.particle") || name.startsWith("variable.particle")) {
-                return new ParticleVariable(name); // bro i spent so much time figuring out i can just do this
+                return new ParticleVariable(name);
             }
             return getVariableParallel(name);
         }
@@ -159,9 +160,40 @@ public class ParticleMolangParser extends MolangParser
             int scopeStart = expression.indexOf('{');
             int conditionStart = expression.indexOf('(');
             int conditionEnd = expression.lastIndexOf(')', scopeStart - 1);
+            // Parse the body of while loop
             MolangMultiStatement subStatement = (MolangMultiStatement) parseExpression(expression.substring(scopeStart + 1, expression.length() - 1));
             return subStatement.setWhileLoop(parseOneLine(expression.substring(conditionStart + 1, conditionEnd)));
         }
+        else if (expression.startsWith("for"))
+        {
+            int scopeStart = expression.indexOf('{');
+            int conditionStart = expression.indexOf('(');
+            int conditionEnd = expression.lastIndexOf(')', scopeStart - 1);
+
+            // Parse the for loop header: for(init; condition; increment)
+            String forHeader = expression.substring(conditionStart + 1, conditionEnd);
+            String[] parts = forHeader.split(","); // Split by comma
+
+            if (parts.length != 3) {
+                throw new MolangException("For loop must have exactly 3 parts: initialization, condition, and update");
+            }
+
+            MolangExpression initExpr = parseOneLine(parts[0].trim());
+            try {
+                Variable initVariable = ((MolangAssignment) initExpr).variable;
+                this.currentStatement.locals.put(initVariable.getName(), initVariable);
+            } catch (Exception e) {
+                throw new MolangException("Error initializing variable of for-loop");
+            }
+            MolangExpression conditionExpr = parseOneLine(parts[1].trim());
+            MolangExpression incrementExpr = parseOneLine(parts[2].trim());
+
+            // Parse the body of the for loop
+            MolangMultiStatement subStatement = (MolangMultiStatement) parseExpression(expression.substring(scopeStart + 1, expression.length() - 1));
+            // Set the for loop configuration
+            return subStatement.setForLoop(initExpr, conditionExpr, incrementExpr);
+        }
+
         else if (expression.startsWith("{"))
         {
             return parseExpression(expression.substring(1, expression.length() - 1));
