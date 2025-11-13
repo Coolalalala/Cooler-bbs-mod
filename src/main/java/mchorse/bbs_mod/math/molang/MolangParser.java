@@ -21,10 +21,10 @@ import java.util.List;
 
 /**
  * MoLang parser
- *
+ * <p>
  * This bad boy parses Molang expressions
  *
- * @link https://bedrock.dev/1.14.0.0/1.14.2.50/MoLang
+ * @link <a href="https://bedrock.dev/1.14.0.0/1.14.2.50/MoLang">...</a>
  */
 public class MolangParser extends MathBuilder
 {
@@ -281,12 +281,11 @@ public class MolangParser extends MathBuilder
             List<Object> symbols = this.breakdownChars(this.breakdown(expression));
 
             /* Assignment it is */
-            if (symbols.size() >= 3 && symbols.get(0) instanceof String && this.isVariable(symbols.get(0)) && symbols.get(1).equals("="))
+            if (symbols.size() >= 3 && symbols.get(0) instanceof String name && this.isVariable(symbols.get(0)) && symbols.get(1).equals("="))
             {
-                String name = (String) symbols.get(0);
                 symbols = symbols.subList(2, symbols.size());
 
-                Variable variable = null;
+                Variable variable;
 
                 if (!this.registerAsGlobals && !this.variables.containsKey(name) && !this.currentStatement.locals.containsKey(name))
                 {
