@@ -65,6 +65,9 @@ public class ParticleComponentMotionParametric extends ParticleComponentMotion i
         particle.position.y = particle.initialPosition.y + position.y;
         particle.position.z = particle.initialPosition.z + position.z;
         particle.rotation = (float) this.rotation.get();
+        particle.speed.x = (float) (particle.position.x - particle.prevPosition.x);
+        particle.speed.y = (float) (particle.position.y - particle.prevPosition.y);
+        particle.speed.z = (float) (particle.position.z - particle.prevPosition.z);
     }
 
     @Override
@@ -77,6 +80,9 @@ public class ParticleComponentMotionParametric extends ParticleComponentMotion i
         particle.position.y = particle.initialPosition.y + position.y;
         particle.position.z = particle.initialPosition.z + position.z;
         particle.rotation = (float) this.rotation.get();
+        particle.speed.x = (float) (particle.position.x - particle.prevPosition.x);
+        particle.speed.y = (float) (particle.position.y - particle.prevPosition.y);
+        particle.speed.z = (float) (particle.position.z - particle.prevPosition.z);
     }
 
     @Override
