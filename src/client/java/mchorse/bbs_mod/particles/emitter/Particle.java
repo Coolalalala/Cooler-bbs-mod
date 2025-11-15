@@ -121,46 +121,6 @@ public class Particle
 
         this.setupMatrix(emitter);
 
-        if (!this.manual)
-        {
-            float rotationAcceleration = this.rotationAcceleration / 20F -this.rotationDrag * this.rotationVelocity;
-
-            this.rotationVelocity += rotationAcceleration / 20F;
-            this.rotation = this.initialRotation + this.rotationVelocity * this.age;
-
-            /* Position */
-            Vector3f vecTemp = new Vector3f(this.speed);
-            vecTemp.mul(-(this.drag + this.dragFactor));
-
-            this.acceleration.add(vecTemp);
-            this.acceleration.div(20F);
-
-            vecTemp.set(this.speed);
-            if (this.relativeVelocity)
-            {
-                if (this.age == 0)
-                {
-                    this.matrix.transform(this.speed);
-                }
-            }
-            else if (this.relativePosition || this.relativeRotation)
-            {
-                this.matrix.transform(vecTemp);
-            }
-            this.speed.add(this.acceleration);
-
-            if (this.age == 0)
-            {
-                vecTemp.mul(1F + this.offset);
-            }
-
-            // if (!relativePosition && relativeRotation) vecTemp.mul(emitter.rotation);
-
-            this.position.x += vecTemp.x * 0.05F;
-            this.position.y += vecTemp.y * 0.05F;
-            this.position.z += vecTemp.z * 0.05F;
-        }
-
         if (this.lifetime >= 0 && this.age >= this.lifetime)
         {
             this.setDead();
