@@ -146,7 +146,7 @@ public class ParticleMolangParser extends MolangParser
     {
         expression = expression.trim();
 
-        if (expression.startsWith("if"))
+        if (expression.startsWith("if "))
         {
             int scopeStart = expression.indexOf('{');
             int conditionStart = expression.indexOf('(');
@@ -154,7 +154,7 @@ public class ParticleMolangParser extends MolangParser
             MolangMultiStatement subStatement = (MolangMultiStatement) parseExpression(expression.substring(scopeStart + 1, expression.length() - 1));
             return subStatement.setCondition(parseOneLine(expression.substring(conditionStart + 1, conditionEnd)));
         }
-        else if (expression.startsWith("while"))
+        else if (expression.startsWith("while "))
         {
             int scopeStart = expression.indexOf('{');
             int conditionStart = expression.indexOf('(');
@@ -163,7 +163,7 @@ public class ParticleMolangParser extends MolangParser
             MolangMultiStatement subStatement = (MolangMultiStatement) parseExpression(expression.substring(scopeStart + 1, expression.length() - 1));
             return subStatement.setWhileLoop(parseOneLine(expression.substring(conditionStart + 1, conditionEnd)));
         }
-        else if (expression.startsWith("for"))
+        else if (expression.startsWith("for "))
         {
             int scopeStart = expression.indexOf('{');
             int conditionStart = expression.indexOf('(');
