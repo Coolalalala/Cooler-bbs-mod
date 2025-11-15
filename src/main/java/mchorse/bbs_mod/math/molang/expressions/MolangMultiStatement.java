@@ -70,19 +70,21 @@ public class MolangMultiStatement extends MolangExpression
         {
             int i = 0;
             double value = 0;
-            while(conditionExpression.get() == 1D) {
+            while(conditionExpression.get() == 1D && i < 2147483646) {
                 value = this.evaluate();
                 i++;
-                if (i > 1000) {
-                    System.out.println("[BBS Snowstorm] Maximum loop depth exceeded (i > 1000)");
-                    this.conditionExpression = null;
-                    this.looping = false;
-                    return 0;
-                }
+
                 // increment
                 if (incrementExpression != null) {
                     incrementExpression.get();
                 }
+            }
+
+            if (i > 2147483646) {
+                System.out.println("[BBS Snowstorm] Maximum loop depth exceeded (i > 2^31)");
+                this.conditionExpression = null;
+                this.looping = false;
+                return 0;
             }
             return value;
         }
