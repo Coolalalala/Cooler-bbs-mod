@@ -1,6 +1,5 @@
 package mchorse.bbs_mod.particles.emitter;
 
-import mchorse.bbs_mod.ui.film.clips.actions.UIBreakBlockActionClip;
 import mchorse.bbs_mod.utils.joml.Vectors;
 import org.joml.Matrix3f;
 import org.joml.Vector3d;
@@ -47,7 +46,6 @@ public class Particle
 
     public Vector3f speed = new Vector3f();
     public Vector3f acceleration = new Vector3f();
-    private final Vector3f prevAcceleration = new Vector3f();
     public int collisions = 0;
     public float drag = 0;
     public float dragFactor = 0;
@@ -58,7 +56,7 @@ public class Particle
     public float b = 1;
     public float a = 1;
 
-    private Vector3d global = new Vector3d();
+    private final Vector3d global = new Vector3d();
 
     public Map<String, Double> localValues = new HashMap<>();
 
