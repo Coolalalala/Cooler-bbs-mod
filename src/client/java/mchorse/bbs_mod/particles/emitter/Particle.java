@@ -1,5 +1,6 @@
 package mchorse.bbs_mod.particles.emitter;
 
+import mchorse.bbs_mod.ui.film.clips.actions.UIBreakBlockActionClip;
 import mchorse.bbs_mod.utils.joml.Vectors;
 import org.joml.Matrix3f;
 import org.joml.Vector3d;
@@ -46,6 +47,7 @@ public class Particle
 
     public Vector3f speed = new Vector3f();
     public Vector3f acceleration = new Vector3f();
+    private final Vector3f prevAcceleration = new Vector3f();
     public int collisions = 0;
     public float drag = 0;
     public float dragFactor = 0;
@@ -142,18 +144,12 @@ public class Particle
                 {
                     this.matrix.transform(this.speed);
                 }
-
-                this.speed.add(this.acceleration);
             }
-            else
+            else if (this.relativePosition || this.relativeRotation)
             {
-                this.speed.add(this.acceleration);
-
-                if (this.relativePosition || this.relativeRotation)
-                {
-                    this.matrix.transform(vecTemp);
-                }
+                this.matrix.transform(vecTemp);
             }
+            this.speed.add(this.acceleration);
 
             if (this.age == 0)
             {
@@ -165,10 +161,6 @@ public class Particle
             this.position.x += vecTemp.x * 0.05F;
             this.position.y += vecTemp.y * 0.05F;
             this.position.z += vecTemp.z * 0.05F;
-            // Verlet integration
-            this.speed.x = (float) (this.position.x - this.prevPosition.x);
-            this.speed.y = (float) (this.position.y - this.prevPosition.y);
-            this.speed.z = (float) (this.position.z - this.prevPosition.z);
         }
 
         if (this.lifetime >= 0 && this.age >= this.lifetime)
