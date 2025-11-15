@@ -162,9 +162,13 @@ public class Particle
 
             // if (!relativePosition && relativeRotation) vecTemp.mul(emitter.rotation);
 
-            this.position.x += vecTemp.x / 20F;
-            this.position.y += vecTemp.y / 20F;
-            this.position.z += vecTemp.z / 20F;
+            this.position.x += vecTemp.x * 0.05F;
+            this.position.y += vecTemp.y * 0.05F;
+            this.position.z += vecTemp.z * 0.05F;
+            // Verlet integration
+            this.speed.x = (float) (this.position.x - this.prevPosition.x);
+            this.speed.y = (float) (this.position.y - this.prevPosition.y);
+            this.speed.z = (float) (this.position.z - this.prevPosition.z);
         }
 
         if (this.lifetime >= 0 && this.age >= this.lifetime)
