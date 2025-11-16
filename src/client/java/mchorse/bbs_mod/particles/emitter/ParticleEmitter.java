@@ -1,5 +1,6 @@
 package mchorse.bbs_mod.particles.emitter;
 
+import com.google.common.util.concurrent.AtomicDouble;
 import com.mojang.blaze3d.systems.RenderSystem;
 import mchorse.bbs_mod.BBSModClient;
 import mchorse.bbs_mod.camera.Camera;
@@ -42,7 +43,7 @@ public class ParticleEmitter
     public ParticleScheme scheme;
     public List<Particle> particles = new ArrayList<>();
     public Map<String, IExpression> variables = new HashMap<>();
-    public Map<String, ArrayList<Double>> listVariables = new HashMap<>();
+    public Map<String, ArrayList<AtomicDouble>> listVariables = new HashMap<>();
 
     public Link texture;
     public LivingEntity target;

@@ -1,5 +1,6 @@
 package mchorse.bbs_mod.particles.functions;
 
+import com.google.common.util.concurrent.AtomicDouble;
 import mchorse.bbs_mod.math.IExpression;
 import mchorse.bbs_mod.math.MathBuilder;
 import mchorse.bbs_mod.math.functions.NNFunction;
@@ -24,12 +25,12 @@ public class SetListVariable extends NNFunction {
     }
 
     @Override
-    public double doubleValue() {
+    synchronized public double doubleValue() {
         if (this.builder instanceof ParticleMolangParser parser)
         {
             String name = this.args[0].stringValue();
             int index = (int) this.args[1].doubleValue();
-            Double value = this.args[2].doubleValue();
+            double value = this.args[2].doubleValue();
 
             ParticleEmitter emitter = parser.scheme.emitter;
 
@@ -38,13 +39,13 @@ public class SetListVariable extends NNFunction {
                 return 0D;
             }
 
-            ArrayList<Double> list = emitter.listVariables.computeIfAbsent(name, k -> new ArrayList<>());
+            ArrayList<AtomicDouble> list = emitter.listVariables.computeIfAbsent(name, k -> new ArrayList<>());
             while (list.size() <= index)
             {
-                list.add(0D);
+                list.add(new AtomicDouble(0D));
             }
 
-            list.set(index, value);
+            list.get(index).set(value);
         }
 
         return 0;

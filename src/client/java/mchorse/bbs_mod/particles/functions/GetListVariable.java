@@ -1,6 +1,6 @@
 package mchorse.bbs_mod.particles.functions;
 
-import mchorse.bbs_mod.math.Constant;
+import com.google.common.util.concurrent.AtomicDouble;
 import mchorse.bbs_mod.math.IExpression;
 import mchorse.bbs_mod.math.MathBuilder;
 import mchorse.bbs_mod.math.functions.SNFunction;
@@ -40,10 +40,10 @@ public class GetListVariable extends SNFunction
                 return 0D;
             }
 
-            ArrayList<Double> list = emitter.listVariables.get(name);
+            ArrayList<AtomicDouble> list = emitter.listVariables.get(name);
             if (list != null && index >= 0 && index < list.size())
             {
-                return list.get(index);
+                return list.get(index).get();
             }
         }
 
