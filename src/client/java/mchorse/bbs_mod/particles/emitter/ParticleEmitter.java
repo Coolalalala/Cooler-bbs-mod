@@ -55,6 +55,7 @@ public class ParticleEmitter
     /* Intermediate values */
     public Vector3d lastGlobal = new Vector3d();
     public Matrix3f rotation = new Matrix3f();
+    public Vector3f velocity = new Vector3f();
 
     /* Runtime properties */
     public float spawnRemainder;
@@ -126,6 +127,10 @@ public class ParticleEmitter
     private Variable varEmitterRotationY;
     private Variable varEmitterRotationZ;
     private Variable varEmitterParicleCount;
+    private Variable varEmitterVelocityX;
+    private Variable varEmitterVelocityY;
+    private Variable varEmitterVelocityZ;
+    private Variable varEmitterVelocity;
 
     public double getAge()
     {
@@ -225,11 +230,15 @@ public class ParticleEmitter
         this.varEmitterRotationY = this.scheme.parser.variables.get("variable.emitter_ry");
         this.varEmitterRotationZ = this.scheme.parser.variables.get("variable.emitter_rz");
         this.varEmitterParicleCount = this.scheme.parser.variables.get("variable.emitter_pcount");
+        this.varEmitterVelocityX = this.scheme.parser.variables.get("variable.emitter_vx");
+        this.varEmitterVelocityY = this.scheme.parser.variables.get("variable.emitter_vy");
+        this.varEmitterVelocityZ = this.scheme.parser.variables.get("variable.emitter_vz");
+        this.varEmitterVelocity = this.scheme.parser.variables.get("variable.emitter_velocity");
     }
 
     public void setParticleVariables(Particle particle, float transition)
     {
-        this.scheme.particle = particle; // Whcih particle is currently processing
+        this.scheme.particle = particle; // Which particle is currently processing
 
         // General variables
         if (this.varIndex != null) this.varIndex.set(particle.index);
@@ -304,6 +313,10 @@ public class ParticleEmitter
         if (this.varEmitterRotationY != null) this.varEmitterRotationY.set(rot.y);
         if (this.varEmitterRotationZ != null) this.varEmitterRotationZ.set(rot.z);
         if (this.varEmitterParicleCount != null) this.varEmitterParicleCount.set(this.particles.size());
+        if (this.varEmitterVelocityX != null) this.varEmitterVelocityX.set(this.velocity.x);
+        if (this.varEmitterVelocityY != null) this.varEmitterVelocityY.set(this.velocity.y);
+        if (this.varEmitterVelocityZ != null) this.varEmitterVelocityZ.set(this.velocity.z);
+        if (this.varEmitterVelocity != null) this.varEmitterVelocity.set(this.velocity.length());
 
         this.scheme.updateCurves();
     }

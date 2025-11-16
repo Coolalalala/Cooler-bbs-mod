@@ -92,7 +92,7 @@ public class ParticleFormRenderer extends FormRenderer<ParticleForm> implements 
             int scale = (y2 - y1) / 2;
 
             stack.push();
-            stack.translate((x2 + x1) / 2, (y2 + y1) / 2, 40);
+            stack.translate((x2 + x1) / 2F, (y2 + y1) / 2F, 40);
             MatrixStackUtils.scaleStack(stack, scale, scale, scale);
 
             this.updateTexture(context.getTransition());
@@ -140,6 +140,7 @@ public class ParticleFormRenderer extends FormRenderer<ParticleForm> implements 
             context.stack.loadIdentity();
             context.stack.multiplyPositionMatrix(new Matrix4f(RenderSystem.getInverseViewRotationMatrix()).invert());
 
+            emitter.velocity.set(translation.x-emitter.lastGlobal.x, translation.y-emitter.lastGlobal.y, translation.z-emitter.lastGlobal.z);
             emitter.lastGlobal.set(translation);
             emitter.rotation.set(matrix);
 

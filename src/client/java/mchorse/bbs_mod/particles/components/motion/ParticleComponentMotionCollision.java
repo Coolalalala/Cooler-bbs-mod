@@ -2,10 +2,8 @@ package mchorse.bbs_mod.particles.components.motion;
 
 import mchorse.bbs_mod.data.types.BaseType;
 import mchorse.bbs_mod.data.types.MapType;
-import mchorse.bbs_mod.math.Operation;
 import mchorse.bbs_mod.math.molang.MolangException;
 import mchorse.bbs_mod.math.molang.MolangParser;
-import mchorse.bbs_mod.math.molang.expressions.MolangExpression;
 import mchorse.bbs_mod.particles.components.IComponentParticleUpdate;
 import mchorse.bbs_mod.particles.components.ParticleComponentBase;
 import mchorse.bbs_mod.particles.emitter.Particle;
@@ -27,8 +25,8 @@ public class ParticleComponentMotionCollision extends ParticleComponentBase impl
     public boolean expireOnImpact;
 
     /* Runtime options */
-    private Vector3d previous = new Vector3d();
-    private Vector3d current = new Vector3d();
+    private final Vector3d previous = new Vector3d();
+    private final Vector3d current = new Vector3d();
 
     @Override
     public BaseType toData()
@@ -106,6 +104,9 @@ public class ParticleComponentMotionCollision extends ParticleComponentBase impl
                 particle.setDead();
                 return;
             }
+
+            // return if particle is leaving the surface
+            if (vec.lengthSquared() > x*x+y*y+z*z) return;
 
             if (particle.relativePosition)
             {
