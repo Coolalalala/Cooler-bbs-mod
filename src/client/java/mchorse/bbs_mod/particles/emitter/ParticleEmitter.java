@@ -42,6 +42,7 @@ public class ParticleEmitter
 {
     public ParticleScheme scheme;
     public List<Particle> particles = new ArrayList<>();
+    protected HashMap<Integer, Particle> particleIndexMap = new HashMap<>();
     public Map<String, IExpression> variables = new HashMap<>();
     public Map<String, ArrayList<AtomicDouble>> listVariables = new HashMap<>();
 
@@ -127,7 +128,7 @@ public class ParticleEmitter
     private Variable varEmitterRotationX;
     private Variable varEmitterRotationY;
     private Variable varEmitterRotationZ;
-    private Variable varEmitterParicleCount;
+    private Variable varEmitterParticleCount;
     private Variable varEmitterVelocityX;
     private Variable varEmitterVelocityY;
     private Variable varEmitterVelocityZ;
@@ -230,7 +231,7 @@ public class ParticleEmitter
         this.varEmitterRotationX = this.scheme.parser.variables.get("variable.emitter_rx");
         this.varEmitterRotationY = this.scheme.parser.variables.get("variable.emitter_ry");
         this.varEmitterRotationZ = this.scheme.parser.variables.get("variable.emitter_rz");
-        this.varEmitterParicleCount = this.scheme.parser.variables.get("variable.emitter_pcount");
+        this.varEmitterParticleCount = this.scheme.parser.variables.get("variable.emitter_pcount");
         this.varEmitterVelocityX = this.scheme.parser.variables.get("variable.emitter_vx");
         this.varEmitterVelocityY = this.scheme.parser.variables.get("variable.emitter_vy");
         this.varEmitterVelocityZ = this.scheme.parser.variables.get("variable.emitter_vz");
@@ -313,7 +314,7 @@ public class ParticleEmitter
         if (this.varEmitterRotationX != null) this.varEmitterRotationX.set(rot.x);
         if (this.varEmitterRotationY != null) this.varEmitterRotationY.set(rot.y);
         if (this.varEmitterRotationZ != null) this.varEmitterRotationZ.set(rot.z);
-        if (this.varEmitterParicleCount != null) this.varEmitterParicleCount.set(this.particles.size());
+        if (this.varEmitterParticleCount != null) this.varEmitterParticleCount.set(this.particles.size());
         if (this.varEmitterVelocityX != null) this.varEmitterVelocityX.set(this.velocity.x);
         if (this.varEmitterVelocityY != null) this.varEmitterVelocityY.set(this.velocity.y);
         if (this.varEmitterVelocityZ != null) this.varEmitterVelocityZ.set(this.velocity.z);
@@ -474,15 +475,7 @@ public class ParticleEmitter
 
     public Particle getParticleByIndex(int index)
     {
-        for (Particle particle : this.particles)
-        {
-            if (particle.index == index)
-            {
-                return particle;
-            }
-        }
-
-        return null;
+        return this.particleIndexMap.getOrDefault(index, null);
     }
 
     /**
@@ -535,6 +528,7 @@ public class ParticleEmitter
         particle.rotation = particle.initialRotation;
         particle.prevRotation = particle.rotation;
 
+        this.particleIndexMap.put(index, particle);
         return particle;
     }
 
