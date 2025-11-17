@@ -33,7 +33,7 @@ public class SetParticleVariable extends NNFunction
             String name = this.args[offset].stringValue();
             double value = this.args[offset + 1].doubleValue();
 
-            Particle particle = null;
+            Particle particle;
             if (parser.scheme.parallel) {
                 particle = ParticleEmitter.evaluationParticle.get();
             } else {

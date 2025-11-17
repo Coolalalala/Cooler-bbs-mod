@@ -2,8 +2,6 @@ package mchorse.bbs_mod.particles;
 
 import mchorse.bbs_mod.math.Variable;
 
-import java.util.Map;
-
 public class ParticleMultithreadVariable extends Variable {
     private final ThreadLocal<Double> doubleValue = ThreadLocal.withInitial(super::doubleValue);
 
