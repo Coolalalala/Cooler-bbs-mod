@@ -30,7 +30,7 @@ public class GetParticleVariable extends SNFunction
         if (this.builder instanceof ParticleMolangParser parser)
         {
             String name = this.args[this.args.length > 1 ? 1 : 0].stringValue();
-            Particle particle = null;
+            Particle particle;
             if (parser.scheme.parallel) {
                 particle = ParticleEmitter.evaluationParticle.get();
             } else {
@@ -47,6 +47,9 @@ public class GetParticleVariable extends SNFunction
                 return 0D;
             }
 
+            if (name.startsWith("variable.") || name.startsWith("v.")) {
+                return parser.getOrCreateVariable(name).doubleValue();
+            }
             return particle.localValues.getOrDefault(name, 0D);
         }
 
