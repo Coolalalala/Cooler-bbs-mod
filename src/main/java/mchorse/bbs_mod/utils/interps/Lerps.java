@@ -212,6 +212,13 @@ public class Lerps
 
     /** Bezier interpolation using De Casteljau algorithm **/
     public static Quaterniond bezierQuat(Quaterniond q0, Quaterniond q1, Quaterniond q2, Quaterniond q3, double t) {
+        // Ensure the shortest path is taken
+        double dot = q1.dot(q2);
+        if (dot < 0) q2.mul(-1);
+        dot = q0.dot(q2);
+        if (dot < 0) q3.mul(-1);
+        dot = q1.dot(q3);
+        if (dot < 0) q3.mul(-1);
         // First level
         Quaterniond q01 = q0.slerp(q1, t);
         Quaterniond q12 = q1.slerp(q2, t);
