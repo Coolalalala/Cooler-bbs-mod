@@ -1,16 +1,18 @@
 
 
-# Features that we need
+# Features that we need (Priority)
+- quaternion rotation interpolation
 - gimbal ui for animation
 - multi bind hotkeys
 - advanced Blockbench molang
+- recording controller with actual controllers
 
 
 # Features that will be neat
 - simd for molang
 - full screen molang editor
 - sub-tick timeline pointer
-- substeps for molang evaluations
+- substeps/variable frame rate for molang evaluations
 
 
 # Features that i really want!!! but we dont actually need them that much but i want them!! i would pay someone to make them but i am poor
