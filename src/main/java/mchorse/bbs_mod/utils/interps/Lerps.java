@@ -1,5 +1,7 @@
 package mchorse.bbs_mod.utils.interps;
 
+import org.joml.Quaterniond;
+
 /**
  * Interpolation methods
  *
@@ -206,6 +208,21 @@ public class Lerps
         double c = y2 - y0;
 
         return ((a * x + b) * x + c) * x + y1;
+    }
+
+    /** Bezier interpolation using De Casteljau algorithm **/
+    public static Quaterniond bezierQuat(Quaterniond q0, Quaterniond q1, Quaterniond q2, Quaterniond q3, double t) {
+        // First level
+        Quaterniond q01 = q0.slerp(q1, t);
+        Quaterniond q12 = q1.slerp(q2, t);
+        Quaterniond q23 = q2.slerp(q3, t);
+
+        // Second level
+        Quaterniond q012 = q01.slerp(q12, t);
+        Quaterniond q123 = q12.slerp(q23, t);
+
+        // Final result
+        return q012.slerp(q123, t);
     }
 
     /**

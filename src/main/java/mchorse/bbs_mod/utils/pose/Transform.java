@@ -5,10 +5,13 @@ import mchorse.bbs_mod.data.IMapSerializable;
 import mchorse.bbs_mod.data.types.MapType;
 import mchorse.bbs_mod.utils.MathUtils;
 import mchorse.bbs_mod.utils.interps.IInterp;
+import mchorse.bbs_mod.utils.interps.Interpolations;
+import mchorse.bbs_mod.utils.interps.Lerps;
 import mchorse.bbs_mod.utils.joml.Matrices;
-import org.joml.Matrix3f;
-import org.joml.Matrix4f;
-import org.joml.Vector3f;
+import org.joml.*;
+
+import static java.lang.Math.abs;
+import static mchorse.bbs_mod.utils.MathUtils.normalizeRadians;
 
 public class Transform implements IMapSerializable
 {
@@ -33,8 +36,43 @@ public class Transform implements IMapSerializable
     {
         this.lerp(this.translate, preA.translate, a.translate, b.translate, postB.translate, interp, x);
         this.lerp(this.scale, preA.scale, a.scale, b.scale, postB.scale, interp, x);
-        this.lerp(this.rotate, preA.rotate, a.rotate, b.rotate, postB.rotate, interp, x);
+        this.interpolateQuat(this.rotate, preA.rotate, a.rotate, b.rotate, postB.rotate, interp, x);
         this.lerp(this.rotate2, preA.rotate2, a.rotate2, b.rotate2, postB.rotate2, interp, x);
+    }
+
+    /* Quaternion interpolation */
+    private void interpolateQuat(Vector3f output, Vector3f preA, Vector3f a, Vector3f b, Vector3f postB, IInterp interp, float x) {
+        // Convert to quaternions
+        Quaterniond startQuad = new Quaterniond().rotateXYZ(a.x, a.y, a.z);
+        Quaterniond endQuad = new Quaterniond().rotateXYZ(b.x, b.y, b.z);
+
+        double dot = startQuad.dot(endQuad);
+        if (abs(dot) < 0.001) { // If quaternions are antipodal, rotate a bit
+            startQuad.rotateZ(0.001);
+        } else if (dot < 0) { // Ensure we take the shortest path
+            endQuad.mul(-1);
+        }
+
+        Vector3d rotation = new Vector3d();
+        if (interp == Interpolations.BEZIER || interp == Interpolations.HERMITE || interp == Interpolations.CUBIC) {
+            Quaterniond preQuad = new Quaterniond().rotateXYZ(preA.x, preA.y, preA.z);
+            Quaterniond postQuad = new Quaterniond().rotateXYZ(postB.x, postB.y, postB.z);
+            // Ensure shortest path
+            if (startQuad.dot(preQuad) < 0) preQuad.mul(-1);
+            if (startQuad.dot(postQuad) < 0) postQuad.mul(-1);
+            // Interpolate and extract angles
+            Lerps.bezierQuat(preQuad, startQuad, endQuad, postQuad, x).getEulerAnglesXYZ(rotation);
+            return;
+        } else {
+            // Interpolate
+            double factor = interp.interpolate(IInterp.context.set(0, 0, 1, 1, x));
+            startQuad.slerp(endQuad, factor);
+            // Extract Euler angles
+            startQuad.getEulerAnglesXYZ(rotation);
+        }
+
+        // Return the rotation
+        output.set((float) rotation.x, (float) rotation.y, (float) rotation.z);
     }
 
     private void lerp(Vector3f target, Vector3f preA, Vector3f a, Vector3f b, Vector3f postB, IInterp interp, float x)
