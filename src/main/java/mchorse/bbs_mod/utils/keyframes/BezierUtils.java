@@ -30,32 +30,4 @@ public class BezierUtils
 
         return Lerps.bezier(0, y1, y2, 1, Lerps.bezierX(x1, x2, x, e)) * h + aValue;
     }
-
-    public static Quaterniond getQuaternion(Quaterniond aQuat, Quaterniond bQuat, float aTick, float bTick, float aRx, float aRy, float bLx, float bLy, float x)
-    {
-        if (x <= 0) return new Quaterniond(aQuat);
-        if (x >= 1) return new Quaterniond(bQuat);
-
-        /* Transform input to 0..1 */
-        float w = bTick - aTick;
-
-        /* Calculate control points for quaternion Bezier curve */
-        double x1 = aRx / w;
-        double x2 = (w - bLx) / w;
-        double e = 0.0005;
-
-        x1 = MathUtils.clamp(x1, 0, 1);
-        x2 = MathUtils.clamp(x2, 0, 1);
-
-        /* Get interpolation factor using Bezier curve */
-        double factor = Lerps.bezierX(x1, x2, x, e);
-
-        /* Perform spherical linear interpolation (SLERP) based on Bezier factor */
-        Quaterniond result = new Quaterniond();
-        result.set(aQuat);
-        result.slerp(bQuat, factor);
-
-        return result;
-    }
-
 }

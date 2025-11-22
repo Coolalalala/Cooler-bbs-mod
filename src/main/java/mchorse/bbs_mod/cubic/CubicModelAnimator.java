@@ -31,50 +31,6 @@ public class CubicModelAnimator
         return output;
     }
 
-    public static Vector3d interpolateQuaternion(Vector3d output, KeyframeChannel<MolangExpression> x, KeyframeChannel<MolangExpression> y, KeyframeChannel<MolangExpression> z, float frame, double defaultValue) {
-        // Find segments for each axis at the given frame
-        KeyframeSegment<MolangExpression> segX = x.findSegment(frame);
-        KeyframeSegment<MolangExpression> segY = y.findSegment(frame);
-        KeyframeSegment<MolangExpression> segZ = z.findSegment(frame);
-
-        if (segX == null || segY == null || segZ == null) {
-            return new Vector3d(defaultValue);
-        }
-        // Snatch rotations
-        double startX = segX.a.getValue().get();
-        double startY = segY.a.getValue().get();
-        double startZ = segZ.a.getValue().get();
-
-        double endX = segX.b.getValue().get();
-        double endY = segY.b.getValue().get();
-        double endZ = segZ.b.getValue().get();
-
-
-        Interpolation interp = segX.b.getInterpolation();
-        // Convert to quaternions
-        Quaterniond startQuad = new Quaterniond().rotateXYZ(startX, startY, startZ);
-        Quaterniond endQuad = new Quaterniond().rotateXYZ(endX, endY, endZ);
-
-        // Interpolate rotations
-        if (interp.getInterp() == Interpolations.BEZIER || interp.getInterp() == Interpolations.HERMITE || interp.getInterp() == Interpolations.CUBIC) {
-            BezierUtils.getQuaternion(startQuad, endQuad,
-                    segX.a.getTick(), segX.b.getTick(),
-                    segX.a.rx, segX.a.ry,
-                    segX.b.lx, segX.b.ly,
-                    segX.x
-            ).getEulerAnglesXYZ(output);
-            // Return euler
-            return output;
-        }
-        double factor = interp.interpolate(IInterp.context.set(0, 0, 1, 0, segX.x));
-        startQuad.slerp(endQuad, factor);
-
-        // Convert back to euler
-        startQuad.getEulerAnglesXYZ(output);
-        return output;
-    }
-
-
     private static double interpolateSegment(KeyframeSegment<MolangExpression> segment, double defaultValue)
     {
         if (segment == null)
