@@ -6,14 +6,12 @@ import mchorse.bbs_mod.cubic.data.model.Model;
 import mchorse.bbs_mod.cubic.data.model.ModelGroup;
 import mchorse.bbs_mod.math.molang.expressions.MolangExpression;
 import mchorse.bbs_mod.utils.interps.IInterp;
-import mchorse.bbs_mod.utils.interps.Interpolation;
 import mchorse.bbs_mod.utils.interps.Interpolations;
 import mchorse.bbs_mod.utils.interps.Lerps;
 import mchorse.bbs_mod.utils.keyframes.BezierUtils;
 import mchorse.bbs_mod.utils.keyframes.KeyframeChannel;
 import mchorse.bbs_mod.utils.keyframes.KeyframeSegment;
 import mchorse.bbs_mod.utils.pose.Transform;
-import org.joml.Quaterniond;
 import org.joml.Vector3d;
 
 public class CubicModelAnimator
@@ -103,7 +101,6 @@ public class CubicModelAnimator
         Vector3d position = interpolateList(p, animation.x, animation.y, animation.z, frame, 0D);
         Vector3d scale = interpolateList(s, animation.sx, animation.sy, animation.sz, frame, 1D);
         Vector3d rotation = interpolateList(r, animation.rx, animation.ry, animation.rz, frame, 0D);
-        // Vector3d rotation = interpolateQuaternion(r, animation.rx, animation.ry, animation.rz, frame, 0D);
 
         scale.sub(1, 1, 1);
 
