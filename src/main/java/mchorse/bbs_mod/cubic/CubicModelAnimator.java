@@ -97,7 +97,6 @@ public class CubicModelAnimator
 
     private static void applyGroupAnimation(ModelGroup group, AnimationPart animation, float frame, float blend)
     {
-        // Interpolation
         Vector3d position = interpolateList(p, animation.x, animation.y, animation.z, frame, 0D);
         Vector3d scale = interpolateList(s, animation.sx, animation.sy, animation.sz, frame, 1D);
         Vector3d rotation = interpolateList(r, animation.rx, animation.ry, animation.rz, frame, 0D);
@@ -110,7 +109,6 @@ public class CubicModelAnimator
         Transform initial = group.initial;
         Transform current = group.current;
 
-        // Blend/hold between multiple poses?
         current.translate.x = Lerps.lerp(current.translate.x, (float) position.x + initial.translate.x, blend);
         current.translate.y = Lerps.lerp(current.translate.y, (float) position.y + initial.translate.y, blend);
         current.translate.z = Lerps.lerp(current.translate.z, (float) position.z + initial.translate.z, blend);

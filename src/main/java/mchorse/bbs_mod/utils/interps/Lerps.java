@@ -1,7 +1,5 @@
 package mchorse.bbs_mod.utils.interps;
 
-import mchorse.bbs_mod.utils.MathUtils;
-
 /**
  * Interpolation methods
  *
