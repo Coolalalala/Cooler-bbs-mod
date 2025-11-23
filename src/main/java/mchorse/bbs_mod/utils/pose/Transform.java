@@ -46,24 +46,25 @@ public class Transform implements IMapSerializable
         // Convert to quaternions (minecraft uses left-handed system!!)
         Quaterniond startQuad = new Quaterniond().rotateXYZ(-a.x, a.y, a.z).normalize();
         Quaterniond endQuad = new Quaterniond().rotateXYZ(-b.x, b.y, b.z).normalize();
+        Quaterniond relQuad = new Quaterniond(endQuad).mul(startQuad.conjugate());
 
         Vector3d rotation = new Vector3d();
         if (interp.getKey().equals("hermite") || interp.getKey().equals("cubic")) {
             Quaterniond preQuad = new Quaterniond().rotateXYZ(-preA.x, preA.y, preA.z);
             Quaterniond postQuad = new Quaterniond().rotateXYZ(-postB.x, postB.y, postB.z);
             // Interpolate and extract angles
-            Lerps.squad(preQuad, startQuad, endQuad, postQuad, x).getEulerAnglesXYZ(rotation);
+            Lerps.squad(preQuad, startQuad, relQuad, postQuad, x).getEulerAnglesXYZ(rotation);
         } else if (interp.getKey().equals("bezier")) {
             Quaterniond preQuad = new Quaterniond().rotateXYZ(-preA.x, preA.y, preA.z);
             Quaterniond postQuad = new Quaterniond().rotateXYZ(-postB.x, postB.y, postB.z);
             // Interpolate and extract angles
-            Lerps.bezierQuat(preQuad, startQuad, endQuad, postQuad, x).getEulerAnglesXYZ(rotation);
+            Lerps.bezierQuat(preQuad, startQuad, relQuad, postQuad, x).getEulerAnglesXYZ(rotation);
         }
         else {
             // Interpolate
             double factor = interp.interpolate(IInterp.context.set(0, 0, 1, 1, x));
             Quaterniond result = new Quaterniond();
-            startQuad.nlerpIterative(endQuad, factor, 0.005, result);
+            startQuad.nlerpIterative(relQuad, factor, 0.005, result);
             // Extract Euler angles
             result.getEulerAnglesXYZ(rotation);
         }
