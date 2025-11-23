@@ -1,7 +1,6 @@
 package mchorse.bbs_mod.utils.interps;
 
 import mchorse.bbs_mod.utils.MathUtils;
-import org.joml.Quaterniond;
 
 /**
  * Interpolation methods
@@ -210,89 +209,6 @@ public class Lerps
 
         return ((a * x + b) * x + c) * x + y1;
     }
-
-    /**
-     * Squad interpolation
-     *
-     * @param q1 - first quaternion
-     * @param a1 - first control point
-     * @param b1 - second control point
-     * @param q2 - second quaternion
-     * @param t blending in [0..1]
-     * @return the interpolated quaternion
-     **/
-    public static Quaterniond squad(
-            Quaterniond q1, Quaterniond a1,
-            Quaterniond b1, Quaterniond q2,
-            float t, Quaterniond dest) {
-
-        Quaterniond q12 = new Quaterniond();
-        Quaterniond ab  = new Quaterniond();
-
-        q12 = q12.set(q1).nlerp(q2, t);   // slerp(q1, q2, t)
-        ab = MathUtils.rawSlerp(a1, b1, t);    // slerp(a1, b1, t)
-
-        float h = 2*t * (1-t);
-        dest.set(q12).nlerp(ab, h); // nlerp is more stable here than slerp for reasons beyond my comprehension
-        return dest;
-    }
-
-    /**
-     * Squad interpolation
-     *
-     * @param t blending in [0..1]
-     * @param q0 previous rotation
-     * @param q1 start rotation
-     * @param q2 end rotation
-     * @param q3 next rotation
-     * @return the interpolated quaternion
-     **/
-    public static Quaterniond squad(Quaterniond q0, Quaterniond q1, Quaterniond q2, Quaterniond q3, float t) {
-        // Calculate control points
-        Quaterniond a1 = new Quaterniond();
-        Quaterniond b1 = new Quaterniond();
-
-        // Calculate control points
-        MathUtils.computeSquadControls(q0, q1, q2, q3, a1, b1);
-        // Interpolate
-        return squad(q1, a1, b1, q2, t, new Quaterniond());
-    }
-
-    /**
-     * Bezier interpolation using De Casteljau algorithm
-     *
-     * @param q1 start quaternion
-     * @param q2 end quaternion
-     * @param a1 control quaternion for start point
-     * @param b1 control quaternion for end point
-     * @param t blending parameter in [0..1]
-     * @param dest destination quaternion to store result
-     * @return the interpolated quaternion
-     **/
-    public static Quaterniond bezierQuat(Quaterniond q1, Quaterniond q2, Quaterniond a1, Quaterniond b1, double t, Quaterniond dest) {
-        // First level interpolation
-        Quaterniond q12 = new Quaterniond();
-        q12.set(q1).slerp(q2, t);
-        Quaterniond a12 = new Quaterniond();
-        a12.set(a1).slerp(b1, t);
-
-        // Second level interpolation
-        Quaterniond q12a12 = new Quaterniond();
-        q12a12.set(q12).slerp(a12, t);
-
-        // Final interpolation: compute the bezier curve point
-        dest.set(q12a12).slerp(q2, t);
-        return dest;
-    }
-
-    public static Quaterniond bezierQuat(Quaterniond q0, Quaterniond q1, Quaterniond q2, Quaterniond q3, float t)
-    {
-        Quaterniond a1 = new Quaterniond();
-        Quaterniond b1 = new Quaterniond();
-        MathUtils.computeSquadControls(q0, q1, q2, q3, a1, b1);
-        return bezierQuat(q1, q2, a1, b1, t, new Quaterniond());
-    }
-
 
     /**
      * Calculate X value for given T using some brute force algorithm... 
