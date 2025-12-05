@@ -46,18 +46,7 @@ import mchorse.bbs_mod.entity.ActorEntity;
 import mchorse.bbs_mod.entity.GunProjectileEntity;
 import mchorse.bbs_mod.film.FilmManager;
 import mchorse.bbs_mod.forms.FormArchitect;
-import mchorse.bbs_mod.forms.forms.AnchorForm;
-import mchorse.bbs_mod.forms.forms.BillboardForm;
-import mchorse.bbs_mod.forms.forms.BlockForm;
-import mchorse.bbs_mod.forms.forms.ExtrudedForm;
-import mchorse.bbs_mod.forms.forms.FramebufferForm;
-import mchorse.bbs_mod.forms.forms.ItemForm;
-import mchorse.bbs_mod.forms.forms.LabelForm;
-import mchorse.bbs_mod.forms.forms.MobForm;
-import mchorse.bbs_mod.forms.forms.ModelForm;
-import mchorse.bbs_mod.forms.forms.ParticleForm;
-import mchorse.bbs_mod.forms.forms.TrailForm;
-import mchorse.bbs_mod.forms.forms.VanillaParticleForm;
+import mchorse.bbs_mod.forms.forms.*;
 import mchorse.bbs_mod.items.GunItem;
 import mchorse.bbs_mod.morphing.Morph;
 import mchorse.bbs_mod.network.ServerNetwork;
@@ -390,7 +379,8 @@ public class BBSMod implements ModInitializer
             .register(Link.bbs("mob"), MobForm.class, null)
             .register(Link.bbs("vanilla_particles"), VanillaParticleForm.class, null)
             .register(Link.bbs("trail"), TrailForm.class, null)
-            .register(Link.bbs("framebuffer"), FramebufferForm.class, null);
+            .register(Link.bbs("framebuffer"), FramebufferForm.class, null)
+            .register(Link.bbs("light"), LightForm.class, null);  // Coolaa extras
 
         films = new FilmManager(() -> new File(worldFolder, "bbs/films"));
 
