@@ -388,6 +388,16 @@ public class UIKeys
     public static final IKey FORMS_EDITORS_LABEL_SHADOW_COLOR = L10n.lang("bbs.ui.forms.editors.label.shadow_color");
     public static final IKey FORMS_EDITORS_LABEL_SHADOW_OFFSET = L10n.lang("bbs.ui.forms.editors.label.shadow_offset");
     public static final IKey FORMS_EDITORS_LABEL_TITLE = L10n.lang("bbs.ui.forms.editors.label.title");
+    public static final IKey FORMS_EDITORS_LIGHT_TITLE = L10n.lang("bbs.ui.forms.editors.light.title");
+    public static final IKey FORMS_EDITORS_LIGHT_COLOR = L10n.lang("bbs.ui.forms.editors.light.color");
+    public static final IKey FORMS_EDITORS_LIGHT_INTENSITY = L10n.lang("bbs.ui.forms.editors.light.intensity");
+    public static final IKey FORMS_EDITORS_LIGHT_TYPE = L10n.lang("bbs.ui.forms.editors.light.type");
+    public static final IKey FORMS_EDITORS_LIGHT_TYPE_POINT = L10n.lang("bbs.ui.forms.editors.light.type.point");
+    public static final IKey FORMS_EDITORS_LIGHT_TYPE_AREA = L10n.lang("bbs.ui.forms.editors.light.type.area");
+    public static final IKey FORMS_EDITORS_LIGHT_ANGLE = L10n.lang("bbs.ui.forms.editors.light.angle");
+    public static final IKey FORMS_EDITORS_LIGHT_SPREAD = L10n.lang("bbs.ui.forms.editors.light.spread");
+    public static final IKey FORMS_EDITORS_LIGHT_RADIUS = L10n.lang("bbs.ui.forms.editors.light.radius");
+    public static final IKey FORMS_EDITORS_LIGHT_ATTENUATION = L10n.lang("bbs.ui.forms.editors.light.attenuation");
     public static final IKey FORMS_EDITORS_MOB_TITLE = L10n.lang("bbs.ui.forms.editors.mob.title");
     public static final IKey FORMS_EDITORS_MODEL_ACTIONS = L10n.lang("bbs.ui.forms.editors.model.actions");
     public static final IKey FORMS_EDITORS_MODEL_POSE = L10n.lang("bbs.ui.forms.editors.model.pose");

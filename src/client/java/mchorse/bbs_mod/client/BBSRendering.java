@@ -418,6 +418,7 @@ public class BBSRendering
         }
 
         BBSModClient.getFilms().render(worldRenderContext);
+
     }
 
     public static boolean isOptifinePresent()
