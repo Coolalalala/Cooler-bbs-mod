@@ -10,6 +10,7 @@ import mchorse.bbs_mod.camera.clips.misc.SubtitleClip;
 import mchorse.bbs_mod.camera.controller.CameraWorkCameraController;
 import mchorse.bbs_mod.camera.controller.PlayCameraController;
 import mchorse.bbs_mod.events.ModelBlockEntityUpdateCallback;
+import mchorse.bbs_mod.forms.LightManager;
 import mchorse.bbs_mod.forms.renderers.utils.RecolorVertexConsumer;
 import mchorse.bbs_mod.graphics.texture.Texture;
 import mchorse.bbs_mod.graphics.texture.TextureFormat;
@@ -419,6 +420,7 @@ public class BBSRendering
 
         BBSModClient.getFilms().render(worldRenderContext);
 
+        LightManager.get().clear();
     }
 
     public static boolean isOptifinePresent()
