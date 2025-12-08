@@ -9,6 +9,8 @@ import mchorse.bbs_mod.ui.UIKeys;
 import mchorse.bbs_mod.ui.framework.UIContext;
 import mchorse.bbs_mod.ui.framework.elements.UIElement;
 import mchorse.bbs_mod.ui.framework.elements.utils.FontRenderer;
+import mchorse.bbs_mod.ui.utils.Gizmo;
+import mchorse.bbs_mod.ui.utils.UIUtils;
 import mchorse.bbs_mod.ui.utils.icons.Icons;
 import mchorse.bbs_mod.utils.Axis;
 import mchorse.bbs_mod.utils.MathUtils;
@@ -148,6 +150,11 @@ public class UIPropTransform extends UITransform
         this.keys().register(Keys.TRANSFORMATIONS_X, () -> this.axis = Axis.X).active(active).category(category);
         this.keys().register(Keys.TRANSFORMATIONS_Y, () -> this.axis = Axis.Y).active(active).category(category);
         this.keys().register(Keys.TRANSFORMATIONS_Z, () -> this.axis = Axis.Z).active(active).category(category);
+        this.keys().register(Keys.TRANSFORMATIONS_TOGGLE_LOCAL, () ->
+        {
+            this.toggleLocal();
+            UIUtils.playClick();
+        }).category(category);
 
         return this;
     }
@@ -185,8 +192,18 @@ public class UIPropTransform extends UITransform
         this.fillR2(MathUtils.toDeg(transform.rotate2.x), MathUtils.toDeg(transform.rotate2.y), MathUtils.toDeg(transform.rotate2.z));
     }
 
-    private void enableMode(int mode)
+    public void enableMode(int mode)
     {
+        this.enableMode(mode, null);
+    }
+
+    public void enableMode(int mode, Axis axis)
+    {
+        if (Gizmo.INSTANCE.setMode(Gizmo.Mode.values()[mode]) && axis == null)
+        {
+            return;
+        }
+
         UIContext context = this.getContext();
 
         if (this.editing)
@@ -199,7 +216,7 @@ public class UIPropTransform extends UITransform
         }
         else
         {
-            this.axis = Axis.X;
+            this.axis = axis == null ? Axis.X : axis;
             this.lastX = context.mouseX;
         }
 
@@ -222,7 +239,7 @@ public class UIPropTransform extends UITransform
         }
         else if (this.mode == 2)
         {
-            return this.transform.rotate;
+            return this.local && BBSSettings.gizmos.get() ? this.transform.rotate2 : this.transform.rotate;
         }
 
         return this.transform.translate;
@@ -232,7 +249,11 @@ public class UIPropTransform extends UITransform
     {
         if (this.mode == 0 || fully) this.setT(null, this.cache.translate.x, this.cache.translate.y, this.cache.translate.z);
         if (this.mode == 1 || fully) this.setS(null, this.cache.scale.x, this.cache.scale.y, this.cache.scale.z);
-        if (this.mode == 2 || fully) this.setR(null, MathUtils.toDeg(this.cache.rotate.x), MathUtils.toDeg(this.cache.rotate.y), MathUtils.toDeg(this.cache.rotate.z));
+        if (this.mode == 2 || fully)
+        {
+            this.setR(null, MathUtils.toDeg(this.cache.rotate.x), MathUtils.toDeg(this.cache.rotate.y), MathUtils.toDeg(this.cache.rotate.z));
+            this.setR2(null, MathUtils.toDeg(this.cache.rotate2.x), MathUtils.toDeg(this.cache.rotate2.y), MathUtils.toDeg(this.cache.rotate2.z));
+        }
     }
 
     private void disable()
@@ -377,9 +398,9 @@ public class UIPropTransform extends UITransform
             {
                 int dx = context.mouseX - this.lastX;
                 Vector3f vector = this.getValue();
-                boolean all = Window.isAltPressed();
-
-                float factor = this.mode == 0 ? 0.05F : (this.mode == 1 ? 0.01F : 0.5F);
+                boolean all = this.mode == 1 && Window.isCtrlPressed();
+                UITrackpad reference = this.mode == 0 ? this.tx : (this.mode == 1 ? this.sx : this.rx);
+                float factor = (float) reference.getValueModifier();
 
                 if (this.local && this.mode == 0)
                 {
@@ -402,7 +423,11 @@ public class UIPropTransform extends UITransform
 
                     if (this.mode == 0) this.setT(null, vector3f.x, vector3f.y, vector3f.z);
                     if (this.mode == 1) this.setS(null, vector3f.x, vector3f.y, vector3f.z);
-                    if (this.mode == 2) this.setR(null, vector3f.x, vector3f.y, vector3f.z);
+                    if (this.mode == 2)
+                    {
+                        if (this.local && BBSSettings.gizmos.get()) this.setR2(null, vector3f.x, vector3f.y, vector3f.z);
+                        else this.setR(null, vector3f.x, vector3f.y, vector3f.z);
+                    }
                 }
 
                 this.setTransform(this.transform);
@@ -453,6 +478,14 @@ public class UIPropTransform extends UITransform
             }
             
             return super.subMouseClicked(context);
+        }
+
+        @Override
+        protected boolean subMouseScrolled(UIContext context)
+        {
+            UITrackpad.updateAmplifier(context);
+
+            return true;
         }
     }
 }

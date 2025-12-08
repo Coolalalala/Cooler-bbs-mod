@@ -39,6 +39,7 @@ import mchorse.bbs_mod.ui.framework.elements.input.keyframes.UIKeyframes;
 import mchorse.bbs_mod.ui.framework.elements.input.keyframes.graphs.UIKeyframeDopeSheet;
 import mchorse.bbs_mod.ui.framework.elements.overlay.UIOverlay;
 import mchorse.bbs_mod.ui.utils.Area;
+import mchorse.bbs_mod.ui.utils.Gizmo;
 import mchorse.bbs_mod.ui.utils.Scale;
 import mchorse.bbs_mod.ui.utils.StencilFormFramebuffer;
 import mchorse.bbs_mod.ui.utils.icons.Icon;
@@ -183,8 +184,8 @@ public class UIReplaysEditor extends UIElement
     {
         String topLevel = StringUtils.fileName(key);
 
-        if (key.startsWith("pose_overlay")) return COLORS.get("pose_overlay");
-        if (key.startsWith("transform_overlay")) return COLORS.get("transform_overlay");
+        if (topLevel.startsWith("pose_overlay")) return COLORS.get("pose_overlay");
+        if (topLevel.startsWith("transform_overlay")) return COLORS.get("transform_overlay");
 
         return COLORS.getOrDefault(topLevel, Colors.ACTIVE);
     }
@@ -506,6 +507,11 @@ public class UIReplaysEditor extends UIElement
                 if (!this.isVisible())
                 {
                     this.filmPanel.showPanel(this);
+                }
+
+                if (Gizmo.INSTANCE.start(stencil.getIndex(), context.mouseX, context.mouseY, UIReplaysEditorUtils.getEditableTransform(this.keyframeEditor)))
+                {
+                    return true;
                 }
 
                 if (context.mouseButton == 0)

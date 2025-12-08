@@ -102,4 +102,36 @@ public class MatrixStackUtils
         position.m12(position.m12() / max);
         position.m22(position.m22() / max);
     }
+
+    public static Matrix4f stripScale(Matrix4f matrix)
+    {
+        Matrix4f m = new Matrix4f(matrix);
+
+        float sx = (float) Math.sqrt(m.m00() * m.m00() + m.m01() * m.m01() + m.m02() * m.m02());
+        float sy = (float) Math.sqrt(m.m10() * m.m10() + m.m11() * m.m11() + m.m12() * m.m12());
+        float sz = (float) Math.sqrt(m.m20() * m.m20() + m.m21() * m.m21() + m.m22() * m.m22());
+
+        if (sx != 0F)
+        {
+            m.m00(m.m00() / sx);
+            m.m01(m.m01() / sx);
+            m.m02(m.m02() / sx);
+        }
+
+        if (sy != 0F)
+        {
+            m.m10(m.m10() / sy);
+            m.m11(m.m11() / sy);
+            m.m12(m.m12() / sy);
+        }
+
+        if (sz != 0F)
+        {
+            m.m20(m.m20() / sz);
+            m.m21(m.m21() / sz);
+            m.m22(m.m22() / sz);
+        }
+
+        return m;
+    }
 }

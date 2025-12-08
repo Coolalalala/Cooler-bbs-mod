@@ -1072,7 +1072,7 @@ public class UIFilmController extends UIElement
 
         if (altPressed)
         {
-            int stencilIndex = this.stencil.getIndex() - 1;
+            int stencilIndex = this.stencil.getIndex() - 7;
 
             this.hoveredEntity = this.getEntities().get(stencilIndex);
 
@@ -1083,7 +1083,7 @@ public class UIFilmController extends UIElement
                 context.batcher.textCard(label, context.mouseX + 12, context.mouseY + 8);
             }
         }
-        else if (pair != null)
+        else if (pair != null && pair.a != null)
         {
             String label = pair.a.getFormIdOrName();
 
@@ -1116,7 +1116,7 @@ public class UIFilmController extends UIElement
 
             int povMode = this.panel.getController().getPovMode();
 
-            if (povMode != UIFilmController.CAMERA_MODE_CAMERA)
+            if (povMode != UIFilmController.CAMERA_MODE_CAMERA && BBSSettings.recordingCameraPreview.get())
             {
                 Recorder.renderCameraPreview(this.panel.getRunner().getPosition(), context.camera(), context.matrixStack());
             }
@@ -1192,7 +1192,7 @@ public class UIFilmController extends UIElement
         {
             for (Map.Entry<Integer, IEntity> entry : this.getEntities().entrySet())
             {
-                this.stencilMap.objectIndex = entry.getKey() + 1;
+                this.stencilMap.objectIndex = entry.getKey() + 7;
 
                 Replay replay = CollectionUtils.getSafe(this.panel.getData().replays.getList(), entry.getKey());
 
@@ -1206,12 +1206,14 @@ public class UIFilmController extends UIElement
         else
         {
             Replay replay = CollectionUtils.getSafe(this.panel.getData().replays.getList(), this.panel.replayEditor.replays.replays.getIndex());
+            Pair<String, Boolean> bone = this.getBone();
 
             BaseFilmController.renderEntity(FilmControllerContext.instance
                 .setup(this.getEntities(), entity, replay, renderContext)
                 .transition(isPlaying ? renderContext.tickDelta() : 0)
                 .stencil(this.stencilMap)
-                .relative(replay.relative.get()));
+                .relative(replay.relative.get())
+                .bone(bone == null ? null : bone.a, bone != null && bone.b));
         }
 
         int x = (int) ((context.mouseX - viewport.x) / (float) viewport.w * mainTexture.width);
