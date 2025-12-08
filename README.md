@@ -2,7 +2,7 @@
 
 Cooler BBS was originally a standalone mod, aimed to make BBS cooler through bytecode injection. However, since I figured out how to use gitHub, I'm now directly modifying the original mod!
 
-Generally speaking, this fork will contain a lot of cool (obscure) features, such as more variables in the snowstorm particle engine, and addressing some weird McHorse decisions.
+Generally speaking, this fork will contain a lot of cool (obscure) features, such as more variables in the snowstorm particle engine, and shader related stuff.
 
 
 # BBS mod (Original description)
