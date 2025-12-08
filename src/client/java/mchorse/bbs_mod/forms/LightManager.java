@@ -47,7 +47,8 @@ public class LightManager {
     }
 
     public void clear() {
-        this.lightAttribs.clear();
+        if (lightAttribs.isEmpty()) pushBuffer();
+        else this.lightAttribs.clear();
     }
 
     public void pushBuffer() {
