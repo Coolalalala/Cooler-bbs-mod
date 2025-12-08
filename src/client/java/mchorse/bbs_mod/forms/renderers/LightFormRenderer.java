@@ -1,12 +1,10 @@
 package mchorse.bbs_mod.forms.renderers;
 
-import coolaa.util.iris.SSBOUtils;
 import mchorse.bbs_mod.forms.LightManager;
 import mchorse.bbs_mod.forms.forms.LightForm;
 import mchorse.bbs_mod.graphics.texture.Texture;
 import mchorse.bbs_mod.resources.Link;
 import mchorse.bbs_mod.ui.framework.UIContext;
-import net.irisshaders.iris.gl.buffer.ShaderStorageBuffer;
 import org.joml.AxisAngle4f;
 import org.joml.Vector3f;
 import java.util.List;
@@ -40,9 +38,9 @@ public class LightFormRenderer extends FormRenderer<LightForm> {
 
         LightManager.get().add(List.of(
                 pos.x, pos.y, pos.z, (float) color,
-                dir.x, dir.y, dir.z, (float) form.type.get(),
+                dir.x, dir.y, dir.z, (float) form.type.get() + (form.indirect.get() ? 0.5F : 0F),
                 form.intensity.get(), form.angle.get(), form.spread.get(), form.radius.get(),
-                form.attenuation.get(), 0f, 0f, 0f
+                form.attenuation.get(), 0F, 0f, 0f
         ));
         LightManager.get().pushBuffer();
 

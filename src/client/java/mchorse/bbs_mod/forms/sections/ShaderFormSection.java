@@ -3,7 +3,6 @@ package mchorse.bbs_mod.forms.sections;
 import mchorse.bbs_mod.forms.FormCategories;
 import mchorse.bbs_mod.forms.categories.FormCategory;
 import mchorse.bbs_mod.forms.forms.LightForm;
-import mchorse.bbs_mod.resources.Link;
 import mchorse.bbs_mod.ui.UIKeys;
 
 import java.util.Arrays;

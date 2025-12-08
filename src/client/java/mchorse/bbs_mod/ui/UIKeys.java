@@ -398,6 +398,7 @@ public class UIKeys
     public static final IKey FORMS_EDITORS_LIGHT_SPREAD = L10n.lang("bbs.ui.forms.editors.light.spread");
     public static final IKey FORMS_EDITORS_LIGHT_RADIUS = L10n.lang("bbs.ui.forms.editors.light.radius");
     public static final IKey FORMS_EDITORS_LIGHT_ATTENUATION = L10n.lang("bbs.ui.forms.editors.light.attenuation");
+    public static final IKey FORMS_EDITORS_LIGHT_INDIRECT = L10n.lang("bbs.ui.forms.editors.light.indirect");
     public static final IKey FORMS_EDITORS_MOB_TITLE = L10n.lang("bbs.ui.forms.editors.mob.title");
     public static final IKey FORMS_EDITORS_MODEL_ACTIONS = L10n.lang("bbs.ui.forms.editors.model.actions");
     public static final IKey FORMS_EDITORS_MODEL_POSE = L10n.lang("bbs.ui.forms.editors.model.pose");

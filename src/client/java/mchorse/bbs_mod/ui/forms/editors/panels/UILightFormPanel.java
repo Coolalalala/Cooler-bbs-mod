@@ -4,6 +4,7 @@ import mchorse.bbs_mod.forms.forms.LightForm;
 import mchorse.bbs_mod.ui.UIKeys;
 import mchorse.bbs_mod.ui.forms.editors.forms.UIForm;
 import mchorse.bbs_mod.ui.framework.elements.buttons.UICirculate;
+import mchorse.bbs_mod.ui.framework.elements.buttons.UIToggle;
 import mchorse.bbs_mod.ui.framework.elements.input.UIColor;
 import mchorse.bbs_mod.ui.framework.elements.input.UITrackpad;
 import mchorse.bbs_mod.ui.utils.UI;
@@ -17,7 +18,7 @@ public class UILightFormPanel extends UIFormPanel<LightForm> {
     public UITrackpad spread;
     public UITrackpad attenuation;
     public UITrackpad radius;
-
+    public UIToggle indirect;
     public UILightFormPanel(UIForm<LightForm> editor)
     {
         super(editor);
@@ -31,6 +32,7 @@ public class UILightFormPanel extends UIFormPanel<LightForm> {
         this.spread = new UITrackpad((v) -> this.form.spread.set(v.floatValue()));
         this.attenuation = new UITrackpad((v) -> this.form.attenuation.set(v.floatValue()));
         this.radius = new UITrackpad((v) -> this.form.radius.set(v.floatValue()));
+        this.indirect = new UIToggle(UIKeys.FORMS_EDITORS_LIGHT_INDIRECT, (b) -> this.form.indirect.set(b.getValue()));
 
 
         this.options.add(UI.label(UIKeys.FORMS_EDITORS_LIGHT_COLOR), this.color,
@@ -39,7 +41,8 @@ public class UILightFormPanel extends UIFormPanel<LightForm> {
                          UI.label(UIKeys.FORMS_EDITORS_LIGHT_ANGLE), this.angle,
                          UI.label(UIKeys.FORMS_EDITORS_LIGHT_SPREAD), this.spread,
                          UI.label(UIKeys.FORMS_EDITORS_LIGHT_ATTENUATION), this.attenuation,
-                         UI.label(UIKeys.FORMS_EDITORS_LIGHT_RADIUS), this.radius);
+                         UI.label(UIKeys.FORMS_EDITORS_LIGHT_RADIUS), this.radius,
+                         this.indirect);
     }
 
     @Override
@@ -53,5 +56,6 @@ public class UILightFormPanel extends UIFormPanel<LightForm> {
         this.spread.setValue(form.spread.get());
         this.attenuation.setValue(form.attenuation.get());
         this.radius.setValue(form.radius.get());
+        this.indirect.setValue(form.indirect.get());
     }
 }
