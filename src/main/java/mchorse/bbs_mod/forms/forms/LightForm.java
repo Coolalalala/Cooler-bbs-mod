@@ -10,11 +10,11 @@ public class LightForm extends Form {
     public static final int LIGHT_TYPE_AREA = 1;
 
     public final ValueColor color = new ValueColor("color", Color.white());
-    public final ValueFloat intensity = new ValueFloat("intensity", 1F);
+    public final ValueFloat intensity = new ValueFloat("intensity", 100F);
     public final ValueInt type = new ValueInt("type", 0, 0, 1);
     public final ValueFloat angle = new ValueFloat("angle", 180F);
     public final ValueFloat spread = new ValueFloat("spread", 0F);
-    public final ValueFloat attenuation = new ValueFloat("attenuation", 20F);
+    public final ValueFloat attenuation = new ValueFloat("attenuation", 5F);
     public final ValueFloat radius = new ValueFloat("radius", 1F);
 
     public LightForm() {
