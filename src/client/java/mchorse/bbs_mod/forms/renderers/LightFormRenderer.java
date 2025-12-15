@@ -10,7 +10,7 @@ import org.joml.Vector3f;
 import java.util.List;
 
 public class LightFormRenderer extends FormRenderer<LightForm> {
-    public static final Link LIGHT_PREVIEW = Link.assets("textures/light.png");
+    public static final Link ICON_TEXTURE = Link.assets("textures/light.png");
 
     public LightFormRenderer(LightForm form) {
         super(form);
@@ -18,7 +18,7 @@ public class LightFormRenderer extends FormRenderer<LightForm> {
 
     @Override
     protected void renderInUI(UIContext context, int x1, int y1, int x2, int y2) {
-        Texture texture = context.render.getTextures().getTexture(LIGHT_PREVIEW);
+        Texture texture = context.render.getTextures().getTexture(ICON_TEXTURE);
 
         int w = texture.width;
         int h = texture.height;

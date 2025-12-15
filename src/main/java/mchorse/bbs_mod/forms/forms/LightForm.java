@@ -20,6 +20,8 @@ public class LightForm extends Form {
     public final ValueBoolean indirect = new ValueBoolean("indirect", false);
 
     public LightForm() {
+        super();
+
         this.add(this.color);
         this.add(this.intensity);
         this.add(this.type);

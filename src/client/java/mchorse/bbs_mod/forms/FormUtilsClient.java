@@ -64,6 +64,7 @@ public class FormUtilsClient
         register(TrailForm.class, TrailFormRenderer::new);
         register(FramebufferForm.class, FramebufferFormRenderer::new);
         register(LightForm.class, LightFormRenderer::new);
+        register(FinalShaderForm.class, FinalShaderFormRenderer::new);
     }
 
     private static void assignBufferBuilder(Object2ObjectLinkedOpenHashMap<RenderLayer, BufferBuilder> builderStorage, RenderLayer layer)
