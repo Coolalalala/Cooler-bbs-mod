@@ -11,7 +11,7 @@ public class UIFinalShaderForm extends UIForm<FinalShaderForm>  {
 
         this.defaultPanel = new UIFinalShaderPanel(this);
 
-        this.registerPanel(this.defaultPanel, UIKeys.FORMS_EDITORS_SHADER_FINAL_TITLE, Icons.SPRAY);
+        this.registerPanel(this.defaultPanel, UIKeys.FORMS_EDITOR_SHADER_FINAL_TITLE, Icons.SPRAY);
         this.registerDefaultPanels();
     }
 }

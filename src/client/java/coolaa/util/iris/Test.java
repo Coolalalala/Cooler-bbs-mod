@@ -1,6 +1,7 @@
 package coolaa.util.iris;
 
 import com.mojang.blaze3d.platform.GlStateManager;
+import net.irisshaders.iris.pipeline.FinalPassRenderer;
 import org.lwjgl.opengl.GL20C;
 
 public class Test {
