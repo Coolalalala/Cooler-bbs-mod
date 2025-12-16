@@ -6,17 +6,11 @@ import mchorse.bbs_mod.settings.values.core.ValueString;
 import mchorse.bbs_mod.settings.values.numeric.ValueBoolean;
 import net.irisshaders.iris.gl.program.Program;
 import net.irisshaders.iris.gl.program.ProgramBuilder;
-import net.irisshaders.iris.gl.program.ProgramSamplers;
 import net.irisshaders.iris.gl.shader.ShaderCompileException;
 import net.irisshaders.iris.gl.state.FogMode;
-import net.irisshaders.iris.pathways.CenterDepthSampler;
-import net.irisshaders.iris.samplers.IrisImages;
-import net.irisshaders.iris.samplers.IrisSamplers;
-import net.irisshaders.iris.shadows.ShadowRenderTargets;
 import net.irisshaders.iris.uniforms.CommonUniforms;
 
 import javax.annotation.Nullable;
-import java.util.Objects;
 
 public class ShaderForm extends Form {
     private Program shaderProgram = null;
@@ -55,6 +49,7 @@ public class ShaderForm extends Form {
     }
 
     public Program createProgram() throws ShaderCompileException {
+        // Create builder
         ProgramBuilder builder = ProgramBuilder.begin(
                 name.toString(),
                 this.vertex.toString(), // vertex shader source
@@ -70,11 +65,14 @@ public class ShaderForm extends Form {
 
     public Program getProgram() {
         if (!this.shaderDirty) return this.shaderProgram;
+        else this.destroyProgram(); // recompile
 
-        if (this.shaderProgram == null) try {
-            this.shaderProgram = this.createProgram();
-        } catch (Exception e) {
-            LogUtils.getLogger().error("Failed to compile shader program: ", e);
+        if (this.shaderProgram == null) {
+            try {
+                this.shaderProgram = this.createProgram();
+            } catch (Exception e) {
+                LogUtils.getLogger().error("Failed to compile shader program: ", e);
+            }
         }
 
         this.shaderDirty = false;
@@ -94,5 +92,28 @@ public class ShaderForm extends Form {
 
     public void markDirty() {
         this.shaderDirty = true;
+    }
+
+    public boolean isDirty() {
+        return this.shaderDirty;
+    }
+
+    // Getters for shader sources
+
+    public String getName() {
+        return this.name.toString();
+    }
+
+    public String getVertexSource() {
+        return this.vertex.toString();
+    }
+
+    public String getFragmentSource() {
+        return this.fragment.toString();
+    }
+
+    @Nullable
+    public String getGeometrySource() {
+        return stringOrNull(this.geometry);
     }
 }

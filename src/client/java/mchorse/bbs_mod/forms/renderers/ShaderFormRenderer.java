@@ -28,6 +28,5 @@ public class ShaderFormRenderer <T extends ShaderForm> extends FormRenderer<T> {
         @Override
     protected void render3D(FormRenderingContext context) {
         ShaderManager.register(this.form);
-        ShaderManager.render();
     }
 }
