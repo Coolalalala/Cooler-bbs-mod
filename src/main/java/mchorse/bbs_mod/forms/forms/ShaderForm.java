@@ -48,39 +48,13 @@ public class ShaderForm extends Form {
         return string.isBlank() ? null : string;
     }
 
-    public Program createProgram() throws ShaderCompileException {
-        // Create builder
-        ProgramBuilder builder = ProgramBuilder.begin(
-                name.toString(),
-                this.vertex.toString(), // vertex shader source
-                stringOrNull(this.geometry), // geometry shader source
-                this.fragment.toString(), // fragment shader source
-                ImmutableSet.of() // reserved texture units if any
-        );
-        // Send uniforms
-        CommonUniforms.addDynamicUniforms(builder, FogMode.OFF);
-
-        return builder.build();
-    }
-
     public Program getProgram() {
-        if (!this.shaderDirty) return this.shaderProgram;
-        else this.destroyProgram(); // recompile
-
-        if (this.shaderProgram == null) {
-            try {
-                this.shaderProgram = this.createProgram();
-            } catch (Exception e) {
-                LogUtils.getLogger().error("Failed to compile shader program: ", e);
-            }
-        }
-
-        this.shaderDirty = false;
         return this.shaderProgram;
     }
 
     public void setProgram(Program program) {
         this.shaderProgram = program;
+        this.shaderDirty = false;
     }
 
     public void destroyProgram() {

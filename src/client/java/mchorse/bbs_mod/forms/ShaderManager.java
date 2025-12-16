@@ -26,6 +26,11 @@ import net.irisshaders.iris.targets.RenderTargets;
 import net.irisshaders.iris.uniforms.CommonUniforms;
 import net.irisshaders.iris.uniforms.FrameUpdateNotifier;
 import net.irisshaders.iris.uniforms.custom.CustomUniforms;
+import net.irisshaders.iris.pipeline.CustomTextureManager;
+import net.irisshaders.iris.shaderpack.texture.TextureStage;
+import net.irisshaders.iris.pipeline.transform.PatchShaderType;
+import net.irisshaders.iris.pipeline.transform.TransformPatcher;
+import net.irisshaders.iris.pipeline.transform.ShaderPrinter;
 import net.minecraft.client.MinecraftClient;
 import org.lwjgl.opengl.GL45C;
 
@@ -47,6 +52,7 @@ public class ShaderManager {
     private static Object2ObjectMap<String, ?> irisCustomTextures = Object2ObjectMaps.emptyMap();
     private static Set<GlImage> customImages = Collections.emptySet();
     private static Supplier<ImmutableSet<Integer>> flippedAfterTranslucent = () -> ImmutableSet.of();
+    private static CustomTextureManager customTextureManager = null;
 
     public ShaderManager() {
         if (!enabled) return;
@@ -96,16 +102,16 @@ public class ShaderManager {
             customImagesField.setAccessible(true);
             customImages = (Set<GlImage>) customImagesField.get(pipeline);
 
-            // Note: customTextureIds and irisCustomTextures are left as empty maps
-            // They will be populated by Iris when the shader pack loads
-            // For now, we rely on IrisSamplers.addRenderTargetSamplers to set up the basic samplers
+            // Get custom texture manager
+            Field customTextureManagerField = IrisRenderingPipeline.class.getDeclaredField("customTextureManager");
+            customTextureManagerField.setAccessible(true);
+            customTextureManager = (CustomTextureManager) customTextureManagerField.get(pipeline);
 
             LogUtils.getLogger().info("Successfully initialized ShaderManager with Iris pipeline access");
             LogUtils.getLogger().info("Render targets: " + (renderTargets != null));
             LogUtils.getLogger().info("Custom uniforms: " + (customUniforms != null));
             LogUtils.getLogger().info("Custom images: " + customImages.size());
-            LogUtils.getLogger().info("Custom texture IDs: " + ((Object2ObjectMap<?, ?>) customTextureIds).size());
-            LogUtils.getLogger().info("Iris custom textures: " + ((Object2ObjectMap<?, ?>) irisCustomTextures).size());
+            LogUtils.getLogger().info("Custom texture manager: " + (customTextureManager != null));
 
         } catch (Exception e) {
             LogUtils.getLogger().error("Failed to retrieve fields from Iris render pipeline: " + e);
@@ -173,6 +179,7 @@ public class ShaderManager {
             try {
                 // Get or create the shader program using Iris integration
                 Program program = shaderForm.getProgram();
+                if (shaderForm.isDirty()) shaderForm.destroyProgram(); // Recompile if dirty
                 if (program == null) {
                     // Try to create Iris-integrated program
                     program = createIrisIntegratedProgram(shaderForm);
@@ -237,28 +244,40 @@ public class ShaderManager {
     /**
      * Enhanced program creation with full Iris pipeline integration
      * This creates programs with access to all Iris samplers and uniforms
+     * Uses TransformPatcher to transform shaders for compatibility with Iris's FullScreenQuadRenderer
      */
     public static Program createIrisIntegratedProgram(ShaderForm shaderForm) {
         if (pipeline == null || renderTargets == null || customUniforms == null) {
-            LogUtils.getLogger().warn("Iris pipeline not ready, using fallback program creation");
-            // Fallback to basic program creation
-            try {
-                return shaderForm.createProgram();
-            } catch (Exception e) {
-                LogUtils.getLogger().error("Failed to create fallback program", e);
-                return null;
-            }
+            LogUtils.getLogger().debug("Iris pipeline not ready, cannot create shader program");
         }
 
         try {
             LogUtils.getLogger().debug("Creating Iris-integrated program for: " + shaderForm.getName());
 
-            // Create program builder with shader sources
-            ProgramBuilder builder = ProgramBuilder.begin(
+            // Transform shaders using Iris's TransformPatcher (like CompositeRenderer does)
+            // This allows users to write shaders using familiar Minecraft/Old OpenGL syntax
+            Map<PatchShaderType, String> transformed = TransformPatcher.patchComposite(
                 shaderForm.getName(),
                 shaderForm.getVertexSource(),
                 shaderForm.getGeometrySource(),
                 shaderForm.getFragmentSource(),
+                TextureStage.COMPOSITE_AND_FINAL,
+                pipeline.getTextureMap()
+            );
+
+            String vertex = transformed.get(PatchShaderType.VERTEX);
+            String geometry = transformed.get(PatchShaderType.GEOMETRY);
+            String fragment = transformed.get(PatchShaderType.FRAGMENT);
+
+            // Print transformed shaders for debugging
+            ShaderPrinter.printProgram(shaderForm.getName()).addSources(transformed).print();
+
+            // Create program builder with transformed shader sources
+            ProgramBuilder builder = ProgramBuilder.begin(
+                shaderForm.getName(),
+                vertex,
+                geometry,
+                fragment,
                 IrisSamplers.COMPOSITE_RESERVED_TEXTURE_UNITS
             );
 
@@ -271,8 +290,13 @@ public class ShaderManager {
             LogUtils.getLogger().debug("Assigned custom uniforms");
 
             // Set up samplers - this is crucial for accessing Iris render targets
-            Object2ObjectMap<String, TextureAccess> textureIds = (Object2ObjectMap<String, TextureAccess>) customTextureIds;
-            Object2ObjectMap<String, TextureAccess> irisTextures = (Object2ObjectMap<String, TextureAccess>) irisCustomTextures;
+            // Use CustomTextureManager to get the actual texture maps for composite stage
+            Object2ObjectMap<String, TextureAccess> textureIds = customTextureManager != null
+                ? customTextureManager.getCustomTextureIdMap(TextureStage.COMPOSITE_AND_FINAL)
+                : (Object2ObjectMap<String, TextureAccess>) customTextureIds;
+            Object2ObjectMap<String, TextureAccess> irisTextures = customTextureManager != null
+                ? customTextureManager.getIrisCustomTextures()
+                : (Object2ObjectMap<String, TextureAccess>) irisCustomTextures;
 
             LogUtils.getLogger().debug("Custom texture IDs size: " + textureIds.size());
             LogUtils.getLogger().debug("Iris custom textures size: " + irisTextures.size());
@@ -306,16 +330,9 @@ public class ShaderManager {
             IrisImages.addCustomImages(builder, customImages);
 
             // Add noise sampler - try to get the actual noise texture
-            try {
-                Field noiseTextureField = IrisRenderingPipeline.class.getDeclaredField("noiseTexture");
-                noiseTextureField.setAccessible(true);
-                TextureAccess noiseTexture = (TextureAccess) noiseTextureField.get(pipeline);
-                IrisSamplers.addNoiseSampler(interceptor, noiseTexture);
-                LogUtils.getLogger().debug("Added noise sampler");
-            } catch (Exception e) {
-                LogUtils.getLogger().warn("Could not get noise texture: " + e.getMessage());
-                IrisSamplers.addNoiseSampler(interceptor, null);
-            }
+            TextureAccess noiseTexture = customTextureManager.getNoiseTexture();
+            IrisSamplers.addNoiseSampler(interceptor, noiseTexture);
+            LogUtils.getLogger().debug("Added noise sampler");
 
             // Add composite samplers
             IrisSamplers.addCompositeSamplers(interceptor, renderTargets);
@@ -374,5 +391,6 @@ public class ShaderManager {
         irisCustomTextures = null;
         centerDepthSampler = null;
         flippedAfterTranslucent = null;
+        customTextureManager = null;
     }
 }
