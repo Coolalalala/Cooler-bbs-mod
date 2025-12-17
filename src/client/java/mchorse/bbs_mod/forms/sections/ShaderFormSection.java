@@ -2,7 +2,7 @@ package mchorse.bbs_mod.forms.sections;
 
 import mchorse.bbs_mod.forms.FormCategories;
 import mchorse.bbs_mod.forms.categories.FormCategory;
-import mchorse.bbs_mod.forms.forms.FinalShaderForm;
+import mchorse.bbs_mod.forms.forms.CompositeShaderForm;
 import mchorse.bbs_mod.forms.forms.LightForm;
 import mchorse.bbs_mod.ui.UIKeys;
 
@@ -24,8 +24,8 @@ public class ShaderFormSection extends FormSection {
         LightForm lightForm = new LightForm();
         shaderForm.addForm(lightForm);
 
-        FinalShaderForm finalShaderForm = new FinalShaderForm();
-        shaderForm.addForm(finalShaderForm);
+        CompositeShaderForm compositeShaderForm = new CompositeShaderForm();
+        shaderForm.addForm(compositeShaderForm);
 
         this.categories = Arrays.asList(shaderForm);
     }

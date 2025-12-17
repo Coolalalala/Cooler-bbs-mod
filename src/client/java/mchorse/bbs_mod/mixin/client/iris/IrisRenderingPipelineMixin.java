@@ -9,7 +9,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
  * Mixin to inject custom shader rendering into the Iris pipeline
- *
+ * <p>
  * This injects after composite rendering but before the final pass,
  * allowing custom shaders to run with full access to Iris render targets.
  */
@@ -23,14 +23,39 @@ public class IrisRenderingPipelineMixin
         method = "finalizeLevelRendering()V",
         at = @At(
             value = "INVOKE",
-            target = "Lnet/irisshaders/iris/pipeline/FinalPassRenderer;renderFinalPass()V",
-            shift = At.Shift.BEFORE
+            target = "Lnet/irisshaders/iris/pipeline/CompositeRenderer;renderAll()V",
+            shift = At.Shift.AFTER
         ),
         remap = false
     )
-    private void bbs$injectCustomShaders(CallbackInfo ci)
+    private void bbs$injectCustomComposite(CallbackInfo ci)
     {
         // Render custom shaders in the composite stage
         ShaderManager.renderCompositeStage();
+    }
+
+    /**
+     * Inject custom shader rendering after deferred passes
+     */
+//    @Inject(
+//            method = "beginTranslucents()V",
+//            at = @At(
+//                    value = "INVOKE",
+//                    target = "Lnet/irisshaders/iris/pipeline/CompositeRenderer;renderAll()V",
+//                    shift = At.Shift.AFTER
+//            ),
+//            remap = false
+//    )
+    @Inject(
+            method = "beginTranslucents()V",
+            at = @At(
+                    value = "TAIL"
+            ),
+            remap = false
+    )
+    private void bbs$injectCustomDeferred(CallbackInfo ci)
+    {
+        // Render custom shaders in the translucent stage
+        ShaderManager.renderDeferredStage();
     }
 }

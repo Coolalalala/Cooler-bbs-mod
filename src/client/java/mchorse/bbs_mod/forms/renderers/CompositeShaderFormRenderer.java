@@ -1,15 +1,15 @@
 package mchorse.bbs_mod.forms.renderers;
 
 import mchorse.bbs_mod.forms.ShaderManager;
-import mchorse.bbs_mod.forms.forms.ShaderForm;
+import mchorse.bbs_mod.forms.forms.CompositeShaderForm;
 import mchorse.bbs_mod.graphics.texture.Texture;
 import mchorse.bbs_mod.resources.Link;
 import mchorse.bbs_mod.ui.framework.UIContext;
 
-public class ShaderFormRenderer <T extends ShaderForm> extends FormRenderer<T> {
+public class CompositeShaderFormRenderer extends FormRenderer<CompositeShaderForm> {
     public static final Link ICON_TEXTURE = Link.assets("textures/shader.png");
 
-    public ShaderFormRenderer(T form) {
+    public CompositeShaderFormRenderer(CompositeShaderForm form) {
         super(form);
     }
 
@@ -25,8 +25,8 @@ public class ShaderFormRenderer <T extends ShaderForm> extends FormRenderer<T> {
         context.batcher.fullTexturedBox(texture, x - w / 2f, y - h / 2f, w, h);
     }
 
-        @Override
     protected void render3D(FormRenderingContext context) {
-        ShaderManager.register(this.form);
+
+        ShaderManager.registerComposite(this.form, this.form.renderStage.get());
     }
 }

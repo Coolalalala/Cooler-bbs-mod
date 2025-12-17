@@ -104,7 +104,7 @@ public class UIFormEditor extends UIElement implements IUIFormList, ICursor
         register(TrailForm.class, UITrailForm::new);
         register(FramebufferForm.class, UIFramebufferForm::new);
         register(LightForm.class, UILightForm::new);
-        register(FinalShaderForm.class, UIFinalShaderForm::new);
+        register(CompositeShaderForm.class, UICompositeShaderForm::new);
     }
 
     public static void register(Class clazz, Supplier<UIForm> supplier)
