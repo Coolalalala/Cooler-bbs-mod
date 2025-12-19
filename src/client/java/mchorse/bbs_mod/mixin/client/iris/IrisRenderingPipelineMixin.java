@@ -37,19 +37,12 @@ public class IrisRenderingPipelineMixin
     /**
      * Inject custom shader rendering after deferred passes
      */
-//    @Inject(
-//            method = "beginTranslucents()V",
-//            at = @At(
-//                    value = "INVOKE",
-//                    target = "Lnet/irisshaders/iris/pipeline/CompositeRenderer;renderAll()V",
-//                    shift = At.Shift.AFTER
-//            ),
-//            remap = false
-//    )
     @Inject(
             method = "beginTranslucents()V",
             at = @At(
-                    value = "TAIL"
+                    value = "INVOKE",
+                    target = "Lnet/irisshaders/iris/pipeline/CompositeRenderer;renderAll()V",
+                    shift = At.Shift.AFTER
             ),
             remap = false
     )

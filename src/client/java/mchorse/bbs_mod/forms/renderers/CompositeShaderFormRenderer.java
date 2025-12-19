@@ -7,7 +7,7 @@ import mchorse.bbs_mod.resources.Link;
 import mchorse.bbs_mod.ui.framework.UIContext;
 
 public class CompositeShaderFormRenderer extends FormRenderer<CompositeShaderForm> {
-    public static final Link ICON_TEXTURE = Link.assets("textures/shader.png");
+    public static final Link ICON_TEXTURE = Link.assets("textures/composite_shader.png");
 
     public CompositeShaderFormRenderer(CompositeShaderForm form) {
         super(form);
@@ -26,7 +26,6 @@ public class CompositeShaderFormRenderer extends FormRenderer<CompositeShaderFor
     }
 
     protected void render3D(FormRenderingContext context) {
-
         ShaderManager.registerComposite(this.form, this.form.renderStage.get());
     }
 }

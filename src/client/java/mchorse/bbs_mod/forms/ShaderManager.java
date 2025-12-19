@@ -4,15 +4,11 @@ import com.google.common.collect.ImmutableSet;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.logging.LogUtils;
-import it.unimi.dsi.fastutil.ints.IntIterator;
-import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
-import it.unimi.dsi.fastutil.ints.IntSet;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMaps;
 import mchorse.bbs_mod.forms.forms.CompositeShaderForm;
 import mchorse.bbs_mod.forms.forms.ShaderForm;
 import net.irisshaders.iris.Iris;
-import net.irisshaders.iris.gl.IrisRenderSystem;
 import net.irisshaders.iris.gl.framebuffer.GlFramebuffer;
 import net.irisshaders.iris.gl.image.GlImage;
 import net.irisshaders.iris.gl.program.Program;
@@ -36,7 +32,6 @@ import net.irisshaders.iris.pipeline.transform.PatchShaderType;
 import net.irisshaders.iris.pipeline.transform.TransformPatcher;
 import net.irisshaders.iris.pipeline.transform.ShaderPrinter;
 import net.minecraft.client.MinecraftClient;
-import org.lwjgl.opengl.GL45C;
 
 import java.lang.reflect.Field;
 import java.util.*;
@@ -57,16 +52,9 @@ public class ShaderManager {
     private static Object2ObjectMap<String, TextureAccess> customTextureIds = Object2ObjectMaps.emptyMap();
     private static Object2ObjectMap<String, TextureAccess> irisCustomTextures = Object2ObjectMaps.emptyMap();
     private static Set<GlImage> customImages = Collections.emptySet();
-    private static Supplier<ImmutableSet<Integer>> flippedAfterTranslucent = ImmutableSet::of;
-    private static Supplier<ImmutableSet<Integer>> flippedAfterPrepare = ImmutableSet::of;
+    private static Supplier<ImmutableSet<Integer>> flippedAfterTranslucent;
+    private static Supplier<ImmutableSet<Integer>> flippedAfterPrepare;
     private static CustomTextureManager customTextureManager = null;
-    
-    // Cache for framebuffers to avoid creating/destroying every frame
-    private static final Map<CompositeShaderForm, GlFramebuffer> framebufferCache = new HashMap<>();
-    
-    // Buffer flipping management
-    private static final BufferFlipper bufferFlipper = new BufferFlipper();
-    private static ImmutableSet<Integer> flippedAtLeastOnceFinal = ImmutableSet.of();
 
     public ShaderManager() {
         if (!enabled) return;
@@ -167,8 +155,6 @@ public class ShaderManager {
         if (program instanceof CompositeShaderForm) {
             activeCompositeShaders.remove(program);
             activeDeferredShaders.remove(program);
-            // Clear framebuffer cache for this program
-            framebufferCache.remove(program);
         }
     }
 
@@ -176,8 +162,6 @@ public class ShaderManager {
         if (!enabled) return;
         activeCompositeShaders.clear();
         activeDeferredShaders.clear();
-        // Clear framebuffer cache
-        framebufferCache.clear();
     }
 
     public static void renderCompositeStyle(CompositeShaderForm shaderForm) {
@@ -197,75 +181,37 @@ public class ShaderManager {
                     LogUtils.getLogger().warn("Shader program is null for form: " + shaderForm.getName());
                     return;
                 }
-                
-                // Clear cached framebuffer when program is recompiled
-                framebufferCache.remove(shaderForm);
             }
             else program = shaderForm.getProgram();
             if (program == null) return;
+
+            // Unbind any previous program
+            Program.unbind();
 
             // Get draw buffers from shader form or default to colortex0
             int[] drawBuffers = shaderForm.getDrawBuffers();
             if (drawBuffers == null || drawBuffers.length == 0) {
                 drawBuffers = new int[]{0};
             }
-            
-            // Use the current buffer flip state
-            ImmutableSet<Integer> stageReadsFromAlt = bufferFlipper.snapshot();
-            
-            // Retrieve or create framebuffer from cache
-            GlFramebuffer framebuffer = framebufferCache.get(shaderForm);
-            if (framebuffer == null || 
-                !Arrays.equals(drawBuffers, shaderForm.getDrawBuffers()) ||
-                !stageReadsFromAlt.equals(bufferFlipper.snapshot())) {
-                
-                framebuffer = renderTargets.createColorFramebuffer(
-                        stageReadsFromAlt,
-                        drawBuffers
-                );
-                framebufferCache.put(shaderForm, framebuffer);
-            }
+            GlFramebuffer framebuffer = renderTargets.createColorFramebuffer(
+                    shaderForm.getFlippedBuffers().get(),
+                    drawBuffers
+            );
 
             // Calculate viewport based on first draw buffer
             RenderTarget target = renderTargets.get(drawBuffers[0]);
             RenderSystem.viewport(0, 0, target.getWidth(), target.getHeight());
-
             // Bind framebuffer
             framebuffer.bind();
-
             // Use the program
             program.use();
 
-            // Push custom uniforms if available
-            // Note: The program already has Iris uniforms from ProgramBuilder
-            // We could add custom uniforms here if needed
+            // Push custom uniforms if we have them (we don't)
 
             // Render fullscreen quad
             FullScreenQuadRenderer.INSTANCE.renderQuad();
 
-            // Memory barrier to ensure shader completion
-            IrisRenderSystem.memoryBarrier(GL45C.GL_ALL_BARRIER_BITS);
-
-            // Handle buffer flipping for this pass
-            // Flip all buffers specified in the draw buffers that are not explicitly disabled
-            for (int buffer : drawBuffers) {
-                // Check if this buffer should be flipped (similar to how Iris does it)
-                if (shaderForm.shouldFlipBuffer(buffer)) {
-                    bufferFlipper.flip(buffer);
-                    
-                    // Update the set of buffers that have been flipped at least once
-                    if (!flippedAtLeastOnceFinal.contains(buffer)) {
-                        flippedAtLeastOnceFinal = ImmutableSet.<Integer>builder()
-                            .addAll(flippedAtLeastOnceFinal)
-                            .add(buffer)
-                            .build();
-                    }
-                }
-            }
-
-            // Don't destroy framebuffer - cache it for reuse
-            // renderTargets.destroyFramebuffer(framebuffer);
-
+            framebuffer.destroy();
         } catch (Exception e) {
             LogUtils.getLogger().error("Failed to render shader form: " + shaderForm.getName(), e);
         }
@@ -417,18 +363,21 @@ public class ShaderManager {
             LogUtils.getLogger().debug("Custom texture IDs size: " + textureIds.size());
             LogUtils.getLogger().debug("Iris custom textures size: " + irisTextures.size());
 
-            // Create a snapshot of the current buffer flip state
-            ImmutableSet<Integer> stageReadsFromAlt = bufferFlipper.snapshot();
-            
             ProgramSamplers.CustomTextureSamplerInterceptor interceptor =
-                ProgramSamplers.customTextureSamplerInterceptor(builder, textureIds, flippedAtLeastOnceFinal);
+                ProgramSamplers.customTextureSamplerInterceptor(builder, textureIds, ImmutableSet.of());
 
             // Find the buffer set required for that stage
-            shaderForm.setBuffers(() -> stageReadsFromAlt);
+            shaderForm.setFlippedBuffers(switch (shaderForm.renderStage.get()) {
+                case BEGIN_STAGE -> flippedAfterPrepare; // TODO: flipped before shadows
+                case PREPARE_STAGE -> flippedAfterPrepare;
+                case DEFERRED_STAGE -> flippedAfterPrepare;
+                case COMPOSITE_STAGE, FINAL_STAGE -> flippedAfterTranslucent;
+                default -> throw new IllegalArgumentException("Invalid render stage: " + shaderForm.renderStage.get());
+            });
             // Add render target samplers (colortex0-7, depth, etc.)
             IrisSamplers.addRenderTargetSamplers(
                 interceptor,
-                shaderForm.getBuffers(),
+                shaderForm.getFlippedBuffers(),
                 renderTargets,
                 true,  // isComposite
                 pipeline
@@ -444,7 +393,7 @@ public class ShaderManager {
             LogUtils.getLogger().debug("Added custom images: " + customImages.size());
 
             // Add render target images
-            IrisImages.addRenderTargetImages(builder, shaderForm.getBuffers(), renderTargets);
+            IrisImages.addRenderTargetImages(builder, shaderForm.getFlippedBuffers(), renderTargets);
             LogUtils.getLogger().debug("Added render target images");
 
             // Add custom images
@@ -499,20 +448,6 @@ public class ShaderManager {
     public static ImmutableSet<Integer> getBuffersAfterPrepare() {
         return flippedAfterPrepare.get();
     }
-    
-    /**
-     * Get the current buffer flip state
-     */
-    public static ImmutableSet<Integer> getCurrentBufferFlipState() {
-        return bufferFlipper.snapshot();
-    }
-    
-    /**
-     * Get the set of buffers that have been flipped at least once
-     */
-    public static ImmutableSet<Integer> getFlippedAtLeastOnceFinal() {
-        return flippedAtLeastOnceFinal;
-    }
 
     /**
      * Check if Iris pipeline is available
@@ -523,13 +458,6 @@ public class ShaderManager {
 
     public static void destroy() {
         ShaderManager.clear();
-        // Destroy cached framebuffers
-        for (GlFramebuffer framebuffer : framebufferCache.values()) {
-            // Note: We don't own these framebuffers, so we shouldn't destroy them
-            // Just clear the cache
-        }
-        framebufferCache.clear();
-        
         pipeline = null;
         renderTargets = null;
         customUniforms = null;
@@ -540,53 +468,5 @@ public class ShaderManager {
         flippedAfterTranslucent = null;
         flippedAfterPrepare = null;
         customTextureManager = null;
-        // Clear buffer flipping state
-        bufferFlipper.reset();
-        flippedAtLeastOnceFinal = ImmutableSet.of();
-    }
-    
-    /**
-     * Inner class for managing buffer flipping state
-     * Based on Iris's BufferFlipper implementation
-     */
-    private static class BufferFlipper {
-        private final IntSet flippedBuffers = new IntOpenHashSet();
-
-        /**
-         * Flip the state of a buffer (toggle between main and alt textures)
-         */
-        public void flip(int target) {
-            if (!this.flippedBuffers.remove(target)) {
-                this.flippedBuffers.add(target);
-            }
-        }
-
-        /**
-         * Check if a buffer is currently flipped
-         */
-        public boolean isFlipped(int target) {
-            return this.flippedBuffers.contains(target);
-        }
-
-        /**
-         * Get iterator over all flipped buffers
-         */
-        public IntIterator getFlippedBuffers() {
-            return this.flippedBuffers.iterator();
-        }
-
-        /**
-         * Create an immutable snapshot of the current flip state
-         */
-        public ImmutableSet<Integer> snapshot() {
-            return ImmutableSet.copyOf(this.flippedBuffers);
-        }
-        
-        /**
-         * Reset the flip state
-         */
-        public void reset() {
-            this.flippedBuffers.clear();
-        }
     }
 }

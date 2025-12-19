@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableSet;
 import mchorse.bbs_mod.settings.values.core.ValueString;
 import mchorse.bbs_mod.settings.values.numeric.ValueBoolean;
 import mchorse.bbs_mod.settings.values.numeric.ValueInt;
+import net.irisshaders.iris.gl.framebuffer.GlFramebuffer;
 import net.irisshaders.iris.gl.program.Program;
 
 import javax.annotation.Nullable;
@@ -17,8 +18,10 @@ public class ShaderForm extends Form {
     public static final int FINAL_STAGE = 4;
 
     private Program shaderProgram = null;
-    private Supplier<ImmutableSet<Integer>> buffers = null;
+    private Supplier<ImmutableSet<Integer>> flippedBuffers = null;
     private boolean shaderDirty = true;
+    private int[] drawBuffers = new int[]{0};
+    private GlFramebuffer framebuffer;
 
     public final ValueString name = new ValueString("name", "");
     public final ValueString vertex = new ValueString("vertex", "");
@@ -65,12 +68,12 @@ public class ShaderForm extends Form {
         this.shaderDirty = false;
     }
 
-    public Supplier<ImmutableSet<Integer>> getBuffers() {
-        return this.buffers;
+    public Supplier<ImmutableSet<Integer>> getFlippedBuffers() {
+        return this.flippedBuffers;
     }
 
-    public void setBuffers(Supplier<ImmutableSet<Integer>> buffers) {
-        this.buffers = buffers;
+    public void setFlippedBuffers(Supplier<ImmutableSet<Integer>> flippedBuffers) {
+        this.flippedBuffers = flippedBuffers;
     }
 
     public void destroyProgram() {
@@ -78,7 +81,7 @@ public class ShaderForm extends Form {
             this.shaderProgram.destroy();
             this.shaderProgram = null;
         }
-        this.buffers = null;
+        this.flippedBuffers = null;
     }
 
     public void markDirty() {
@@ -106,5 +109,13 @@ public class ShaderForm extends Form {
     @Nullable
     public String getGeometrySource() {
         return stringOrNull(this.geometry);
+    }
+
+    public int[] getDrawBuffers() {
+        return this.drawBuffers.clone();
+    }
+
+    public void setDrawBuffers(int[] drawBuffers) {
+        this.drawBuffers = drawBuffers != null ? drawBuffers.clone() : new int[]{0};
     }
 }
