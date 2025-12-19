@@ -49,6 +49,7 @@ public class ShaderManager {
     private static Object2ObjectMap<String, TextureAccess> customTextureIds = Object2ObjectMaps.emptyMap();
     private static Object2ObjectMap<String, TextureAccess> irisCustomTextures = Object2ObjectMaps.emptyMap();
     private static Set<GlImage> customImages = Collections.emptySet();
+    private static Supplier<ImmutableSet<Integer>> flippedBeforeShadow;
     private static Supplier<ImmutableSet<Integer>> flippedAfterTranslucent;
     private static Supplier<ImmutableSet<Integer>> flippedAfterPrepare;
     private static CustomTextureManager customTextureManager = null;
@@ -81,17 +82,10 @@ public class ShaderManager {
             centerDepthSamplerField.setAccessible(true);
             centerDepthSampler = (CenterDepthSampler) centerDepthSamplerField.get(pipeline);
 
-            // Get flipped buffers after translucent
-            Field flippedAfterTranslucentField = IrisRenderingPipeline.class.getDeclaredField("flippedAfterTranslucent");
-            flippedAfterTranslucentField.setAccessible(true);
-            ImmutableSet<Integer> flippedTrans = (ImmutableSet<Integer>) flippedAfterTranslucentField.get(pipeline);
-            flippedAfterTranslucent = () -> flippedTrans;
-
-            // Get flipped buffers after prepare
-            Field flippedAfterPrepareField = IrisRenderingPipeline.class.getDeclaredField("flippedAfterPrepare");
-            flippedAfterPrepareField.setAccessible(true);
-            ImmutableSet<Integer> flippedPrepare = (ImmutableSet<Integer>) flippedAfterPrepareField.get(pipeline);
-            flippedAfterPrepare = () -> flippedPrepare;
+            // Get flipped buffer states
+            flippedBeforeShadow = pipeline::getFlippedBeforeShadow;
+            flippedAfterTranslucent = pipeline::getFlippedAfterTranslucent;
+            flippedAfterPrepare = pipeline::getFlippedAfterPrepare;
 
             // Get custom textures and images
             Field customImagesField = IrisRenderingPipeline.class.getDeclaredField("customImages");
@@ -109,6 +103,7 @@ public class ShaderManager {
             LogUtils.getLogger().info("Custom images: {}", customImages.size());
             LogUtils.getLogger().info("Custom texture manager: {}", (customTextureManager));
 
+            // Set up flipper forms
         } catch (Exception e) {
             LogUtils.getLogger().error("Failed to retrieve fields from Iris render pipeline: {}", e.toString());
         }
@@ -155,7 +150,7 @@ public class ShaderManager {
         activeDeferredShaders.clear();
     }
 
-    public static void renderFullScreenQuad(CompositeShaderForm shaderForm) {
+    public static void renderFullScreenQuad(CompositeShaderForm shaderForm, CompositeShaderForm previous) {
         if (renderTargets == null) return;
         try {
             // Get or create the shader program using Iris integration
@@ -163,7 +158,7 @@ public class ShaderManager {
             if (shaderForm.isDirty()) { // Recompile if dirty
                 shaderForm.destroyProgram();
                 // Try to create Iris-integrated program
-                program = createIrisIntegratedProgram(shaderForm);
+                program = createCompositeProgram(shaderForm, previous);
                 shaderForm.setProgram(program);
                 if (program == null) {
                     LogUtils.getLogger().warn("Shader program is null for form: " + shaderForm.getName());
@@ -196,7 +191,8 @@ public class ShaderManager {
             // Use the program
             program.use();
 
-            // Push custom uniforms if we have them (we don't)
+            // Push custom uniforms
+            customUniforms.push(program);
 
             // Render fullscreen quad
             FullScreenQuadRenderer.INSTANCE.renderQuad();
@@ -231,10 +227,12 @@ public class ShaderManager {
         RenderSystem.disableBlend();
         FullScreenQuadRenderer.INSTANCE.begin();
         // Render each shader
+        CompositeShaderForm previous = null;
         for (CompositeShaderForm shaderForm : activeShaders) {
             // Wait for next dispatch
             shaderMap.replace(shaderForm, -1);
-            renderFullScreenQuad(shaderForm);
+            renderFullScreenQuad(shaderForm, previous);
+            previous = shaderForm;
         }
         // End fullscreen quad rendering
         FullScreenQuadRenderer.INSTANCE.end();
@@ -259,7 +257,7 @@ public class ShaderManager {
      * This creates programs with access to all Iris samplers and uniforms
      * Uses TransformPatcher to transform shaders for compatibility with Iris's FullScreenQuadRenderer
      */
-    public static Program createIrisIntegratedProgram(ShaderForm shaderForm) {
+    public static Program createCompositeProgram(ShaderForm shaderForm, ShaderForm parent) {
         if (isPipelineNuhuh()) {
             LogUtils.getLogger().debug("Iris pipeline not ready, cannot create shader program");
             return null;
@@ -312,7 +310,7 @@ public class ShaderManager {
             customUniforms.assignTo(builder);
             LogUtils.getLogger().debug("Assigned custom uniforms");
 
-            // Set up samplers - this is crucial for accessing Iris render targets
+            // Set up samplers
             // Use CustomTextureManager to get the actual texture maps for the appropriate stage
             Object2ObjectMap<String, TextureAccess> textureIds = customTextureManager != null
                 ? customTextureManager.getCustomTextureIdMap(textureStage)
@@ -328,13 +326,18 @@ public class ShaderManager {
                 ProgramSamplers.customTextureSamplerInterceptor(builder, textureIds, ImmutableSet.of());
 
             // Find the buffer set required for that stage
-            shaderForm.setFlippedBuffers(switch (shaderForm.renderStage.get()) {
-                case BEGIN_STAGE -> flippedAfterPrepare; // TODO: flipped before shadows
-                case PREPARE_STAGE -> flippedAfterPrepare;
+            Supplier<ImmutableSet<Integer>> flippedBuffers = switch (shaderForm.renderStage.get()) {
+                case BEGIN_STAGE -> flippedBeforeShadow;
+                case PREPARE_STAGE -> flippedBeforeShadow;
                 case DEFERRED_STAGE -> flippedAfterPrepare;
                 case COMPOSITE_STAGE, FINAL_STAGE -> flippedAfterTranslucent;
                 default -> throw new IllegalArgumentException("Invalid render stage: " + shaderForm.renderStage.get());
-            });
+            };
+            if (shaderForm.priority.get() % 2 != 1) { // Even priority
+                shaderForm.setFlippedBuffers(() -> getFlipped(flippedBuffers));
+            } else {
+                shaderForm.setFlippedBuffers(flippedBuffers);
+            }
             // Add render target samplers (colortex0-7, depth, etc.)
             IrisSamplers.addRenderTargetSamplers(
                 interceptor,
@@ -418,5 +421,16 @@ public class ShaderManager {
         flippedAfterTranslucent = null;
         flippedAfterPrepare = null;
         customTextureManager = null;
+    }
+
+    public static ImmutableSet<Integer> getFlipped(Supplier<ImmutableSet<Integer>> buffers) {
+        ImmutableSet<Integer> bufferInt = buffers.get();
+        ImmutableSet.Builder<Integer> flipped =  ImmutableSet.builder();
+        for (int i = 0; i <8; i++) {
+            if (!bufferInt.contains(i)) {
+                flipped.add(i);
+            }
+        }
+        return flipped.build();
     }
 }

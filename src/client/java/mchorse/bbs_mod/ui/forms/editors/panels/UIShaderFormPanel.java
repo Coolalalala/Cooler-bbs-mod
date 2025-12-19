@@ -1,5 +1,6 @@
 package mchorse.bbs_mod.ui.forms.editors.panels;
 
+import mchorse.bbs_mod.forms.ShaderManager;
 import mchorse.bbs_mod.forms.forms.ShaderForm;
 import mchorse.bbs_mod.ui.UIKeys;
 import mchorse.bbs_mod.ui.forms.editors.forms.UIForm;
@@ -29,6 +30,7 @@ public class UIShaderFormPanel<T extends ShaderForm> extends UIFormPanel<T> {
     public UIToggle sendChildren;
     public UITrackpad priority;
     public UICirculate renderStage;
+    public UIButton recompileAll;
 
     public UIShaderFormPanel(UIForm<T> editor) {
         super(editor);
@@ -51,7 +53,7 @@ public class UIShaderFormPanel<T extends ShaderForm> extends UIFormPanel<T> {
         this.sendParents = new UIToggle(UIKeys.FORMS_EDITOR_SHADER_SEND_PARENTS, (t) -> this.form.sendParents.set(t.getValue()));
         this.sendChildren = new UIToggle(UIKeys.FORMS_EDITOR_SHADER_SEND_CHILDREN, (t) -> this.form.sendChildren.set(t.getValue()));
         this.priority = new UITrackpad((v) -> this.form.priority.set(v.intValue()));
-        this.priority.integer().limit(0);
+        this.priority.integer().limit(1);
         this.priority.tooltip(UIKeys.FORMS_EDITOR_SHADER_PRIORITY_TOOLTIP);
         this.renderStage = new UICirculate((c) -> this.form.renderStage.set(c.getValue()));
         this.renderStage.tooltip(UIKeys.FORMS_EDITOR_SHADER_RENDER_STAGE_TOOLTIP);
@@ -60,12 +62,14 @@ public class UIShaderFormPanel<T extends ShaderForm> extends UIFormPanel<T> {
         this.renderStage.addLabel(UIKeys.FORMS_EDITOR_SHADER_RENDER_STAGE_DEFERRED);
         this.renderStage.addLabel(UIKeys.FORMS_EDITOR_SHADER_RENDER_STAGE_COMPOSITE);
         this.renderStage.addLabel(UIKeys.FORMS_EDITOR_SHADER_RENDER_STAGE_FINAL);
+        this.recompileAll = new UIButton(UIKeys.FORMS_EDITOR_SHADER_RECOMPILE, (b) -> ShaderManager.destroy());
 
         this.options.add(UI.label(UIKeys.FORMS_EDITOR_SHADER_NAME), this.name);
         this.options.add(this.vertex, this.geometry, this.fragment,
                          this.sendTransforms, this.sendParents, this.sendChildren);
         this.options.add(UI.label(UIKeys.FORMS_EDITOR_SHADER_PRIORITY), this.priority);
         this.options.add(UI.label(UIKeys.FORMS_EDITOR_SHADER_RENDER_STAGE), this.renderStage);
+        this.options.add(this.recompileAll);
     }
 
     @Override

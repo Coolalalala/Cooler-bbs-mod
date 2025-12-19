@@ -31,7 +31,7 @@ public class ShaderForm extends Form {
     public final ValueBoolean sendParents = new ValueBoolean("sendParents", false);
     public final ValueBoolean sendChildren = new ValueBoolean("sendChildren", false);
     public final ValueInt renderStage = new ValueInt("renderStage", 0);
-    public final ValueInt priority = new ValueInt("priority", 0, 0, 32767);
+    public final ValueInt priority = new ValueInt("priority", 1, 1, 32767);
 
 
     public ShaderForm() {
@@ -50,7 +50,7 @@ public class ShaderForm extends Form {
 
     @Override
     protected String getDefaultDisplayName() {
-        return "Shader " + this.name;
+        return "Shader " + (!this.name.get().isBlank() ? ": " + this.name.get() : "");
     }
 
     @Nullable
