@@ -37,19 +37,12 @@ public class IrisRenderingPipelineMixin
     /**
      * Inject custom shader rendering after deferred passes
      */
-//    @Inject(
-//            method = "beginTranslucents()V",
-//            at = @At(
-//                    value = "INVOKE",
-//                    target = "Lnet/irisshaders/iris/pipeline/CompositeRenderer;renderAll()V",
-//                    shift = At.Shift.AFTER
-//            ),
-//            remap = false
-//    )
     @Inject(
             method = "beginTranslucents()V",
             at = @At(
-                    value = "TAIL"
+                    value = "INVOKE",
+                    target = "Lnet/irisshaders/iris/pipeline/CompositeRenderer;renderAll()V",
+                    shift = At.Shift.AFTER
             ),
             remap = false
     )
@@ -57,5 +50,17 @@ public class IrisRenderingPipelineMixin
     {
         // Render custom shaders in the translucent stage
         ShaderManager.renderDeferredStage();
+    }
+
+    /**
+     * Hook into destroy function so all stuff gets cleaned up
+     */
+    @Inject(
+            method = "destroy()V",
+            at = @At("TAIL"),
+            remap = false
+    )
+    private void bbs$destroy(CallbackInfo ci) {
+        ShaderManager.destroy();
     }
 }

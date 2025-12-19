@@ -52,7 +52,9 @@ public class UIShaderFormPanel<T extends ShaderForm> extends UIFormPanel<T> {
         this.sendChildren = new UIToggle(UIKeys.FORMS_EDITOR_SHADER_SEND_CHILDREN, (t) -> this.form.sendChildren.set(t.getValue()));
         this.priority = new UITrackpad((v) -> this.form.priority.set(v.intValue()));
         this.priority.integer().limit(0);
+        this.priority.tooltip(UIKeys.FORMS_EDITOR_SHADER_PRIORITY_TOOLTIP);
         this.renderStage = new UICirculate((c) -> this.form.renderStage.set(c.getValue()));
+        this.renderStage.tooltip(UIKeys.FORMS_EDITOR_SHADER_RENDER_STAGE_TOOLTIP);
         this.renderStage.addLabel(UIKeys.FORMS_EDITOR_SHADER_RENDER_STAGE_BEGIN);
         this.renderStage.addLabel(UIKeys.FORMS_EDITOR_SHADER_RENDER_STAGE_PREPARE);
         this.renderStage.addLabel(UIKeys.FORMS_EDITOR_SHADER_RENDER_STAGE_DEFERRED);
