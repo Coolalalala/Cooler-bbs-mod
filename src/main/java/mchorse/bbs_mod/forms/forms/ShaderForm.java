@@ -8,7 +8,6 @@ import net.irisshaders.iris.gl.framebuffer.GlFramebuffer;
 import net.irisshaders.iris.gl.program.Program;
 
 import javax.annotation.Nullable;
-import java.util.function.Supplier;
 
 public class ShaderForm extends Form {
     public static final int BEGIN_STAGE = 0;
@@ -18,7 +17,7 @@ public class ShaderForm extends Form {
     public static final int FINAL_STAGE = 4;
 
     private Program shaderProgram = null;
-    private Supplier<ImmutableSet<Integer>> flippedBuffers = null;
+    private ImmutableSet<Integer> flippedBuffers = ImmutableSet.of();
     private boolean shaderDirty = true;
     private int[] drawBuffers = new int[]{0,1,2,3,4,5,6,7};
     private GlFramebuffer framebuffer = null;
@@ -68,11 +67,11 @@ public class ShaderForm extends Form {
         this.shaderDirty = false;
     }
 
-    public Supplier<ImmutableSet<Integer>> getFlippedBuffers() {
+    public ImmutableSet<Integer> getFlippedBuffers() {
         return this.flippedBuffers;
     }
 
-    public void setFlippedBuffers(Supplier<ImmutableSet<Integer>> flippedBuffers) {
+    public void setFlippedBuffers(ImmutableSet<Integer> flippedBuffers) {
         this.flippedBuffers = flippedBuffers;
     }
 

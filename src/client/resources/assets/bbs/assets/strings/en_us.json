@@ -562,7 +562,7 @@
     "bbs.ui.forms.editor.shader.priority": "Index",
     "bbs.ui.forms.editor.shader.priority-tooltip": "Priority of which shader program runs, higher runs first\nEven index gets flipped buffer access! (view iris doc for details)",
     "bbs.ui.forms.editor.shader.render_stage": "Render stage",
-    "bbs.ui.forms.editor.shader.render_stage-tooltip": "Render stage of which shader program will run after",
+    "bbs.ui.forms.editor.shader.render_stage-tooltip": "Render stage of which shader program will run before",
     "bbs.ui.forms.editor.shader.render_stage.begin": "Begin",
     "bbs.ui.forms.editor.shader.render_stage.prepare": "Prepare",
     "bbs.ui.forms.editor.shader.render_stage.deferred": "Deferred",

@@ -24,7 +24,7 @@ public class IrisRenderingPipelineMixin
         at = @At(
             value = "INVOKE",
             target = "Lnet/irisshaders/iris/pipeline/CompositeRenderer;renderAll()V",
-            shift = At.Shift.AFTER
+            shift = At.Shift.BEFORE
         ),
         remap = false
     )
@@ -42,7 +42,7 @@ public class IrisRenderingPipelineMixin
             at = @At(
                     value = "INVOKE",
                     target = "Lnet/irisshaders/iris/pipeline/CompositeRenderer;renderAll()V",
-                    shift = At.Shift.AFTER
+                    shift = At.Shift.BEFORE
             ),
             remap = false
     )
