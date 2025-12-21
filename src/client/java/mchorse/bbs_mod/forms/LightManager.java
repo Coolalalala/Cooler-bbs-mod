@@ -1,6 +1,7 @@
 package mchorse.bbs_mod.forms;
 
 import coolaa.util.iris.SSBOUtils;
+import mchorse.bbs_mod.client.BBSRendering;
 import net.irisshaders.iris.gl.buffer.ShaderStorageBuffer;
 import org.lwjgl.opengl.GL45C;
 
@@ -8,25 +9,17 @@ import java.nio.FloatBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
+import static mchorse.bbs_mod.client.BBSRendering.isIrisShadersEnabled;
+
 public class LightManager {
     private static final LightManager instance = new LightManager();
-    private static final boolean enabled = isIrisInstalled();
     public static ShaderStorageBuffer lightsSSBO = null;
     private final List<Float> lightAttribs = new ArrayList<>();
 
 
     public LightManager() {
-        if (!enabled) return;
+        if (!isIrisShadersEnabled()) return;
         initializeBuffer();
-    }
-
-    private static boolean isIrisInstalled() {
-        try {
-            Class.forName("net.irisshaders.iris.Iris");
-            return true;
-        } catch (ClassNotFoundException e) {
-            return false;
-        }
     }
 
     private void initializeBuffer() {
@@ -53,7 +46,7 @@ public class LightManager {
 
     public void pushBuffer() {
         {
-            if (!enabled) return;
+            if (!isIrisShadersEnabled()) return;
             if (lightsSSBO == null) initializeBuffer();
             if (lightsSSBO == null) return;
 

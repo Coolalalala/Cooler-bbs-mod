@@ -5,7 +5,7 @@ import mchorse.bbs_mod.ui.UIKeys;
 import mchorse.bbs_mod.ui.forms.editors.panels.UICompositeShaderFormPanel;
 import mchorse.bbs_mod.ui.utils.icons.Icons;
 
-public class UICompositeShaderForm extends UIForm<CompositeShaderForm>  {
+public class UICompositeShaderForm extends UIForm<CompositeShaderForm> {
     public UICompositeShaderForm() {
         super();
 

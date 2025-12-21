@@ -26,6 +26,6 @@ public class CompositeShaderFormRenderer extends FormRenderer<CompositeShaderFor
     }
 
     protected void render3D(FormRenderingContext context) {
-        ShaderManager.registerComposite(this.form, this.form.renderStage.get());
+        ShaderManager.register(this.form, this.form.renderStage.get());
     }
 }

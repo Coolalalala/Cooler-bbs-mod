@@ -450,6 +450,7 @@ public class UIKeys
     public static final IKey FORMS_EDITOR_SHADER_RENDER_STAGE_FINAL = L10n.lang("bbs.ui.forms.editor.shader.render_stage.final");
     public static final IKey FORMS_EDITOR_SHADER_RECOMPILE = L10n.lang("bbs.ui.forms.editor.shader.recompile");
     public static final IKey FORMS_EDITOR_SHADER_COMPOSITE_TITLE = L10n.lang("bbs.ui.forms.editor.shader.composite.title");
+    public static final IKey FORMS_EDITOR_SHADER_GBUFFER_TITLE = L10n.lang("bbs.ui.forms.editor.shader.gbuffer.title");
     public static final IKey FORMS_EDITOR_SLIM = L10n.lang("bbs.ui.forms.editor.slim");
     public static final IKey FORMS_EDITOR_SLIM_TOOLTIP = L10n.lang("bbs.ui.forms.editor.slim-tooltip");
     public static final IKey FORMS_EDITOR_STATES_MANAGER_CONTEXT_ADD = L10n.lang("bbs.ui.forms.editor.states.manager.context.add");
