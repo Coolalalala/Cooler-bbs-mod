@@ -31,6 +31,8 @@ public class SetParticleVariable extends NNFunction
         {
             int offset = this.args.length > 2 ? 1 : 0;
             String name = this.args[offset].stringValue();
+            if (name == null) return 0;
+
             double value = this.args[offset + 1].doubleValue();
 
             Particle particle;

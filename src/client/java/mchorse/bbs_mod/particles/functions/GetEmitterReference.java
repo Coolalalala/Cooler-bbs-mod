@@ -30,6 +30,7 @@ public class GetEmitterReference extends SNFunction
         if (this.builder instanceof ParticleMolangParser parser)
         {
             String name = this.args[0].stringValue();
+            if (name == null) return 0;
             ParticleEmitter emitter = parser.scheme.emitter;
 
             if (emitter == null)

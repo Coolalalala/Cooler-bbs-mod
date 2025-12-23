@@ -29,6 +29,8 @@ public class SetEmitterReference extends NNFunction
         if (this.builder instanceof ParticleMolangParser parser)
         {
             String name = this.args[0].stringValue();
+            if (name == null) return 0;
+
             IExpression value = this.args[1];
 
             ParticleEmitter emitter = parser.scheme.emitter;

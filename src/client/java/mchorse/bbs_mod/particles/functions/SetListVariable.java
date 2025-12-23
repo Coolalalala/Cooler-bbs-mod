@@ -29,6 +29,8 @@ public class SetListVariable extends NNFunction {
         if (this.builder instanceof ParticleMolangParser parser)
         {
             String name = this.args[0].stringValue();
+            if (name == null) return 0;
+
             int index = (int) this.args[1].doubleValue();
             double value = this.args[2].doubleValue();
 
