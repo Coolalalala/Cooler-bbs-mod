@@ -275,7 +275,7 @@ public class ParticleEmitter
         if (this.varPositionX != null) this.varPositionX.set(Lerps.lerp(prevPosition.x, position.x, transition));
         if (this.varPositionY != null) this.varPositionY.set(Lerps.lerp(prevPosition.y, position.y, transition));
         if (this.varPositionZ != null) this.varPositionZ.set(Lerps.lerp(prevPosition.z, position.z, transition));
-        if (this.varDisplacement != null) this.varDisplacement.set(particle.position.length());
+        if (this.varDisplacement != null) this.varDisplacement.set(prevPosition.length());
         if (this.varVelocityX != null) this.varVelocityX.set(particle.speed.x);
         if (this.varVelocityY != null) this.varVelocityY.set(particle.speed.y);
         if (this.varVelocityZ != null) this.varVelocityZ.set(particle.speed.z);

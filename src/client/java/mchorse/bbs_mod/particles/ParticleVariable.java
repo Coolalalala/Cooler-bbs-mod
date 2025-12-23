@@ -52,7 +52,7 @@ public class ParticleVariable extends Variable {
             case "variable.particle_x" -> prevPosition.x;
             case "variable.particle_y" -> prevPosition.y;
             case "variable.particle_z" -> prevPosition.z;
-            case "variable.particle_displacement" -> particle.position.length();
+            case "variable.particle_displacement" -> prevPosition.length();
             case "variable.particle_vx" -> particle.speed.x;
             case "variable.particle_vy" -> particle.speed.y;
             case "variable.particle_vz" -> particle.speed.z;
