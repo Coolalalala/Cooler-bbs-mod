@@ -37,7 +37,8 @@ public class Transform implements IMapSerializable
     {
         this.lerp(this.translate, preA.translate, a.translate, b.translate, postB.translate, interp, x);
         this.lerp(this.scale, preA.scale, a.scale, b.scale, postB.scale, interp, x);
-        this.interpolateQuat(this.rotate, preA.rotate, a.rotate, b.rotate, postB.rotate, interp, x);
+        this.lerp(this.rotate, preA.rotate, a.rotate, b.rotate, postB.rotate, interp, x);
+        // this.interpolateQuat(this.rotate, preA.rotate, a.rotate, b.rotate, postB.rotate, interp, x);
         this.lerp(this.rotate2, preA.rotate2, a.rotate2, b.rotate2, postB.rotate2, interp, x);
     }
 
@@ -54,15 +55,11 @@ public class Transform implements IMapSerializable
         if (interp.getKey().equals("hermite") || interp.getKey().equals("cubic")) {
             Quaterniond preQuad = new Quaterniond().rotateXYZ(-preA.x, preA.y, preA.z);
             Quaterniond postQuad = new Quaterniond().rotateXYZ(-postB.x, postB.y, postB.z);
-            double preRoll = preQuad.w;
-            double postRoll = postQuad.w;
             // Interpolate and extract angles
-            Lerps.squad(preQuad, startQuad, endQuad, postQuad, x);
+            Lerps.squad(preQuad, startQuad, endQuad, postQuad, x).getEulerAnglesXYZ(rotation);
         } else if (interp.getKey().equals("bezier")) {
             Quaterniond preQuad = new Quaterniond().rotateXYZ(-preA.x, preA.y, preA.z);
             Quaterniond postQuad = new Quaterniond().rotateXYZ(-postB.x, postB.y, postB.z);
-            double preRoll = preQuad.w;
-            double postRoll = postQuad.w;
             // Interpolate and extract angles
             Lerps.bezierQuat(preQuad, startQuad, endQuad, postQuad, x).getEulerAnglesXYZ(rotation);
         }
