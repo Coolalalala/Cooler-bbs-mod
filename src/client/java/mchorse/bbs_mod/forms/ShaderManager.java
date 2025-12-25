@@ -6,6 +6,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.logging.LogUtils;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMaps;
+import mchorse.bbs_mod.cubic.render.vao.ModelVAO;
 import mchorse.bbs_mod.forms.forms.BufferFlipperForm;
 import mchorse.bbs_mod.forms.forms.CompositeShaderForm;
 import mchorse.bbs_mod.forms.forms.GBufferShaderForm;
@@ -35,6 +36,7 @@ import net.irisshaders.iris.pipeline.transform.PatchShaderType;
 import net.irisshaders.iris.pipeline.transform.TransformPatcher;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gl.VertexBuffer;
+import net.minecraft.client.render.VertexFormats;
 
 import java.lang.reflect.Field;
 import java.util.*;
@@ -48,7 +50,7 @@ import static mchorse.bbs_mod.forms.forms.ShaderForm.*;
 public class ShaderManager {
     public static Map<ShaderForm, Integer> activeDeferredShaders = new HashMap<>();
     public static Map<ShaderForm, Integer> activeCompositeShaders = new HashMap<>();
-    public static Map<GBufferShaderForm, VertexBuffer> activeVBOs = new HashMap<>();
+    public static Map<GBufferShaderForm, List<ModelVAO>> activeVAOs = new HashMap<>();
     private static ImmutableSet<Integer> flipState = ImmutableSet.of();
     private static BufferFlipperForm compositeFlipper;
     private static BufferFlipperForm deferredFlipper;
@@ -156,9 +158,9 @@ public class ShaderManager {
         }
     }
 
-    public static void addVAO(GBufferShaderForm program, VertexBuffer modelVBO) {
+    public static void addVAO(GBufferShaderForm program, List<ModelVAO> modelVAOs) {
         if (isPipelineNuhuh()) return;
-        activeVBOs.put(program, modelVBO);
+        activeVAOs.put(program, modelVAOs);
     }
 
     public static void remove(ShaderForm program) {
@@ -171,13 +173,13 @@ public class ShaderManager {
     public static void clear() {
         activeCompositeShaders.clear();
         activeDeferredShaders.clear();
-        activeVBOs.clear();
+        activeVAOs.clear();
     }
 
     /**
      * Render 3D geometry with a custom shader program
      */
-    public static void renderGeometry(GBufferShaderForm shaderForm, VertexBuffer modelVAO) {
+    public static void renderGeometry(GBufferShaderForm shaderForm, List<ModelVAO> modelVAO) {
         if (renderTargets == null) return;
 
         if (isFullScreen) {
@@ -225,8 +227,10 @@ public class ShaderManager {
             customUniforms.push(program);
 
             // Render
-            modelVAO.bind();
-            modelVAO.draw();
+            for (ModelVAO vao : modelVAO) {
+                // Format doesnt matter
+                vao.render(VertexFormats.POSITION_COLOR_TEXTURE_OVERLAY_LIGHT_NORMAL, 1, 0, 1, 1, 0, 0); // TODO: get light level
+            }
 
             // Clean up
             Program.unbind();
@@ -293,7 +297,7 @@ public class ShaderManager {
     }
 
     private static void renderShaderForm(ShaderForm shaderForm) {
-        if (shaderForm instanceof GBufferShaderForm) renderGeometry((GBufferShaderForm) shaderForm, activeVBOs.get(shaderForm));
+        if (shaderForm instanceof GBufferShaderForm) renderGeometry((GBufferShaderForm) shaderForm, activeVAOs.get(shaderForm));
         else renderFullScreenQuad((CompositeShaderForm) shaderForm);
     }
 

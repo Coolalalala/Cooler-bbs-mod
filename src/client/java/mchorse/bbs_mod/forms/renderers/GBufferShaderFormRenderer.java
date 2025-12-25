@@ -51,7 +51,51 @@ public class GBufferShaderFormRenderer extends FormRenderer<GBufferShaderForm> {
     protected void render3D(FormRenderingContext context) {
         if (!BBSRendering.isIrisShadersEnabled()) return;
         // Iterate through body parts (children)
-        List<ModelVAOData> modelVaoData = new ArrayList<>();
+//        List<ModelVAOData> modelVaoData = new ArrayList<>();
+//        for (BodyPart part : form.parts.getAllTyped()) {
+//            Form childForm = part.getForm();
+//            if (childForm != null) {
+//                FormRenderer<?> childRenderer = FormUtilsClient.getRenderer(childForm);
+//                if (childRenderer instanceof ModelFormRenderer modelRenderer) {
+//                    ModelInstance childModelInstance = modelRenderer.getModel();
+//
+//                    ModelVAOData data = extractVAOData(childModelInstance);
+//                    if (data != null) {
+//                        modelVaoData.add(data);
+//                    }
+//                }
+//            }
+//        }
+//
+//        if (modelVaoData.isEmpty()) return;
+
+//        BufferBuilder bufferBuilder = new BufferBuilder(VertexFormats.POSITION_TEXTURE.getVertexSizeByte() * 4);
+//        bufferBuilder.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_TEXTURE);
+//        // Populate the buffer
+//        for (ModelVAOData data : modelVaoData) {
+//            float[] verts = data.vertices();
+//            float[] texcoords = data.texCoords();
+//            float[] normals = data.normals();
+//            for (int i = 0; i < data.vertices().length/3; i++) {
+//                bufferBuilder.vertex(verts[3*i], verts[3*i + 1], verts[3*i + 2])
+//                        .texture(texcoords[2*i], texcoords[2*i + 1])
+//                        .normal(normals[3*i], normals[3*i + 1], normals[3*i + 2])
+//                        .next();
+//            }
+//        }
+//
+//        BufferBuilder.BuiltBuffer renderedBuffer = bufferBuilder.end();
+//        VertexBuffer vbo = new VertexBuffer(VertexBuffer.Usage.STATIC);
+//        vbo.bind();
+//        vbo.upload(renderedBuffer);
+//        VertexBuffer.unbind();
+
+//        ShaderManager.register(this.form, this.form.renderStage.get());
+//        ShaderManager.addVAO(this.form, vbo);
+
+
+
+        List<ModelVAO> modelVaoData = new ArrayList<>();
         for (BodyPart part : form.parts.getAllTyped()) {
             Form childForm = part.getForm();
             if (childForm != null) {
@@ -59,9 +103,10 @@ public class GBufferShaderFormRenderer extends FormRenderer<GBufferShaderForm> {
                 if (childRenderer instanceof ModelFormRenderer modelRenderer) {
                     ModelInstance childModelInstance = modelRenderer.getModel();
 
-                    ModelVAOData data = extractVAOData(childModelInstance);
-                    if (data != null) {
-                        modelVaoData.add(data);
+                    try {
+                        modelVaoData.addAll(processModelVAO(childModelInstance));
+                    } catch (Exception e) {
+                        return;
                     }
                 }
             }
@@ -69,32 +114,11 @@ public class GBufferShaderFormRenderer extends FormRenderer<GBufferShaderForm> {
 
         if (modelVaoData.isEmpty()) return;
 
-        BufferBuilder bufferBuilder = new BufferBuilder(VertexFormats.POSITION_TEXTURE.getVertexSizeByte() * 4);
-        bufferBuilder.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_TEXTURE);
-        // Populate the buffer
-        for (ModelVAOData data : modelVaoData) {
-            float[] verts = data.vertices();
-            float[] texcoords = data.texCoords();
-            float[] normals = data.normals();
-            for (int i = 0; i < data.vertices().length/3; i++) {
-                bufferBuilder.vertex(verts[3*i], verts[3*i + 1], verts[3*i + 2])
-                        .texture(texcoords[2*i], texcoords[2*i + 1])
-                        .normal(normals[3*i], normals[3*i + 1], normals[3*i + 2])
-                        .next();
-            }
-        }
-
-        BufferBuilder.BuiltBuffer renderedBuffer = bufferBuilder.end();
-        VertexBuffer vbo = new VertexBuffer(VertexBuffer.Usage.STATIC);
-        vbo.bind();
-        vbo.upload(renderedBuffer);
-        VertexBuffer.unbind();
-
         ShaderManager.register(this.form, this.form.renderStage.get());
-        ShaderManager.addVAO(this.form, vbo);
+        ShaderManager.addVAO(this.form, modelVaoData);
     }
 
-    public ModelVAO processModelVAO(ModelInstance modelInstance) {
+    public List<ModelVAO> processModelVAO(ModelInstance modelInstance) {
         // First check if the model uses VAO rendering
         if (!modelInstance.isVAORendered()) {
             System.out.println("Model does not use VAO rendering");
@@ -102,32 +126,22 @@ public class GBufferShaderFormRenderer extends FormRenderer<GBufferShaderForm> {
         }
 
         IModel model = modelInstance.getModel();
+        List<ModelVAO> listVao = new ArrayList<ModelVAO>();
 
         // Handle BOBJ models
         if (model instanceof BOBJModel bobjModel) {
             BOBJModelVAO vao = bobjModel.getVao();
             if (vao != null) {
-                System.out.println("Got BOBJ VAO: " + vao);
-                return null; // TODO: support bobj models
+                // TODO: support bobj models
             }
         }
         // Handle regular cubic models
         else if (model instanceof Model) {
-            Map<ModelGroup, ModelVAO> vaos = modelInstance.getVaos();
-            System.out.println("Model has " + vaos.size() + " VAOs");
-
-            // Process each group's VAO
-            for (Map.Entry<ModelGroup, ModelVAO> entry : vaos.entrySet()) {
-                ModelGroup group = entry.getKey();
-                ModelVAO vao = entry.getValue();
-
-                System.out.println("Group: " + group.id + ", VAO: " + vao);
-                // Use the VAO for rendering or processing
-                return vao;
-            }
+            // Add each group's VAO
+            listVao.addAll(modelInstance.getVaos().values());
         }
 
-        return null;
+        return listVao;
     }
 
     /**

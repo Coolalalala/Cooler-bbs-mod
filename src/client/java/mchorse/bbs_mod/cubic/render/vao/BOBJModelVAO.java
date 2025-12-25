@@ -251,4 +251,19 @@ public class BOBJModelVAO
         GL30.glBindVertexArray(currentVAO);
         GL30.glBindBuffer(GL30.GL_ELEMENT_ARRAY_BUFFER, currentElementArrayBuffer);
     }
+    
+    /**
+     * Get the underlying VAO data for this model
+     */
+    public ModelVAOData getModelVAOData() {
+        // Calculate tangents
+        float[] tangents = BBSRendering.calculateTangents(this.data.posData, this.data.normData, this.data.texData);
+        
+        return new ModelVAOData(
+            this.data.posData,      // vertices
+            this.data.normData,     // normals
+            tangents,               // tangents
+            this.data.texData       // texCoords
+        );
+    }
 }

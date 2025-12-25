@@ -10,12 +10,14 @@ public class ModelVAO implements IModelVAO
     private int vao;
     private int vao2;
     private int count;
+    private ModelVAOData data;
 
     public ModelVAO(ModelVAOData data)
     {
         int currentVAO = GL30.glGetInteger(GL30.GL_VERTEX_ARRAY_BINDING);
 
         this.upload(data);
+        this.data = data;
 
         GL30.glBindVertexArray(currentVAO);
     }
@@ -119,5 +121,12 @@ public class ModelVAO implements IModelVAO
     public static boolean isShadersEnabled()
     {
         return BBSRendering.isIrisShadersEnabled();
+    }
+    
+    /**
+     * Get the underlying VAO data for this model
+     */
+    public ModelVAOData getData() {
+        return this.data;
     }
 }
