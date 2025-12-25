@@ -37,7 +37,7 @@ public class Transform implements IMapSerializable
     {
         this.lerp(this.translate, preA.translate, a.translate, b.translate, postB.translate, interp, x);
         this.lerp(this.scale, preA.scale, a.scale, b.scale, postB.scale, interp, x);
-        this.interpolateQuat(this.rotate, preA.rotate, a.rotate, b.rotate, postB.rotate, interp, x);
+        this.lerp(this.rotate, preA.rotate, a.rotate, b.rotate, postB.rotate, interp, x);
         this.lerp(this.rotate2, preA.rotate2, a.rotate2, b.rotate2, postB.rotate2, interp, x);
     }
 
