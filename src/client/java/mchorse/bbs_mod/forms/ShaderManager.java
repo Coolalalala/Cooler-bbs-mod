@@ -11,6 +11,7 @@ import mchorse.bbs_mod.forms.forms.BufferFlipperForm;
 import mchorse.bbs_mod.forms.forms.CompositeShaderForm;
 import mchorse.bbs_mod.forms.forms.GBufferShaderForm;
 import mchorse.bbs_mod.forms.forms.ShaderForm;
+import mchorse.bbs_mod.graphics.texture.Texture;
 import net.irisshaders.iris.Iris;
 import net.irisshaders.iris.gl.image.GlImage;
 import net.irisshaders.iris.gl.program.Program;
@@ -35,10 +36,13 @@ import net.irisshaders.iris.shaderpack.texture.TextureStage;
 import net.irisshaders.iris.pipeline.transform.PatchShaderType;
 import net.irisshaders.iris.pipeline.transform.TransformPatcher;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gl.VertexBuffer;
 import net.minecraft.client.render.VertexFormats;
+import org.joml.Matrix4f;
+import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL13;
 
 import java.lang.reflect.Field;
+import java.nio.FloatBuffer;
 import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -50,7 +54,7 @@ import static mchorse.bbs_mod.forms.forms.ShaderForm.*;
 public class ShaderManager {
     public static Map<ShaderForm, Integer> activeDeferredShaders = new HashMap<>();
     public static Map<ShaderForm, Integer> activeCompositeShaders = new HashMap<>();
-    public static Map<GBufferShaderForm, List<ModelVAO>> activeVAOs = new HashMap<>();
+    public static Map<GBufferShaderForm, List<GBufferGroupData>> activeGBufferShaders = new HashMap<>();
     private static ImmutableSet<Integer> flipState = ImmutableSet.of();
     private static BufferFlipperForm compositeFlipper;
     private static BufferFlipperForm deferredFlipper;
@@ -129,15 +133,6 @@ public class ShaderManager {
         }
     }
 
-    private static boolean isIrisInstalled() {
-        try {
-            Class.forName("net.irisshaders.iris.Iris");
-            return true;
-        } catch (ClassNotFoundException e) {
-            return false;
-        }
-    }
-
     private static boolean isPipelineNuhuh() {
         if (!isIrisShadersEnabled()) return true;
         if (pipeline == null) init();
@@ -158,9 +153,13 @@ public class ShaderManager {
         }
     }
 
-    public static void addVAO(GBufferShaderForm program, List<ModelVAO> modelVAOs) {
+    public static void addModelGroup(GBufferShaderForm program, ModelVAO modelVAO, Matrix4f transform, Texture texture) {
         if (isPipelineNuhuh()) return;
-        activeVAOs.put(program, modelVAOs);
+        activeGBufferShaders.putIfAbsent(program, new ArrayList<>());
+        GBufferGroupData data = new GBufferGroupData(modelVAO, transform, texture);
+        if (!activeGBufferShaders.get(program).contains(data)) {
+            activeGBufferShaders.get(program).add(data);
+        }
     }
 
     public static void remove(ShaderForm program) {
@@ -173,18 +172,20 @@ public class ShaderManager {
     public static void clear() {
         activeCompositeShaders.clear();
         activeDeferredShaders.clear();
-        activeVAOs.clear();
+        activeGBufferShaders.clear();
     }
 
     /**
      * Render 3D geometry with a custom shader program
      */
-    public static void renderGeometry(GBufferShaderForm shaderForm, List<ModelVAO> modelVAO) {
+    public static void renderGeometry(GBufferShaderForm shaderForm, List<GBufferGroupData> gBufferDatas) {
         if (renderTargets == null) return;
 
         if (isFullScreen) {
             FullScreenQuadRenderer.INSTANCE.end();
             isFullScreen = false;
+            GL11.glEnable(GL11.GL_DEPTH_TEST);
+            GL11.glDepthMask(true);
         }
         try {
             // Get or create the shader program
@@ -202,6 +203,7 @@ public class ShaderManager {
             }
 
             if (program == null) return;
+            if (gBufferDatas == null) return;
 
             // Unbind any previous program
             Program.unbind();
@@ -213,8 +215,8 @@ public class ShaderManager {
             }
 
             // Bind framebuffer
-            if (!shaderForm.bindFramebuffer()) {
-                shaderForm.setFramebuffer(renderTargets.createColorFramebuffer(
+            if (shaderForm.bindFramebuffer()) {
+                shaderForm.setFramebuffer(renderTargets.createColorFramebufferWithDepth(
                         shaderForm.getFlippedBuffers(),
                         drawBuffers
                 ));
@@ -227,13 +229,25 @@ public class ShaderManager {
             customUniforms.push(program);
 
             // Render
-            for (ModelVAO vao : modelVAO) {
-                // Format doesnt matter
-                vao.render(VertexFormats.POSITION_COLOR_TEXTURE_OVERLAY_LIGHT_NORMAL, 1, 0, 1, 1, 0, 0); // TODO: get light level
+            int progID = program.getProgramId();
+            int poseLocation = GlStateManager._glGetUniformLocation(progID, "modelPoseMatrix");
+            int textureLocation = GlStateManager._glGetUniformLocation(progID, "modelTexture");
+            // Upload texture unit
+            RenderSystem.glUniform1i(textureLocation, 29); // TODO: properly manage texture units
+            for (GBufferGroupData data : gBufferDatas) {
+                // Upload transform as an uniform
+                FloatBuffer buffer = org.lwjgl.BufferUtils.createFloatBuffer(16);
+                data.poseTransform.get(buffer);
+                RenderSystem.glUniformMatrix4(poseLocation, false, buffer);
+                // Upload texture as a sampler 2D
+                data.texture.bind(GL13.GL_TEXTURE29);
+                // Draw group
+                data.vao.render(VertexFormats.POSITION_COLOR_TEXTURE_OVERLAY_LIGHT_NORMAL, 1, 0, 1, 1, 0, 0); // TODO: get light level
             }
 
             // Clean up
             Program.unbind();
+            activeGBufferShaders.remove(shaderForm);
 
         } catch (Exception e) {
             LogUtils.getLogger().error("Failed to render geometry with shader: {}", shaderForm.getName(), e);
@@ -273,7 +287,7 @@ public class ShaderManager {
             }
 
             // Bind framebuffer
-            if (!shaderForm.bindFramebuffer()) {
+            if (shaderForm.bindFramebuffer()) {
                 shaderForm.setFramebuffer(renderTargets.createColorFramebuffer(
                         shaderForm.getFlippedBuffers(),
                         drawBuffers
@@ -297,7 +311,7 @@ public class ShaderManager {
     }
 
     private static void renderShaderForm(ShaderForm shaderForm) {
-        if (shaderForm instanceof GBufferShaderForm) renderGeometry((GBufferShaderForm) shaderForm, activeVAOs.get(shaderForm));
+        if (shaderForm instanceof GBufferShaderForm) renderGeometry((GBufferShaderForm) shaderForm, activeGBufferShaders.get(shaderForm));
         else renderFullScreenQuad((CompositeShaderForm) shaderForm);
     }
 
@@ -488,7 +502,7 @@ public class ShaderManager {
             // Pipeline has been deleted
             destroy();
         } catch (Exception e) {
-            LogUtils.getLogger().error("Failed to create Iris-integrated program for: " + shaderForm.getName(), e);
+            LogUtils.getLogger().error("Failed to create composite program for: {}\n{}", shaderForm.getName(), e.getMessage());
         }
         return null;
     }
@@ -496,7 +510,7 @@ public class ShaderManager {
     /**
      * Create a program suitable for geometry rendering with full Iris integration
      */
-    public static Program createGBufferProgram(ShaderForm shaderForm) {
+    public static Program createGBufferProgram(GBufferShaderForm shaderForm) {
         if (isPipelineNuhuh()) return null;
 
         try {
@@ -607,7 +621,7 @@ public class ShaderManager {
         } catch (IllegalStateException e) {
             destroy();
         } catch (Exception e) {
-            LogUtils.getLogger().error("Failed to create geometry program for: {}", shaderForm.getName(), e);
+            LogUtils.getLogger().error("Failed to create geometry program for: {}\n{}", shaderForm.getName(), e.getMessage());
         }
         return null;
     }
@@ -639,16 +653,6 @@ public class ShaderManager {
     }
 
     /**
-     * Get the set that is flipped for every buffer
-     */
-    public static ImmutableSet<Integer> getFlipped(ImmutableSet<Integer> buffers) {
-        return IntStream.range(0, 8)
-                .filter(i -> !buffers.contains(i))
-                .boxed()
-                .collect(ImmutableSet.toImmutableSet());
-    }
-
-    /**
      * Get the set that is flipped for every buffer in the given set
      */
     public static ImmutableSet<Integer> getFlipped(ImmutableSet<Integer> buffers, Set<Integer> toFlip) {
@@ -659,5 +663,18 @@ public class ShaderManager {
                 .boxed()
                 .collect(ImmutableSet.toImmutableSet());
 
+    }
+
+
+    public static class GBufferGroupData {
+        public ModelVAO vao;
+        public Matrix4f poseTransform;
+        public Texture texture;
+
+        public GBufferGroupData(ModelVAO modelVAO, Matrix4f transform, Texture texture) {
+            this.vao = modelVAO;
+            this.poseTransform = transform;
+            this.texture = texture;
+        }
     }
 }

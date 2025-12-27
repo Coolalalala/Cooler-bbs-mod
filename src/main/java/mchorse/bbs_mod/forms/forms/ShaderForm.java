@@ -2,7 +2,6 @@ package mchorse.bbs_mod.forms.forms;
 
 import com.google.common.collect.ImmutableSet;
 import mchorse.bbs_mod.settings.values.core.ValueString;
-import mchorse.bbs_mod.settings.values.numeric.ValueBoolean;
 import mchorse.bbs_mod.settings.values.numeric.ValueInt;
 import net.irisshaders.iris.gl.framebuffer.GlFramebuffer;
 import net.irisshaders.iris.gl.program.Program;
@@ -26,9 +25,6 @@ public class ShaderForm extends Form {
     public final ValueString vertex = new ValueString("vertex", "");
     public final ValueString fragment = new ValueString("fragment", "");
     public final ValueString geometry = new ValueString("geometry", "");
-    public final ValueBoolean sendTransforms = new ValueBoolean("sendTransforms", false);
-    public final ValueBoolean sendParents = new ValueBoolean("sendParents", false);
-    public final ValueBoolean sendChildren = new ValueBoolean("sendChildren", false);
     public final ValueInt renderStage = new ValueInt("renderStage", 0);
     public final ValueInt priority = new ValueInt("priority", 1, 1, 32767);
 
@@ -40,9 +36,6 @@ public class ShaderForm extends Form {
         this.add(this.vertex);
         this.add(this.fragment);
         this.add(this.geometry);
-        this.add(this.sendTransforms);
-        this.add(this.sendParents);
-        this.add(this.sendChildren);
         this.add(this.priority);
         this.add(this.renderStage);
     }
@@ -119,11 +112,11 @@ public class ShaderForm extends Form {
     }
 
     public boolean bindFramebuffer() {
-        if (this.framebuffer != null) {
-            this.framebuffer.bind();
-            return true;
+        if (this.framebuffer == null) {
+            return false;
         }
-        return false;
+        this.framebuffer.bind();
+        return true;
     }
 
     public GlFramebuffer getFramebuffer() {

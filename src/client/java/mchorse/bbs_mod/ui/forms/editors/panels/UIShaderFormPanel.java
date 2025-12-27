@@ -7,7 +7,6 @@ import mchorse.bbs_mod.ui.forms.editors.forms.UIForm;
 import mchorse.bbs_mod.ui.framework.elements.buttons.UIButton;
 import mchorse.bbs_mod.ui.framework.elements.buttons.UICirculate;
 import mchorse.bbs_mod.ui.framework.elements.buttons.UIIcon;
-import mchorse.bbs_mod.ui.framework.elements.buttons.UIToggle;
 import mchorse.bbs_mod.ui.framework.elements.input.UITrackpad;
 import mchorse.bbs_mod.ui.framework.elements.input.text.UITextEditor;
 import mchorse.bbs_mod.ui.framework.elements.input.text.UITextbox;
@@ -25,9 +24,6 @@ public class UIShaderFormPanel<T extends ShaderForm> extends UIFormPanel<T> {
 //    public UIButton tessellationControl;
 //    public UIButton tessellationEvaluation;
 //    public UIButton compute;
-    public UIToggle sendTransforms;
-    public UIToggle sendParents;
-    public UIToggle sendChildren;
     public UITrackpad priority;
     public UICirculate renderStage;
     public UIButton recompileAll;
@@ -49,9 +45,6 @@ public class UIShaderFormPanel<T extends ShaderForm> extends UIFormPanel<T> {
         this.vertex = new UIButton(UIKeys.FORMS_EDITOR_SHADER_VERTEX, (v) -> this.editProgramSrc(this::setVertex, this.form.vertex.toString()));
         this.fragment = new UIButton(UIKeys.FORMS_EDITOR_SHADER_FRAGMENT, (v) -> this.editProgramSrc(this::setFragment, this.form.fragment.toString()));
         this.geometry = new UIButton(UIKeys.FORMS_EDITOR_SHADER_GEOMETRY, (v) -> this.editProgramSrc(this::setGeometry, this.form.geometry.toString()));
-        this.sendTransforms = new UIToggle(UIKeys.FORMS_EDITOR_SHADER_SEND_TRANSFORM, (t) -> this.form.sendTransforms.set(t.getValue()));
-        this.sendParents = new UIToggle(UIKeys.FORMS_EDITOR_SHADER_SEND_PARENTS, (t) -> this.form.sendParents.set(t.getValue()));
-        this.sendChildren = new UIToggle(UIKeys.FORMS_EDITOR_SHADER_SEND_CHILDREN, (t) -> this.form.sendChildren.set(t.getValue()));
         this.priority = new UITrackpad((v) -> this.form.priority.set(v.intValue()));
         this.priority.integer().limit(1);
         this.priority.tooltip(UIKeys.FORMS_EDITOR_SHADER_PRIORITY_TOOLTIP);
@@ -61,12 +54,11 @@ public class UIShaderFormPanel<T extends ShaderForm> extends UIFormPanel<T> {
         this.renderStage.addLabel(UIKeys.FORMS_EDITOR_SHADER_RENDER_STAGE_PREPARE);
         this.renderStage.addLabel(UIKeys.FORMS_EDITOR_SHADER_RENDER_STAGE_DEFERRED);
         this.renderStage.addLabel(UIKeys.FORMS_EDITOR_SHADER_RENDER_STAGE_COMPOSITE);
-//        this.renderStage.addLabel(UIKeys.FORMS_EDITOR_SHADER_RENDER_STAGE_FINAL);
+        this.renderStage.addLabel(UIKeys.FORMS_EDITOR_SHADER_RENDER_STAGE_END);
         this.recompileAll = new UIButton(UIKeys.FORMS_EDITOR_SHADER_RECOMPILE, (b) -> ShaderManager.reCompile());
 
         this.options.add(UI.label(UIKeys.FORMS_EDITOR_SHADER_NAME), this.name);
-        this.options.add(this.vertex, this.geometry, this.fragment,
-                         this.sendTransforms, this.sendParents, this.sendChildren);
+        this.options.add(this.vertex, this.geometry, this.fragment);
         this.options.add(UI.label(UIKeys.FORMS_EDITOR_SHADER_PRIORITY), this.priority);
         this.options.add(UI.label(UIKeys.FORMS_EDITOR_SHADER_RENDER_STAGE), this.renderStage);
         this.options.add(this.recompileAll);
@@ -77,9 +69,6 @@ public class UIShaderFormPanel<T extends ShaderForm> extends UIFormPanel<T> {
         super.startEdit(form);
 
         this.name.setText(form.name.toString());
-        this.sendTransforms.setValue(form.sendTransforms.get());
-        this.sendParents.setValue(form.sendParents.get());
-        this.sendChildren.setValue(form.sendChildren.get());
         this.priority.setValue(form.priority.get());
         this.renderStage.setValue(form.renderStage.get());
     }

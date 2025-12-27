@@ -1,30 +1,25 @@
 package mchorse.bbs_mod.forms.renderers;
 
-import mchorse.bbs_mod.client.BBSRendering;
-import mchorse.bbs_mod.cubic.IModel;
+import com.mojang.blaze3d.systems.RenderSystem;
 import mchorse.bbs_mod.cubic.ModelInstance;
 import mchorse.bbs_mod.cubic.data.model.Model;
 import mchorse.bbs_mod.cubic.data.model.ModelGroup;
-import mchorse.bbs_mod.cubic.model.bobj.BOBJModel;
-import mchorse.bbs_mod.cubic.render.vao.BOBJModelVAO;
+import mchorse.bbs_mod.cubic.render.ICubicRenderer;
 import mchorse.bbs_mod.cubic.render.vao.ModelVAO;
-import mchorse.bbs_mod.cubic.render.vao.ModelVAOData;
 import mchorse.bbs_mod.forms.FormUtilsClient;
 import mchorse.bbs_mod.forms.ShaderManager;
+import mchorse.bbs_mod.BBSModClient;
+import mchorse.bbs_mod.forms.entities.IEntity;
 import mchorse.bbs_mod.forms.forms.BodyPart;
-import mchorse.bbs_mod.forms.forms.Form;
 import mchorse.bbs_mod.forms.forms.GBufferShaderForm;
 import mchorse.bbs_mod.graphics.texture.Texture;
 import mchorse.bbs_mod.resources.Link;
 import mchorse.bbs_mod.ui.framework.UIContext;
-import net.caffeinemc.mods.sodium.api.vertex.buffer.VertexBufferWriter;
-import net.minecraft.client.gl.VertexBuffer;
-import net.minecraft.client.render.BufferBuilder;
-import net.minecraft.client.render.VertexFormat;
-import net.minecraft.client.render.VertexFormats;
+import mchorse.bbs_mod.utils.MatrixStackUtils;
+import mchorse.bbs_mod.utils.pose.Transform;
+import net.minecraft.client.util.math.MatrixStack;
+import org.joml.Matrix4f;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
 public class GBufferShaderFormRenderer extends FormRenderer<GBufferShaderForm> {
@@ -49,148 +44,93 @@ public class GBufferShaderFormRenderer extends FormRenderer<GBufferShaderForm> {
     }
 
     protected void render3D(FormRenderingContext context) {
-        if (!BBSRendering.isIrisShadersEnabled()) return;
-        // Iterate through body parts (children)
-//        List<ModelVAOData> modelVaoData = new ArrayList<>();
-//        for (BodyPart part : form.parts.getAllTyped()) {
-//            Form childForm = part.getForm();
-//            if (childForm != null) {
-//                FormRenderer<?> childRenderer = FormUtilsClient.getRenderer(childForm);
-//                if (childRenderer instanceof ModelFormRenderer modelRenderer) {
-//                    ModelInstance childModelInstance = modelRenderer.getModel();
-//
-//                    ModelVAOData data = extractVAOData(childModelInstance);
-//                    if (data != null) {
-//                        modelVaoData.add(data);
-//                    }
-//                }
-//            }
-//        }
-//
-//        if (modelVaoData.isEmpty()) return;
+        ShaderManager.register(this.form, this.form.renderStage.get());
+    }
 
-//        BufferBuilder bufferBuilder = new BufferBuilder(VertexFormats.POSITION_TEXTURE.getVertexSizeByte() * 4);
-//        bufferBuilder.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_TEXTURE);
-//        // Populate the buffer
-//        for (ModelVAOData data : modelVaoData) {
-//            float[] verts = data.vertices();
-//            float[] texcoords = data.texCoords();
-//            float[] normals = data.normals();
-//            for (int i = 0; i < data.vertices().length/3; i++) {
-//                bufferBuilder.vertex(verts[3*i], verts[3*i + 1], verts[3*i + 2])
-//                        .texture(texcoords[2*i], texcoords[2*i + 1])
-//                        .normal(normals[3*i], normals[3*i + 1], normals[3*i + 2])
-//                        .next();
-//            }
-//        }
-//
-//        BufferBuilder.BuiltBuffer renderedBuffer = bufferBuilder.end();
-//        VertexBuffer vbo = new VertexBuffer(VertexBuffer.Usage.STATIC);
-//        vbo.bind();
-//        vbo.upload(renderedBuffer);
-//        VertexBuffer.unbind();
+    @Override
+    protected void renderBodyPart(BodyPart part, FormRenderingContext context)
+    {
+        IEntity oldEntity = context.entity;
 
-//        ShaderManager.register(this.form, this.form.renderStage.get());
-//        ShaderManager.addVAO(this.form, vbo);
+        context.entity = part.useTarget.get() ? oldEntity : part.getEntity();
 
+        if (part.getForm() != null)
+        {
+            context.stack.push();
+            MatrixStackUtils.applyTransform(context.stack, part.transform.get());
 
+            // Register for custom rendering
+            FormRenderer<?> childRenderer = FormUtilsClient.getRenderer(part.getForm());
+            if (childRenderer instanceof ModelFormRenderer modelRenderer) {
+                ModelInstance modelInstance = modelRenderer.getModel();
+                if  (modelInstance != null && modelInstance.getModel() instanceof Model model) {
+                    Map<ModelGroup, ModelVAO> vaos = modelInstance.getVaos();
 
-        List<ModelVAO> modelVaoData = new ArrayList<>();
-        for (BodyPart part : form.parts.getAllTyped()) {
-            Form childForm = part.getForm();
-            if (childForm != null) {
-                FormRenderer<?> childRenderer = FormUtilsClient.getRenderer(childForm);
-                if (childRenderer instanceof ModelFormRenderer modelRenderer) {
-                    ModelInstance childModelInstance = modelRenderer.getModel();
+                    // Track the model's texture
+                    Texture texture = null;
+                    Link textureLink = modelRenderer.getForm().texture.get();
+                    if (textureLink == null) {
+                        textureLink = modelInstance.texture;
+                    }
+                    if (textureLink != null) {
+                        texture = BBSModClient.getTextures().getTexture(textureLink);
+                    }
 
-                    try {
-                        modelVaoData.addAll(processModelVAO(childModelInstance));
-                    } catch (Exception e) {
-                        return;
+                    if (texture == null) return;
+
+                    for (ModelGroup topGroup : model.topGroups) {
+                        registerVAORecursive(context.stack, vaos, topGroup, RenderSystem.getProjectionMatrix(), context, texture);
                     }
                 }
             }
-        }
 
-        if (modelVaoData.isEmpty()) return;
-
-        ShaderManager.register(this.form, this.form.renderStage.get());
-        ShaderManager.addVAO(this.form, modelVaoData);
-    }
-
-    public List<ModelVAO> processModelVAO(ModelInstance modelInstance) {
-        // First check if the model uses VAO rendering
-        if (!modelInstance.isVAORendered()) {
-            System.out.println("Model does not use VAO rendering");
-            return null;
-        }
-
-        IModel model = modelInstance.getModel();
-        List<ModelVAO> listVao = new ArrayList<ModelVAO>();
-
-        // Handle BOBJ models
-        if (model instanceof BOBJModel bobjModel) {
-            BOBJModelVAO vao = bobjModel.getVao();
-            if (vao != null) {
-                // TODO: support bobj models
+            if (this.form.renderChildren.get()) {
+                // Regular rendering as usual
+                FormUtilsClient.render(part.getForm(), context);
             }
-        }
-        // Handle regular cubic models
-        else if (model instanceof Model) {
-            // Add each group's VAO
-            listVao.addAll(modelInstance.getVaos().values());
+
+            context.stack.pop();
         }
 
-        return listVao;
+        context.entity = oldEntity;
     }
 
     /**
-     * Extract VAO data from a model instance for use in GBuffer shaders
+     * Register VAO data of all children of a group to the ShaderManager recursively
      */
-    public ModelVAOData extractVAOData(ModelInstance modelInstance) {
-        // First check if the model uses VAO rendering
-        if (!modelInstance.isVAORendered()) {
-            System.out.println("Model does not use VAO rendering");
-            return null;
+    private void registerVAORecursive(MatrixStack stack, Map<ModelGroup, ModelVAO> vaos, ModelGroup group, Matrix4f projMatrix, FormRenderingContext context, Texture texture)
+    {
+        if  (!group.visible) return;
+
+        stack.push();
+        applyGroupTransformations(stack, group);
+        ModelVAO vao = vaos.get(group);
+        if (vao != null) ShaderManager.addModelGroup(this.form, vao, projMatrix.get(new Matrix4f()).mul(context.stack.peek().getPositionMatrix()).scale(-1,1,-1), texture);
+
+        for (ModelGroup childGroup : group.children) {
+            registerVAORecursive(stack, vaos, childGroup, projMatrix, context, texture);
         }
 
-        IModel model = modelInstance.getModel();
+        stack.pop();
+    }
 
-        // Handle regular cubic models
-        if (model instanceof Model) {
-            Map<ModelGroup, ModelVAO> vaos = modelInstance.getVaos();
-            System.out.println("Model has " + vaos.size() + " VAOs");
+    private static void applyGroupTransformations(MatrixStack stack, ModelGroup groupIn)
+    {
+        ModelGroup group = new ModelGroup("");
+        group.initial.copy(groupIn.initial);
+        transformTransform(group.initial);
+        group.current.copy(groupIn.current);
+        transformTransform(group.current);
+        ICubicRenderer.translateGroup(stack, group);
+        ICubicRenderer.moveToGroupPivot(stack, group);
+        ICubicRenderer.rotateGroup(stack, group);
+        ICubicRenderer.scaleGroup(stack, group);
+        ICubicRenderer.moveBackFromGroupPivot(stack, group);
+    }
 
-            // For now, just get the first VAO's data
-            // In a full implementation, you might want to combine all VAO data
-            for (Map.Entry<ModelGroup, ModelVAO> entry : vaos.entrySet()) {
-                ModelGroup group = entry.getKey();
-                ModelVAO vao = entry.getValue();
-                
-                // Extract the VAO data
-                ModelVAOData data = vao.getData();
-                if (data != null) {
-                    System.out.println("Extracted VAO data for group: " + group.id);
-                    System.out.println("Vertices: " + data.vertices().length);
-                    System.out.println("Normals: " + data.normals().length);
-                    System.out.println("TexCoords: " + data.texCoords().length);
-                    System.out.println("Tangents: " + data.tangents().length);
-                    return data;
-                }
-            }
-        }
-        
-        // BOBJ models would need separate handling
-        else if (model instanceof BOBJModel bobjModel) {
-            BOBJModelVAO vao = bobjModel.getVao();
-            if (vao != null) {
-                // Extract data from BOBJModelVAO
-                ModelVAOData data = vao.getModelVAOData();
-                System.out.println("Processing BOBJ model");
-                return data;
-            }
-        }
-
-        return null;
+    private static void transformTransform(Transform transform) {
+        transform.translate.mul(-1,1,-1);
+        transform.rotate.mul(-1,1,-1);
+        transform.rotate2.mul(-1,1,-1);
     }
 }

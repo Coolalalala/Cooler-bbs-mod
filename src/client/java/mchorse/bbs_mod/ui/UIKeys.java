@@ -436,8 +436,6 @@ public class UIKeys
     public static final IKey FORMS_EDITOR_SHADER_VERTEX = L10n.lang("bbs.ui.forms.editor.shader.vertex");
     public static final IKey FORMS_EDITOR_SHADER_GEOMETRY = L10n.lang("bbs.ui.forms.editor.shader.geometry");
     public static final IKey FORMS_EDITOR_SHADER_FRAGMENT = L10n.lang("bbs.ui.forms.editor.shader.fragment");
-    public static final IKey FORMS_EDITOR_SHADER_SEND_TRANSFORM = L10n.lang("bbs.ui.forms.editor.shader.send_transform");
-    public static final IKey FORMS_EDITOR_SHADER_SEND_PARENTS = L10n.lang("bbs.ui.forms.editor.shader.send_parents");
     public static final IKey FORMS_EDITOR_SHADER_SEND_CHILDREN = L10n.lang("bbs.ui.forms.editor.shader.send_children");
     public static final IKey FORMS_EDITOR_SHADER_PRIORITY = L10n.lang("bbs.ui.forms.editor.shader.priority");
     public static final IKey FORMS_EDITOR_SHADER_PRIORITY_TOOLTIP = L10n.lang("bbs.ui.forms.editor.shader.priority-tooltip");
@@ -447,7 +445,7 @@ public class UIKeys
     public static final IKey FORMS_EDITOR_SHADER_RENDER_STAGE_PREPARE = L10n.lang("bbs.ui.forms.editor.shader.render_stage.prepare");
     public static final IKey FORMS_EDITOR_SHADER_RENDER_STAGE_DEFERRED = L10n.lang("bbs.ui.forms.editor.shader.render_stage.deferred");
     public static final IKey FORMS_EDITOR_SHADER_RENDER_STAGE_COMPOSITE = L10n.lang("bbs.ui.forms.editor.shader.render_stage.composite");
-    public static final IKey FORMS_EDITOR_SHADER_RENDER_STAGE_FINAL = L10n.lang("bbs.ui.forms.editor.shader.render_stage.final");
+    public static final IKey FORMS_EDITOR_SHADER_RENDER_STAGE_END = L10n.lang("bbs.ui.forms.editor.shader.render_stage.end");
     public static final IKey FORMS_EDITOR_SHADER_RECOMPILE = L10n.lang("bbs.ui.forms.editor.shader.recompile");
     public static final IKey FORMS_EDITOR_SHADER_COMPOSITE_TITLE = L10n.lang("bbs.ui.forms.editor.shader.composite.title");
     public static final IKey FORMS_EDITOR_SHADER_GBUFFER_TITLE = L10n.lang("bbs.ui.forms.editor.shader.gbuffer.title");
