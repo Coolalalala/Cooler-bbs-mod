@@ -186,35 +186,48 @@ public class MathUtils
             Quaterniond q2, Quaterniond q3,
             Quaterniond a1, Quaterniond b1) {
 
-        Quaterniond identity = new Quaterniond(0, 0, 0, 1);
-        Vector3d v = new Vector3d();
-        Vector3d temp = new Vector3d();
-        Quaterniond tmpQ = new Quaterniond();
-        Quaterniond inv = new Quaterniond();
+        // Temporary quaternions
+        Quaterniond temp1 = new Quaterniond();
+        Quaterniond temp2 = new Quaterniond();
+        Quaterniond q1Inv = new Quaterniond(q1).conjugate();
+        Quaterniond q2Inv = new Quaterniond(q2).conjugate();
 
-        // a1
-        inv.set(q1).invert();          // q1^{-1}
-        tmpQ.set(inv).mul(q0);            // q1^{-1} q0
-        quatLog(tmpQ, v);
+        // Compute control point a1 (at q1)
+        // a1 = q1 * exp(-[log(q1⁻¹ * q0) + log(q1⁻¹ * q2)] / 4)
 
-        tmpQ.set(inv).mul(q2);            // q1^{-1} q2
-        quatLog(tmpQ, temp);
+        // q1⁻¹ * q0
+        temp1.set(q1Inv).mul(q0);
+        // q1⁻¹ * q2
+        temp2.set(q1Inv).mul(q2);
 
-        v.add(temp).mul(-0.25f);          // -1/4 * (log(q1^{-1}q0)+log(q1^{-1}q2))
-        quatExp(v, tmpQ);
-        a1.set(q1).mul(tmpQ).normalize();
+        // Log of both quaternions
+        Vector3d log1 = new Vector3d();
+        Vector3d log2 = new Vector3d();
+        quatLog(temp1, log1);
+        quatLog(temp2, log2);
 
-        // b1
-        inv.set(q2).invert();          // q2^{-1}
-        tmpQ.set(inv).mul(q1);            // q2^{-1} q1
-        quatLog(tmpQ, v);
+        // Average and scale by -1/4
+        Vector3d sum = new Vector3d(log1).add(log2).mul(-0.25);
 
-        tmpQ.set(inv).mul(q3);            // q2^{-1} q3
-        quatLog(tmpQ, temp);
+        // Exponentiate and apply to q1
+        Quaterniond correction = new Quaterniond();
+        quatExp(sum, correction);
+        a1.set(q1).mul(correction);
 
-        v.add(temp).mul(-0.25f);
-        quatExp(v, tmpQ);
-        b1.set(q2).mul(tmpQ).normalize();
+        // Compute control point b1 (at q2)
+        // b1 = q2 * exp(-[log(q2⁻¹ * q1) + log(q2⁻¹ * q3)] / 4)
+
+        // q2⁻¹ * q1
+        temp1.set(q2Inv).mul(q1);
+        // q2⁻¹ * q3
+        temp2.set(q2Inv).mul(q3);
+
+        quatLog(temp1, log1);
+        quatLog(temp2, log2);
+
+        sum.set(log1).add(log2).mul(-0.25);
+        quatExp(sum, correction);
+        b1.set(q2).mul(correction);
     }
 
 
