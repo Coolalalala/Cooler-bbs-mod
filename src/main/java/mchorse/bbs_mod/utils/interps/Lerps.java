@@ -3,6 +3,9 @@ package mchorse.bbs_mod.utils.interps;
 import mchorse.bbs_mod.utils.MathUtils;
 import org.joml.Quaterniond;
 
+import static mchorse.bbs_mod.utils.MathUtils.computeSquadControls;
+import static mchorse.bbs_mod.utils.MathUtils.rawSlerp;
+
 /**
  * Interpolation methods
  *
@@ -211,49 +214,45 @@ public class Lerps
         return ((a * x + b) * x + c) * x + y1;
     }
 
-    /**
-     * Squad interpolation
-     *
-     * @param q1 - first quaternion
-     * @param a1 - first control point
-     * @param b1 - second control point
-     * @param q2 - second quaternion
-     * @param t blending in [0..1]
-     * @return the interpolated quaternion
-     **/
     public static Quaterniond squad(
             Quaterniond q1, Quaterniond a1,
             Quaterniond b1, Quaterniond q2,
             float t, Quaterniond dest) {
 
-        Quaterniond q12 = new Quaterniond();
-        Quaterniond ab  = new Quaterniond();
+        // Create temporary quaternions without new allocations
+        Quaterniond tmp1 = new Quaterniond();
+        Quaterniond tmp2 = new Quaterniond();
 
-        q12 = q12.set(q1).nlerp(q2, t);   // slerp(q1, q2, t)
-        ab = MathUtils.rawSlerp(a1, b1, t);    // slerp(a1, b1, t)
+        // slerp(q1, q2, t)
+        // q1.slerp(q2, t, tmp1);
+        tmp1 = rawSlerp(q1, q2, t);
 
-        float h = 2*t * (1-t);
-        dest.set(q12).nlerp(ab, h); // nlerp is more stable here than slerp for reasons beyond my comprehension
-        return dest;
+        // slerp(a1, b1, t)
+        // a1.slerp(b1, t, tmp2);
+        tmp2 = rawSlerp(a1, b1, t);
+
+        // Final slerp with weight 2t(1-t)
+        float squadT = 2.0f * t * (1.0f - t);
+        // return tmp1.slerp(tmp2, squadT, dest);
+        return rawSlerp(tmp1, tmp2, squadT);
     }
 
-    /**
-     * Squad interpolation
-     *
-     * @param t blending in [0..1]
-     * @param q0 previous rotation
-     * @param q1 start rotation
-     * @param q2 end rotation
-     * @param q3 next rotation
-     * @return the interpolated quaternion
-     **/
-    public static Quaterniond squad(Quaterniond q0, Quaterniond q1, Quaterniond q2, Quaterniond q3, float t) {
-        // Calculate control points
+    public static Quaterniond squad(
+            Quaterniond q0, Quaterniond q1,
+            Quaterniond q2, Quaterniond q3,
+            float t) {
+
         Quaterniond a1 = new Quaterniond();
         Quaterniond b1 = new Quaterniond();
 
+        // Ensure same hemisphere
+        if (q1.dot(q2) < 0) q2.mul(-1);
+        if (q0.dot(q1) < 0) q0.mul(-1);
+        if (q2.dot(q3) < 0) q3.mul(-1);
+
         // Calculate control points
-        MathUtils.computeSquadControls(q0, q1, q2, q3, a1, b1);
+        computeSquadControls(q0, q1, q2, q3, a1, b1);
+
         // Interpolate
         return squad(q1, a1, b1, q2, t, new Quaterniond());
     }
@@ -271,25 +270,27 @@ public class Lerps
      **/
     public static Quaterniond bezierQuat(Quaterniond q1, Quaterniond q2, Quaterniond a1, Quaterniond b1, double t, Quaterniond dest) {
         // First level interpolation
-        Quaterniond q12 = new Quaterniond();
-        q12.set(q1).slerp(q2, t);
-        Quaterniond a12 = new Quaterniond();
-        a12.set(a1).slerp(b1, t);
+        Quaterniond q12 = rawSlerp(q1, q2, t);
+        Quaterniond a12 = rawSlerp(a1, b1, t);
 
         // Second level interpolation
-        Quaterniond q12a12 = new Quaterniond();
-        q12a12.set(q12).slerp(a12, t);
+        Quaterniond q12a12 = rawSlerp(q12, a12, t);
 
         // Final interpolation: compute the bezier curve point
-        dest.set(q12a12).slerp(q2, t);
-        return dest;
+        return rawSlerp(q12a12, q2, t);
     }
 
     public static Quaterniond bezierQuat(Quaterniond q0, Quaterniond q1, Quaterniond q2, Quaterniond q3, float t)
     {
         Quaterniond a1 = new Quaterniond();
         Quaterniond b1 = new Quaterniond();
-        MathUtils.computeSquadControls(q0, q1, q2, q3, a1, b1);
+
+        // Ensure same hemisphere
+        if (q1.dot(q2) < 0) q2.mul(-1);
+        if (q0.dot(q1) < 0) q0.mul(-1);
+        if (q2.dot(q3) < 0) q3.mul(-1);
+
+        computeSquadControls(q0, q1, q2, q3, a1, b1);
         return bezierQuat(q1, q2, a1, b1, t, new Quaterniond());
     }
 

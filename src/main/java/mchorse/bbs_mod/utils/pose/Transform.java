@@ -37,8 +37,8 @@ public class Transform implements IMapSerializable
     {
         this.lerp(this.translate, preA.translate, a.translate, b.translate, postB.translate, interp, x);
         this.lerp(this.scale, preA.scale, a.scale, b.scale, postB.scale, interp, x);
-        this.lerp(this.rotate, preA.rotate, a.rotate, b.rotate, postB.rotate, interp, x);
-        // this.interpolateQuat(this.rotate, preA.rotate, a.rotate, b.rotate, postB.rotate, interp, x);
+        // this.lerp(this.rotate, preA.rotate, a.rotate, b.rotate, postB.rotate, interp, x);
+        this.interpolateQuat(this.rotate, preA.rotate, a.rotate, b.rotate, postB.rotate, interp, x);
         this.lerp(this.rotate2, preA.rotate2, a.rotate2, b.rotate2, postB.rotate2, interp, x);
     }
 
@@ -47,11 +47,8 @@ public class Transform implements IMapSerializable
         // Convert to quaternions (minecraft uses left-handed system!!)
         Quaterniond startQuad = new Quaterniond().rotateXYZ(-a.x, a.y, a.z).normalize();
         Quaterniond endQuad = new Quaterniond().rotateXYZ(-b.x, b.y, b.z).normalize();
-        double startRoll = startQuad.w;
-        double endRoll = endQuad.w;
 
         Vector3d rotation = new Vector3d();
-        Vector3d vector = new Vector3d();
         if (interp.getKey().equals("hermite") || interp.getKey().equals("cubic")) {
             Quaterniond preQuad = new Quaterniond().rotateXYZ(-preA.x, preA.y, preA.z);
             Quaterniond postQuad = new Quaterniond().rotateXYZ(-postB.x, postB.y, postB.z);
