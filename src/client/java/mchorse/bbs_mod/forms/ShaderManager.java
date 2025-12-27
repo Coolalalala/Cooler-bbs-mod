@@ -11,6 +11,7 @@ import mchorse.bbs_mod.forms.forms.BufferFlipperForm;
 import mchorse.bbs_mod.forms.forms.CompositeShaderForm;
 import mchorse.bbs_mod.forms.forms.GBufferShaderForm;
 import mchorse.bbs_mod.forms.forms.ShaderForm;
+import mchorse.bbs_mod.utils.Pair;
 import net.irisshaders.iris.Iris;
 import net.irisshaders.iris.gl.image.GlImage;
 import net.irisshaders.iris.gl.program.Program;
@@ -35,10 +36,13 @@ import net.irisshaders.iris.shaderpack.texture.TextureStage;
 import net.irisshaders.iris.pipeline.transform.PatchShaderType;
 import net.irisshaders.iris.pipeline.transform.TransformPatcher;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gl.VertexBuffer;
 import net.minecraft.client.render.VertexFormats;
+import net.minecraft.client.util.math.MatrixStack;
+import org.joml.Matrix4f;
+import org.lwjgl.opengl.GL11;
 
 import java.lang.reflect.Field;
+import java.nio.FloatBuffer;
 import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -50,7 +54,7 @@ import static mchorse.bbs_mod.forms.forms.ShaderForm.*;
 public class ShaderManager {
     public static Map<ShaderForm, Integer> activeDeferredShaders = new HashMap<>();
     public static Map<ShaderForm, Integer> activeCompositeShaders = new HashMap<>();
-    public static Map<GBufferShaderForm, List<ModelVAO>> activeVAOs = new HashMap<>();
+    public static Map<GBufferShaderForm, List<Pair<ModelVAO, Matrix4f>>> activeVAOs = new HashMap<>();
     private static ImmutableSet<Integer> flipState = ImmutableSet.of();
     private static BufferFlipperForm compositeFlipper;
     private static BufferFlipperForm deferredFlipper;
@@ -158,9 +162,10 @@ public class ShaderManager {
         }
     }
 
-    public static void addVAO(GBufferShaderForm program, List<ModelVAO> modelVAOs) {
+    public static void addVAO(GBufferShaderForm program, ModelVAO modelVAO, Matrix4f transform) {
         if (isPipelineNuhuh()) return;
-        activeVAOs.put(program, modelVAOs);
+        activeVAOs.putIfAbsent(program, new ArrayList<>());
+        activeVAOs.get(program).add(new Pair<>(modelVAO, transform));
     }
 
     public static void remove(ShaderForm program) {
@@ -179,12 +184,14 @@ public class ShaderManager {
     /**
      * Render 3D geometry with a custom shader program
      */
-    public static void renderGeometry(GBufferShaderForm shaderForm, List<ModelVAO> modelVAO) {
+    public static void renderGeometry(GBufferShaderForm shaderForm, List<Pair<ModelVAO, Matrix4f>> modelVAO) {
         if (renderTargets == null) return;
 
         if (isFullScreen) {
             FullScreenQuadRenderer.INSTANCE.end();
             isFullScreen = false;
+            GL11.glEnable(GL11.GL_DEPTH_TEST);
+            GL11.glDepthMask(true);
         }
         try {
             // Get or create the shader program
@@ -202,6 +209,7 @@ public class ShaderManager {
             }
 
             if (program == null) return;
+            if (modelVAO == null) return;
 
             // Unbind any previous program
             Program.unbind();
@@ -214,7 +222,7 @@ public class ShaderManager {
 
             // Bind framebuffer
             if (!shaderForm.bindFramebuffer()) {
-                shaderForm.setFramebuffer(renderTargets.createColorFramebuffer(
+                shaderForm.setFramebuffer(renderTargets.createColorFramebufferWithDepth(
                         shaderForm.getFlippedBuffers(),
                         drawBuffers
                 ));
@@ -227,13 +235,19 @@ public class ShaderManager {
             customUniforms.push(program);
 
             // Render
-            for (ModelVAO vao : modelVAO) {
-                // Format doesnt matter
-                vao.render(VertexFormats.POSITION_COLOR_TEXTURE_OVERLAY_LIGHT_NORMAL, 1, 0, 1, 1, 0, 0); // TODO: get light level
+            int location = GlStateManager._glGetUniformLocation(program.getProgramId(), "modelPoseMatrix");
+            for (Pair<ModelVAO, Matrix4f> vao : modelVAO) {
+                // Upload transform as an uniform
+                FloatBuffer buffer = org.lwjgl.BufferUtils.createFloatBuffer(16);
+                vao.b.get(buffer);
+                RenderSystem.glUniformMatrix4(location, false, buffer);
+                // Draw group
+                vao.a.render(VertexFormats.POSITION_COLOR_TEXTURE_OVERLAY_LIGHT_NORMAL, 1, 0, 1, 1, 0, 0); // TODO: get light level
             }
 
             // Clean up
             Program.unbind();
+            activeVAOs.remove(shaderForm);
 
         } catch (Exception e) {
             LogUtils.getLogger().error("Failed to render geometry with shader: {}", shaderForm.getName(), e);
@@ -488,7 +502,7 @@ public class ShaderManager {
             // Pipeline has been deleted
             destroy();
         } catch (Exception e) {
-            LogUtils.getLogger().error("Failed to create Iris-integrated program for: " + shaderForm.getName(), e);
+            LogUtils.getLogger().error("Failed to create composite program for: {}\n{}", shaderForm.getName(), e.getMessage());
         }
         return null;
     }
@@ -496,7 +510,7 @@ public class ShaderManager {
     /**
      * Create a program suitable for geometry rendering with full Iris integration
      */
-    public static Program createGBufferProgram(ShaderForm shaderForm) {
+    public static Program createGBufferProgram(GBufferShaderForm shaderForm) {
         if (isPipelineNuhuh()) return null;
 
         try {
@@ -607,7 +621,7 @@ public class ShaderManager {
         } catch (IllegalStateException e) {
             destroy();
         } catch (Exception e) {
-            LogUtils.getLogger().error("Failed to create geometry program for: {}", shaderForm.getName(), e);
+            LogUtils.getLogger().error("Failed to create geometry program for: {}\n{}", shaderForm.getName(), e.getMessage());
         }
         return null;
     }
@@ -636,16 +650,6 @@ public class ShaderManager {
         irisCustomTextures = null;
         centerDepthSampler = null;
         customTextureManager = null;
-    }
-
-    /**
-     * Get the set that is flipped for every buffer
-     */
-    public static ImmutableSet<Integer> getFlipped(ImmutableSet<Integer> buffers) {
-        return IntStream.range(0, 8)
-                .filter(i -> !buffers.contains(i))
-                .boxed()
-                .collect(ImmutableSet.toImmutableSet());
     }
 
     /**
