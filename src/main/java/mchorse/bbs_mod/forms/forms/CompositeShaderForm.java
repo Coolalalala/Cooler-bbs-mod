@@ -8,7 +8,7 @@ public class CompositeShaderForm extends ShaderForm {
 
     @Override
     protected String getDefaultDisplayName() {
-        if (!this.name.get().isBlank()) return "Composite Shader Program";
+        if (this.name.get().isBlank()) return "Composite Shader Program";
         else return "Composite: " + this.name.get();
     }
 
