@@ -13,7 +13,6 @@ import java.util.List;
 
 public class ShaderFormSection extends FormSection {
     private List<FormCategory> categories;
-    private FormCategory lights;
 
     public ShaderFormSection(FormCategories parent) {
         super(parent);
@@ -29,7 +28,7 @@ public class ShaderFormSection extends FormSection {
         shaderForm.addForm(compositeShaderForm);
         GBufferShaderForm gBufferShaderForm = new GBufferShaderForm();
         shaderForm.addForm(gBufferShaderForm);
-        BufferFlipperForm bufferFlipperForm = new BufferFlipperForm(BufferFlipperForm.COMPOSITE_STAGE, "buffer_flipper");
+        BufferFlipperForm bufferFlipperForm = new BufferFlipperForm();
         shaderForm.addForm(bufferFlipperForm);
 
         this.categories = Arrays.asList(shaderForm);

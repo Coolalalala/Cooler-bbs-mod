@@ -66,6 +66,7 @@ public class FormUtilsClient
         register(LightForm.class, LightFormRenderer::new);
         register(CompositeShaderForm.class, CompositeShaderFormRenderer::new);
         register(GBufferShaderForm.class, GBufferShaderFormRenderer::new);
+        register(BufferFlipperForm.class, BufferFlipperFormRenderer::new);
     }
 
     private static void assignBufferBuilder(Object2ObjectLinkedOpenHashMap<RenderLayer, BufferBuilder> builderStorage, RenderLayer layer)

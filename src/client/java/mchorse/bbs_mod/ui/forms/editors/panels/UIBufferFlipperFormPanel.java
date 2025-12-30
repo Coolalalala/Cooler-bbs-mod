@@ -70,12 +70,18 @@ public class UIBufferFlipperFormPanel extends UIFormPanel<BufferFlipperForm> {
     }
 
     private void toggleBuffer(int buffer, boolean state) {
-        Set<Integer> buffers = this.form.get();
-        if (state) {
-            buffers.add(buffer);
-        } else {
-            buffers.remove(buffer);
-        }
-        this.form.set(ImmutableSet.copyOf(buffers));
+        Set<Integer> current = this.form.get();
+        boolean contains = current.contains(buffer);
+
+        if (contains == state) return; // No change needed
+
+        Set<Integer> result = state ?
+                ImmutableSet.<Integer>builder().addAll(current).add(buffer).build() :
+                ImmutableSet.copyOf(current.stream()
+                        .filter(b -> b != buffer)
+                        .collect(java.util.stream.Collectors.toSet()));
+
+        this.form.set(ImmutableSet.copyOf(result));
     }
+
 }

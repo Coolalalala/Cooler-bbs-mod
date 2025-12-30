@@ -4,11 +4,19 @@ import com.google.common.collect.ImmutableSet;
 import mchorse.bbs_mod.settings.values.numeric.ValueInt;
 
 public class BufferFlipperForm extends CompositeShaderForm {
-    public final ValueInt priority = new ValueInt("priority", 0, 0, 0);
+    public final ValueInt priority = new ValueInt("priority", 0, 0, 32767);
     private ImmutableSet<Integer> buffers = ImmutableSet.of();
+
+    public BufferFlipperForm() {
+        super();
+
+        this.add(this.priority);
+        this.add(this.renderStage);
+    }
 
     public BufferFlipperForm(int stage, String name) {
         super();
+
         this.renderStage.set(stage);
         this.name.set(name);
     }
@@ -64,5 +72,11 @@ public class BufferFlipperForm extends CompositeShaderForm {
         source.append("}");
 
         this.fragment.set(source.toString());
+    }
+
+    @Override
+    protected String getDefaultDisplayName() {
+        if (!this.name.get().isBlank()) return "Buffer Flipper Shader Program";
+        else return "Flipper: " + this.name.get();
     }
 }
