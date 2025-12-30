@@ -16,7 +16,7 @@ public class GBufferShaderForm extends ShaderForm {
 
     @Override
     protected String getDefaultDisplayName() {
-        if (!this.name.get().isBlank()) return "GBuffer Shader Program";
+        if (this.name.get().isBlank()) return "GBuffer Shader Program";
         else return "GBuffer: " + this.name.get();
     }
 
