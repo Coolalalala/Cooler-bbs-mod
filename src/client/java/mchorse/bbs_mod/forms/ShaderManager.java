@@ -215,7 +215,7 @@ public class ShaderManager {
             }
 
             // Bind framebuffer
-            if (shaderForm.bindFramebuffer()) {
+            if (!shaderForm.bindFramebuffer()) {
                 shaderForm.setFramebuffer(renderTargets.createColorFramebufferWithDepth(
                         shaderForm.getFlippedBuffers(),
                         drawBuffers
@@ -287,7 +287,7 @@ public class ShaderManager {
             }
 
             // Bind framebuffer
-            if (shaderForm.bindFramebuffer()) {
+            if (!shaderForm.bindFramebuffer()) {
                 shaderForm.setFramebuffer(renderTargets.createColorFramebuffer(
                         shaderForm.getFlippedBuffers(),
                         drawBuffers
