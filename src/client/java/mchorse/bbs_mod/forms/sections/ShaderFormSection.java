@@ -2,6 +2,7 @@ package mchorse.bbs_mod.forms.sections;
 
 import mchorse.bbs_mod.forms.FormCategories;
 import mchorse.bbs_mod.forms.categories.FormCategory;
+import mchorse.bbs_mod.forms.forms.BufferFlipperForm;
 import mchorse.bbs_mod.forms.forms.CompositeShaderForm;
 import mchorse.bbs_mod.forms.forms.GBufferShaderForm;
 import mchorse.bbs_mod.forms.forms.LightForm;
@@ -28,6 +29,8 @@ public class ShaderFormSection extends FormSection {
         shaderForm.addForm(compositeShaderForm);
         GBufferShaderForm gBufferShaderForm = new GBufferShaderForm();
         shaderForm.addForm(gBufferShaderForm);
+        BufferFlipperForm bufferFlipperForm = new BufferFlipperForm(BufferFlipperForm.COMPOSITE_STAGE, "buffer_flipper");
+        shaderForm.addForm(bufferFlipperForm);
 
         this.categories = Arrays.asList(shaderForm);
     }

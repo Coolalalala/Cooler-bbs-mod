@@ -31,6 +31,10 @@ public class BufferFlipperForm extends CompositeShaderForm {
         this.markDirty();
     }
 
+    public ImmutableSet<Integer> get() {
+        return this.buffers;
+    }
+
     private void setVertexSource() {
         String source = """
                         #version 330 compatibility

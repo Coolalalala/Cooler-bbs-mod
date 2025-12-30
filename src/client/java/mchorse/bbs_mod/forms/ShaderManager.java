@@ -349,8 +349,9 @@ public class ShaderManager {
                 .comparingInt((ShaderForm s) -> shaderMap.get(s))
                 .thenComparing(s -> Arrays.hashCode(s.getDrawBuffers())));
 
-        // We don't insert into GBuffer stages, so we can assume the full screen rendering is always on at init
+        // Begin full screen quad rendering
         RenderSystem.disableBlend();
+        FullScreenQuadRenderer.INSTANCE.begin();
         isFullScreen = true;
 
         // Initialize flip state
@@ -381,8 +382,9 @@ public class ShaderManager {
         // End fullscreen quad rendering
         if (isFullScreen) {
             FullScreenQuadRenderer.INSTANCE.end();
+            isFullScreen = false;
         }
-        
+
         // Clean up state
         Program.unbind();
         GlStateManager._glUseProgram(0);
@@ -472,13 +474,13 @@ public class ShaderManager {
                 ProgramSamplers.customTextureSamplerInterceptor(builder, textureIds, ImmutableSet.of());
 
             // Find the buffer set required for that stage
-            Supplier<ImmutableSet<Integer>> flippedBuffers = switch (shaderForm.renderStage.get()) {
-                case BEGIN_STAGE, PREPARE_STAGE -> pipeline::getFlippedBeforeShadow;
-                case DEFERRED_STAGE -> pipeline::getFlippedAfterPrepare;
-                case COMPOSITE_STAGE, FINAL_STAGE -> pipeline::getFlippedAfterTranslucent;
+            ImmutableSet<Integer> flippedBuffers = switch (shaderForm.renderStage.get()) {
+                case BEGIN_STAGE, PREPARE_STAGE -> pipeline.getFlippedBeforeShadow();
+                case DEFERRED_STAGE -> pipeline.getFlippedAfterPrepare();
+                case COMPOSITE_STAGE, FINAL_STAGE -> pipeline.getFlippedAfterTranslucent();
                 default -> throw new IllegalArgumentException("Invalid render stage: " + shaderForm.renderStage.get());
             };
-            shaderForm.setFlippedBuffers(getFlipped(flippedBuffers.get(), flipState));
+            shaderForm.setFlippedBuffers(getFlipped(flippedBuffers, flipState));
 
             // Add render target samplers (colortex0-7, depth, etc.)
             IrisSamplers.addRenderTargetSamplers(

@@ -94,8 +94,13 @@ public class ShaderForm extends Form {
         if (this.framebuffer == null) {
             return false;
         }
-        this.framebuffer.bind();
-        return true;
+
+        try {
+            this.framebuffer.bind();
+            return true;
+        } catch (IllegalStateException e) { // Shader reloaded
+            return false;
+        }
     }
 
     // Get/setters for shader sources
