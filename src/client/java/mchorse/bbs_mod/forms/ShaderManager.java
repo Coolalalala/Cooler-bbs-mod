@@ -43,7 +43,6 @@ import org.lwjgl.opengl.GL13;
 import java.lang.reflect.Field;
 import java.nio.FloatBuffer;
 import java.util.*;
-import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -56,7 +55,7 @@ public class ShaderManager {
     public static Map<ShaderForm, Integer> activeDeferredShaders = new HashMap<>();
     public static Map<ShaderForm, Integer> activeCompositeShaders = new HashMap<>();
     public static Map<GBufferShaderForm, List<GBufferGroupData>> activeGBufferShaders = new HashMap<>();
-    private static final ImmutableSet<Integer> flipState = ImmutableSet.of();
+    private static ImmutableSet<Integer> flipState = ImmutableSet.of();
     private static BufferFlipperForm compositeFlipper;
     private static BufferFlipperForm deferredFlipper;
     private static boolean isFullScreen = false;
@@ -356,7 +355,7 @@ public class ShaderManager {
 
         // Initialize flip state
         // Find the buffer set required for that stage
-        ImmutableSet<Integer> flipState = switch (renderStage) {
+        flipState = switch (renderStage) {
             case BEGIN_STAGE, PREPARE_STAGE -> pipeline.getFlippedBeforeShadow();
             case DEFERRED_STAGE -> pipeline.getFlippedAfterPrepare();
             case COMPOSITE_STAGE, FINAL_STAGE -> pipeline.getFlippedAfterTranslucent();
