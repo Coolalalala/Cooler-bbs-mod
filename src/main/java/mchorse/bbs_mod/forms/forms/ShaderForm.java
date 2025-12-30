@@ -111,6 +111,11 @@ public class ShaderForm extends Form {
         this.drawBuffers = drawBuffers != null ? drawBuffers.clone() : new int[]{0};
     }
 
+    /**
+     * Binds the framebuffer if they exist
+     * @return true if framebuffer was successfully bound, false if no framebuffer exists
+     */
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public boolean bindFramebuffer() {
         if (this.framebuffer == null) {
             return false;
@@ -118,6 +123,7 @@ public class ShaderForm extends Form {
         this.framebuffer.bind();
         return true;
     }
+
 
     public GlFramebuffer getFramebuffer() {
         return this.framebuffer;
