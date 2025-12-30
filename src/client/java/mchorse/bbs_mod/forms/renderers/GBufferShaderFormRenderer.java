@@ -10,8 +10,7 @@ import mchorse.bbs_mod.forms.FormUtilsClient;
 import mchorse.bbs_mod.forms.ShaderManager;
 import mchorse.bbs_mod.BBSModClient;
 import mchorse.bbs_mod.forms.entities.IEntity;
-import mchorse.bbs_mod.forms.forms.BodyPart;
-import mchorse.bbs_mod.forms.forms.GBufferShaderForm;
+import mchorse.bbs_mod.forms.forms.*;
 import mchorse.bbs_mod.graphics.texture.Texture;
 import mchorse.bbs_mod.resources.Link;
 import mchorse.bbs_mod.ui.framework.UIContext;
@@ -54,21 +53,21 @@ public class GBufferShaderFormRenderer extends FormRenderer<GBufferShaderForm> {
 
         context.entity = part.useTarget.get() ? oldEntity : part.getEntity();
 
-        if (part.getForm() != null)
+        Form childrenForm  = part.getForm();
+        if (childrenForm != null)
         {
             context.stack.push();
             MatrixStackUtils.applyTransform(context.stack, part.transform.get());
 
             // Register for custom rendering
-            FormRenderer<?> childRenderer = FormUtilsClient.getRenderer(part.getForm());
-            if (childRenderer instanceof ModelFormRenderer modelRenderer) {
-                ModelInstance modelInstance = modelRenderer.getModel();
+            if (childrenForm instanceof ModelForm modelForm) {
+                ModelInstance modelInstance = BBSModClient.getModels().getModel(modelForm.model.get());
                 if  (modelInstance != null && modelInstance.getModel() instanceof Model model) {
                     Map<ModelGroup, ModelVAO> vaos = modelInstance.getVaos();
 
                     // Track the model's texture
                     Texture texture = null;
-                    Link textureLink = modelRenderer.getForm().texture.get();
+                    Link textureLink = modelForm.texture.get();
                     if (textureLink == null) {
                         textureLink = modelInstance.texture;
                     }
@@ -86,7 +85,7 @@ public class GBufferShaderFormRenderer extends FormRenderer<GBufferShaderForm> {
 
             if (this.form.renderChildren.get()) {
                 // Regular rendering as usual
-                FormUtilsClient.render(part.getForm(), context);
+                FormUtilsClient.render(childrenForm, context);
             }
 
             context.stack.pop();

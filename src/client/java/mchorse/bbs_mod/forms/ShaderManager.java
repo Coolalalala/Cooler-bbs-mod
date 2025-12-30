@@ -56,7 +56,7 @@ public class ShaderManager {
     public static Map<ShaderForm, Integer> activeDeferredShaders = new HashMap<>();
     public static Map<ShaderForm, Integer> activeCompositeShaders = new HashMap<>();
     public static Map<GBufferShaderForm, List<GBufferGroupData>> activeGBufferShaders = new HashMap<>();
-    private static ImmutableSet<Integer> flipState = ImmutableSet.of();
+    private static final ImmutableSet<Integer> flipState = ImmutableSet.of();
     private static BufferFlipperForm compositeFlipper;
     private static BufferFlipperForm deferredFlipper;
     private static boolean isFullScreen = false;
@@ -206,17 +206,24 @@ public class ShaderManager {
             Program.unbind();
 
             // Get draw buffers from shader form or default to colortex0
-            int[] drawBuffers = shaderForm.getDrawBuffers();
+            int[] drawBuffers = shaderForm.getDrawBuffersForReal();
             if (drawBuffers == null || drawBuffers.length == 0) {
                 drawBuffers = new int[]{0};
             }
 
             // Bind framebuffer
             if (!shaderForm.bindFramebuffer()) {
-                shaderForm.setFramebuffer(renderTargets.createColorFramebufferWithDepth(
-                        shaderForm.getFlippedBuffers(),
-                        drawBuffers
-                ));
+                if (shaderForm.pingpong.get()) {
+                    shaderForm.setFramebuffer(renderTargets.createColorFramebufferWithDepth(
+                            shaderForm.getFlippedBuffers(),
+                            drawBuffers
+                    ));
+                } else {
+                    shaderForm.setFramebuffer(renderTargets.createGbufferFramebuffer(
+                            shaderForm.getFlippedBuffers(),
+                            drawBuffers
+                    ));
+                }
             }
 
             // Use the program
@@ -319,7 +326,7 @@ public class ShaderManager {
     /**
      * Render custom shaders
      */
-    private static void renderPrograms(Map<ShaderForm, Integer> shaderMap, BufferFlipperForm bufferFlipper) {
+    private static void renderPrograms(Map<ShaderForm, Integer> shaderMap, BufferFlipperForm bufferFlipper, int renderStage) {
         if (isPipelineNuhuh()) return;
 
         // Get all active shader forms
@@ -342,14 +349,19 @@ public class ShaderManager {
                 .comparingInt((ShaderForm s) -> shaderMap.get(s))
                 .thenComparing(s -> Arrays.hashCode(s.getDrawBuffers())));
 
-        // Begin fullscreen quad rendering
+        // We don't insert into GBuffer stages, so we can assume the full screen rendering is always on at init
         RenderSystem.disableBlend();
-        if (isFullScreen) {
-            FullScreenQuadRenderer.INSTANCE.begin();
-        }
+        isFullScreen = true;
 
         // Initialize flip state
-        flipState = activeShaders.get(0).getFlippedBuffers();
+        // Find the buffer set required for that stage
+        ImmutableSet<Integer> flipState = switch (renderStage) {
+            case BEGIN_STAGE, PREPARE_STAGE -> pipeline.getFlippedBeforeShadow();
+            case DEFERRED_STAGE -> pipeline.getFlippedAfterPrepare();
+            case COMPOSITE_STAGE, FINAL_STAGE -> pipeline.getFlippedAfterTranslucent();
+            default ->
+                    throw new IllegalArgumentException("Invalid render stage: " + renderStage);
+        };
         
         // Render each shader
         for (ShaderForm shaderForm : activeShaders) {
@@ -380,11 +392,11 @@ public class ShaderManager {
     }
 
     public static void renderCompositeStage() {
-        renderPrograms(activeCompositeShaders, compositeFlipper);
+        renderPrograms(activeCompositeShaders, compositeFlipper, COMPOSITE_STAGE);
     }
 
     public static void renderDeferredStage() {
-        renderPrograms(activeDeferredShaders, deferredFlipper);
+        renderPrograms(activeDeferredShaders, deferredFlipper, DEFERRED_STAGE);
     }
 
 
@@ -553,7 +565,8 @@ public class ShaderManager {
     }
 
     /**
-     * Get the set that is flipped for every buffer in the given set
+     * Get the set that is flipped for every buffer in the toFlip set
+     * @return The flipped set
      */
     public static ImmutableSet<Integer> getFlipped(Set<Integer> buffers, Set<Integer> toFlip) {
         if (buffers == null) return ImmutableSet.copyOf(toFlip);

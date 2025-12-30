@@ -18,7 +18,7 @@ public class ShaderForm extends Form {
     private Program shaderProgram = null;
     private ImmutableSet<Integer> flippedBuffers = ImmutableSet.of();
     private boolean shaderDirty = true;
-    private int[] drawBuffers = new int[]{0,1,2,3,4,5,6,7};
+    private int[] drawBuffers = new int[]{};
     private GlFramebuffer framebuffer = null;
 
     public final ValueString name = new ValueString("name", "");
@@ -122,7 +122,7 @@ public class ShaderForm extends Form {
     }
 
     public void setDrawBuffers(int[] drawBuffers) {
-        this.drawBuffers = drawBuffers != null ? drawBuffers.clone() : new int[]{0,1,2,3,4,5,6,7};
+        this.drawBuffers = drawBuffers != null ? drawBuffers.clone() : new int[]{};
     }
 
     public GlFramebuffer getFramebuffer() {

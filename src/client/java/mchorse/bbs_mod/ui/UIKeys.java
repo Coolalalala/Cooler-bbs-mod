@@ -437,6 +437,7 @@ public class UIKeys
     public static final IKey FORMS_EDITOR_SHADER_GEOMETRY = L10n.lang("bbs.ui.forms.editor.shader.geometry");
     public static final IKey FORMS_EDITOR_SHADER_FRAGMENT = L10n.lang("bbs.ui.forms.editor.shader.fragment");
     public static final IKey FORMS_EDITOR_SHADER_SEND_CHILDREN = L10n.lang("bbs.ui.forms.editor.shader.send_children");
+    public static final IKey FORMS_EDITOR_SHADER_PINGPONG = L10n.lang("bbs.ui.forms.editor.shader.pingpong");
     public static final IKey FORMS_EDITOR_SHADER_PRIORITY = L10n.lang("bbs.ui.forms.editor.shader.priority");
     public static final IKey FORMS_EDITOR_SHADER_PRIORITY_TOOLTIP = L10n.lang("bbs.ui.forms.editor.shader.priority-tooltip");
     public static final IKey FORMS_EDITOR_SHADER_RENDER_STAGE = L10n.lang("bbs.ui.forms.editor.shader.render_stage");
