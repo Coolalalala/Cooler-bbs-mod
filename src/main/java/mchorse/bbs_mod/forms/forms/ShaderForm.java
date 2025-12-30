@@ -61,7 +61,8 @@ public class ShaderForm extends Form {
     }
 
     public ImmutableSet<Integer> getFlippedBuffers() {
-        return this.flippedBuffers;
+        if (this.flippedBuffers != null) return ImmutableSet.copyOf(this.flippedBuffers);
+        else return ImmutableSet.of();
     }
 
     public void setFlippedBuffers(ImmutableSet<Integer> flippedBuffers) {
@@ -73,7 +74,7 @@ public class ShaderForm extends Form {
             this.shaderProgram.destroy();
             this.shaderProgram = null;
         }
-        this.flippedBuffers = null;
+        this.flippedBuffers = ImmutableSet.of();
     }
 
     public void markDirty() {
@@ -84,7 +85,20 @@ public class ShaderForm extends Form {
         return this.shaderDirty;
     }
 
-    // Getters for shader sources
+    /**
+     * Binds the framebuffer if they exist
+     * @return true if framebuffer was successfully bound, false if no framebuffer exists
+     */
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
+    public boolean bindFramebuffer() {
+        if (this.framebuffer == null) {
+            return false;
+        }
+        this.framebuffer.bind();
+        return true;
+    }
+
+    // Get/setters for shader sources
 
     public String getName() {
         return this.name.toString();
@@ -108,22 +122,8 @@ public class ShaderForm extends Form {
     }
 
     public void setDrawBuffers(int[] drawBuffers) {
-        this.drawBuffers = drawBuffers != null ? drawBuffers.clone() : new int[]{0};
+        this.drawBuffers = drawBuffers != null ? drawBuffers.clone() : new int[]{0,1,2,3,4,5,6,7};
     }
-
-    /**
-     * Binds the framebuffer if they exist
-     * @return true if framebuffer was successfully bound, false if no framebuffer exists
-     */
-    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
-    public boolean bindFramebuffer() {
-        if (this.framebuffer == null) {
-            return false;
-        }
-        this.framebuffer.bind();
-        return true;
-    }
-
 
     public GlFramebuffer getFramebuffer() {
         return this.framebuffer;

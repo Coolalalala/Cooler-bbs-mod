@@ -38,13 +38,14 @@ import net.irisshaders.iris.pipeline.transform.TransformPatcher;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.VertexFormats;
 import org.joml.Matrix4f;
-import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL13;
 
 import java.lang.reflect.Field;
 import java.nio.FloatBuffer;
 import java.util.*;
 import java.util.function.Supplier;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -163,10 +164,8 @@ public class ShaderManager {
     }
 
     public static void remove(ShaderForm program) {
-        if (program instanceof CompositeShaderForm) {
-            activeCompositeShaders.remove(program);
-            activeDeferredShaders.remove(program);
-        }
+        activeCompositeShaders.remove(program);
+        activeDeferredShaders.remove(program);
     }
 
     public static void clear() {
@@ -184,8 +183,6 @@ public class ShaderManager {
         if (isFullScreen) {
             FullScreenQuadRenderer.INSTANCE.end();
             isFullScreen = false;
-            GL11.glEnable(GL11.GL_DEPTH_TEST);
-            GL11.glDepthMask(true);
         }
         try {
             // Get or create the shader program
@@ -233,14 +230,18 @@ public class ShaderManager {
             int poseLocation = GlStateManager._glGetUniformLocation(progID, "modelPoseMatrix");
             int textureLocation = GlStateManager._glGetUniformLocation(progID, "modelTexture");
             // Upload texture unit
-            RenderSystem.glUniform1i(textureLocation, 29); // TODO: properly manage texture units
+            int modelTextureUnit = 8; // TODO: properly manage texture units
+            RenderSystem.glUniform1i(textureLocation, modelTextureUnit);
+
             for (GBufferGroupData data : gBufferDatas) {
                 // Upload transform as an uniform
                 FloatBuffer buffer = org.lwjgl.BufferUtils.createFloatBuffer(16);
                 data.poseTransform.get(buffer);
                 RenderSystem.glUniformMatrix4(poseLocation, false, buffer);
-                // Upload texture as a sampler 2D
-                data.texture.bind(GL13.GL_TEXTURE29);
+                
+                // Upload texture to the assigned texture unit
+                data.texture.bind(GL13.GL_TEXTURE0 + modelTextureUnit);
+                
                 // Draw group
                 data.vao.render(VertexFormats.POSITION_COLOR_TEXTURE_OVERLAY_LIGHT_NORMAL, 1, 0, 1, 1, 0, 0); // TODO: get light level
             }
@@ -335,7 +336,11 @@ public class ShaderManager {
             }
         }
         if (activeShaders.isEmpty()) return;
-        activeShaders.sort(Comparator.comparingInt(shaderMap::get)); // Large number runs first
+
+        // Sort by priority and buffer usage to avoid conflicts
+        activeShaders.sort(Comparator
+                .comparingInt((ShaderForm s) -> shaderMap.get(s))
+                .thenComparing(s -> Arrays.hashCode(s.getDrawBuffers())));
 
         // Begin fullscreen quad rendering
         RenderSystem.disableBlend();
@@ -345,6 +350,7 @@ public class ShaderManager {
 
         // Initialize flip state
         flipState = activeShaders.get(0).getFlippedBuffers();
+        
         // Render each shader
         for (ShaderForm shaderForm : activeShaders) {
             // Wait for next dispatch
@@ -352,19 +358,23 @@ public class ShaderManager {
             // Render
             renderShaderForm(shaderForm);
             // Toggle flip state
-            flipState = getFlipped(flipState, Arrays.stream(shaderForm.getDrawBuffers()).boxed().collect(Collectors.toSet())); // TODO: wtf
+            flipState = getFlipped(flipState, Arrays.stream(shaderForm.getDrawBuffers()).boxed().collect(Collectors.toSet()));
         }
         // Flip the buffers so that it matches the expected input from iris
-        bufferFlipper.set(flipState);
-        renderFullScreenQuad(bufferFlipper);
+        if (!flipState.equals(ImmutableSet.of())) { // If the flip state is not empty
+            bufferFlipper.set(flipState);
+            renderFullScreenQuad(bufferFlipper);
+        }
 
         // End fullscreen quad rendering
         if (isFullScreen) {
             FullScreenQuadRenderer.INSTANCE.end();
         }
+        
         // Clean up state
         Program.unbind();
         GlStateManager._glUseProgram(0);
+        
         // Restore main framebuffer
         MinecraftClient.getInstance().getFramebuffer().beginWrite(true);
     }
@@ -378,16 +388,20 @@ public class ShaderManager {
     }
 
 
-    /**
-     * Enhanced program creation with full Iris pipeline integration
-     * This creates programs with access to all Iris samplers and uniforms
-     * Uses TransformPatcher to transform shaders for compatibility with Iris's FullScreenQuadRenderer
-     */
     public static Program createCompositeProgram(ShaderForm shaderForm) {
+        return createProgramInternal(shaderForm, true, IrisSamplers.COMPOSITE_RESERVED_TEXTURE_UNITS, FogMode.OFF);
+    }
+
+    public static Program createGBufferProgram(GBufferShaderForm shaderForm) {
+        return createProgramInternal(shaderForm, false, IrisSamplers.WORLD_RESERVED_TEXTURE_UNITS, FogMode.PER_VERTEX);
+    }
+
+
+    private static Program createProgramInternal(ShaderForm shaderForm, boolean isComposite, ImmutableSet<java.lang.Integer> reservedTextureUnits, FogMode fogMode) {
         if (isPipelineNuhuh()) return null;
 
         try {
-            LogUtils.getLogger().debug("Creating Iris-integrated program for: " + shaderForm.getName());
+            LogUtils.getLogger().debug("Creating Iris-integrated program for: {}", shaderForm.getName());
 
             // Transform shaders using Iris's TransformPatcher (like CompositeRenderer does)
 
@@ -419,13 +433,16 @@ public class ShaderManager {
                 vertex,
                 geometry,
                 fragment,
-                IrisSamplers.COMPOSITE_RESERVED_TEXTURE_UNITS
+                reservedTextureUnits
             );
+
+            // Find draw buffers
+            shaderForm.setDrawBuffers(findBufferLocations(fragment));
 
             // Add dynamic uniforms (time, view matrix, etc.)
             NamespacedId dimension = new NamespacedId("minecraft:overworld");
             ProgramSet currentSet = currentPack.getProgramSet(dimension).getPack().getProgramSet(dimension);
-            CommonUniforms.addCommonUniforms(builder, currentPack.getIdMap(), currentSet.getPackDirectives(), updateNotifier, FogMode.OFF);
+            CommonUniforms.addCommonUniforms(builder, currentPack.getIdMap(), currentSet.getPackDirectives(), updateNotifier, fogMode);
 
             // Assign custom uniforms from shader pack
             customUniforms.assignTo(builder);
@@ -456,7 +473,7 @@ public class ShaderManager {
                 interceptor,
                 shaderForm::getFlippedBuffers,
                 renderTargets,
-                true,  // isComposite
+                isComposite,
                 pipeline
             );
 
@@ -495,139 +512,22 @@ public class ShaderManager {
             // Map custom uniforms to this program
             customUniforms.mapholderToPass(builder, program);
 
-            LogUtils.getLogger().info("Successfully created Iris-integrated program for: " + shaderForm.getName());
-            return program;
-
-        } catch (IllegalStateException e) {
-            // Pipeline has been deleted
-            destroy();
-        } catch (Exception e) {
-            LogUtils.getLogger().error("Failed to create composite program for: {}\n{}", shaderForm.getName(), e.getMessage());
-        }
-        return null;
-    }
-
-    /**
-     * Create a program suitable for geometry rendering with full Iris integration
-     */
-    public static Program createGBufferProgram(GBufferShaderForm shaderForm) {
-        if (isPipelineNuhuh()) return null;
-
-        try {
-            LogUtils.getLogger().debug("Creating geometry program for: {}", shaderForm.getName());
-
-            // Transform shaders using Iris's TransformPatcher
-            TextureStage textureStage = switch (shaderForm.renderStage.get()) {
-                case BEGIN_STAGE -> TextureStage.BEGIN;
-                case PREPARE_STAGE -> TextureStage.PREPARE;
-                case DEFERRED_STAGE -> TextureStage.DEFERRED;
-                case COMPOSITE_STAGE, FINAL_STAGE -> TextureStage.COMPOSITE_AND_FINAL;
-                default -> throw new IllegalArgumentException("Invalid render stage: " + shaderForm.renderStage.get());
-            };
-
-            Map<PatchShaderType, String> transformed = TransformPatcher.patchComposite(
-                    shaderForm.getName(),
-                    shaderForm.getVertexSource(),
-                    shaderForm.getGeometrySource(),
-                    shaderForm.getFragmentSource(),
-                    textureStage,
-                    pipeline.getTextureMap()
-            );
-
-            String vertex = transformed.get(PatchShaderType.VERTEX);
-            String geometry = transformed.get(PatchShaderType.GEOMETRY);
-            String fragment = transformed.get(PatchShaderType.FRAGMENT);
-
-            // Create program builder with transformed shader sources
-            ProgramBuilder builder = ProgramBuilder.begin(
-                    shaderForm.getName(),
-                    vertex,
-                    geometry,
-                    fragment,
-                    IrisSamplers.WORLD_RESERVED_TEXTURE_UNITS
-            );
-
-            // Add dynamic uniforms
-            NamespacedId dimension = new NamespacedId("minecraft:overworld");
-            ProgramSet currentSet = currentPack.getProgramSet(dimension).getPack().getProgramSet(dimension);
-            CommonUniforms.addCommonUniforms(builder, currentPack.getIdMap(), currentSet.getPackDirectives(), updateNotifier, FogMode.PER_VERTEX);
-
-            // Assign custom uniforms
-            customUniforms.assignTo(builder);
-
-            // Set up samplers
-            Object2ObjectMap<String, TextureAccess> textureIds = customTextureManager != null
-                    ? customTextureManager.getCustomTextureIdMap(textureStage)
-                    : customTextureIds;
-            Object2ObjectMap<String, TextureAccess> irisTextures = customTextureManager != null
-                    ? customTextureManager.getIrisCustomTextures()
-                    : irisCustomTextures;
-
-            ProgramSamplers.CustomTextureSamplerInterceptor interceptor =
-                    ProgramSamplers.customTextureSamplerInterceptor(builder, textureIds, ImmutableSet.of());
-
-            // Determine flipped buffers based on render stage
-            Supplier<ImmutableSet<Integer>> flippedBuffers = switch (shaderForm.renderStage.get()) {
-                case BEGIN_STAGE, PREPARE_STAGE -> pipeline::getFlippedBeforeShadow;
-                case DEFERRED_STAGE -> pipeline::getFlippedAfterPrepare;
-                case COMPOSITE_STAGE, FINAL_STAGE -> pipeline::getFlippedAfterTranslucent;
-                default -> throw new IllegalArgumentException("Invalid render stage: " + shaderForm.renderStage.get());
-            };
-
-            shaderForm.setFlippedBuffers(getFlipped(flippedBuffers.get(), flipState));
-
-            // Add render target samplers
-            IrisSamplers.addRenderTargetSamplers(
-                    interceptor,
-                    shaderForm::getFlippedBuffers,
-                    renderTargets,
-                    false, // Not composite
-                    pipeline
-            );
-
-            // Add other samplers
-            IrisSamplers.addCustomTextures(builder, irisTextures);
-            IrisSamplers.addCustomImages(interceptor, customImages);
-            IrisImages.addRenderTargetImages(builder, shaderForm::getFlippedBuffers, renderTargets);
-            IrisImages.addCustomImages(builder, customImages);
-
-            TextureAccess noiseTexture = customTextureManager.getNoiseTexture();
-            IrisSamplers.addNoiseSampler(interceptor, noiseTexture);
-
-            // Add shadow samplers if needed
-            if (IrisSamplers.hasShadowSamplers(interceptor)) {
-                // TODO: implement
-            }
-
-            // Add center depth sampler
-            if (centerDepthSampler != null) {
-                centerDepthSampler.setUsage(
-                        builder.addDynamicSampler(
-                                centerDepthSampler::getCenterDepthTexture,
-                                "iris_centerDepthSmooth"
-                        )
-                );
-            }
-
-            // Build the program
-            Program program = builder.build();
-
-            // Map custom uniforms
-            customUniforms.mapholderToPass(builder, program);
-
-            LogUtils.getLogger().info("Successfully created geometry program for: {}", shaderForm.getName());
+            LogUtils.getLogger().info("Successfully created {} shader program for: {}",
+                        isComposite ? "composite" : "geometry", shaderForm.getName());
             return program;
 
         } catch (IllegalStateException e) {
             destroy();
         } catch (Exception e) {
-            LogUtils.getLogger().error("Failed to create geometry program for: {}\n{}", shaderForm.getName(), e.getMessage());
+            LogUtils.getLogger().error("Failed to create {} program for: {}\n{}",
+                    isComposite ? "composite" : "geometry", shaderForm.getName(), e.getMessage());
         }
         return null;
     }
 
 
     public static void reCompile() {
+        LogUtils.getLogger().info("Recompiling shader forms...");
         activeCompositeShaders.keySet().forEach(ShaderForm::markDirty);
         activeDeferredShaders.keySet().forEach(ShaderForm::markDirty);
         compositeFlipper.setBuffers(ImmutableSet.of());
@@ -655,14 +555,49 @@ public class ShaderManager {
     /**
      * Get the set that is flipped for every buffer in the given set
      */
-    public static ImmutableSet<Integer> getFlipped(ImmutableSet<Integer> buffers, Set<Integer> toFlip) {
+    public static ImmutableSet<Integer> getFlipped(Set<Integer> buffers, Set<Integer> toFlip) {
         if (buffers == null) return ImmutableSet.copyOf(toFlip);
         // Essentially XOR
         return IntStream.range(0, 8)
                 .filter(i -> toFlip.contains(i) != buffers.contains(i))
                 .boxed()
                 .collect(ImmutableSet.toImmutableSet());
+    }
 
+
+    /**
+     * Find written buffer locations in the given glsl source code
+     *
+     * @param src The glsl source code
+     * @return The buffer locations that are written into
+     */
+    public static int[] findBufferLocations(String src) {
+        List<Integer> locations = new ArrayList<>();
+
+        // Pattern to match layout(location = X) with "out vec4"
+        String pattern = "layout\\s*\\([^)]*?location\\s*=\\s*(\\d+)[^)]*\\)\\s+out\\s+vec4";
+
+        Pattern regex = Pattern.compile(pattern);
+        Matcher matcher = regex.matcher(src);
+
+        while (matcher.find()) {
+            try {
+                // Extract the location number from the match
+                String match = matcher.group(0);
+                Pattern numPattern = Pattern.compile("location\\s*=\\s*(\\d+)");
+                Matcher numMatcher = numPattern.matcher(match);
+
+                if (numMatcher.find()) {
+                    int location = Integer.parseInt(numMatcher.group(1));
+                    locations.add(location);
+                }
+            } catch (NumberFormatException e) {
+                LogUtils.getLogger().error("Failed to parse location, enabling all buffers");
+                return new int[]{0,1,2,3,4,5,6,7};
+            }
+        }
+
+        return locations.stream().mapToInt(Integer::intValue).toArray();
     }
 
 
