@@ -122,11 +122,4 @@ public class ModelVAO implements IModelVAO
     {
         return BBSRendering.isIrisShadersEnabled();
     }
-    
-    /**
-     * Get the underlying VAO data for this model
-     */
-    public ModelVAOData getData() {
-        return this.data;
-    }
 }
