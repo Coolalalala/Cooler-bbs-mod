@@ -63,10 +63,12 @@ public class FormUtilsClient
         register(VanillaParticleForm.class, VanillaParticleFormRenderer::new);
         register(TrailForm.class, TrailFormRenderer::new);
         register(FramebufferForm.class, FramebufferFormRenderer::new);
-        register(LightForm.class, LightFormRenderer::new);
+        register(LightForm.class, LightFormRenderer::new); // Coolaa extras
         register(CompositeShaderForm.class, CompositeShaderFormRenderer::new);
         register(GBufferShaderForm.class, GBufferShaderFormRenderer::new);
+        register(ComputeShaderForm.class, ComputeShaderFormRenderer::new);
         register(BufferFlipperForm.class, BufferFlipperFormRenderer::new);
+        register(SSBOForm.class, SSBOFormRenderer::new);
     }
 
     private static void assignBufferBuilder(Object2ObjectLinkedOpenHashMap<RenderLayer, BufferBuilder> builderStorage, RenderLayer layer)
