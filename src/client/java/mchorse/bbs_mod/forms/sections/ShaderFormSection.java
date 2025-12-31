@@ -2,10 +2,7 @@ package mchorse.bbs_mod.forms.sections;
 
 import mchorse.bbs_mod.forms.FormCategories;
 import mchorse.bbs_mod.forms.categories.FormCategory;
-import mchorse.bbs_mod.forms.forms.BufferFlipperForm;
-import mchorse.bbs_mod.forms.forms.CompositeShaderForm;
-import mchorse.bbs_mod.forms.forms.GBufferShaderForm;
-import mchorse.bbs_mod.forms.forms.LightForm;
+import mchorse.bbs_mod.forms.forms.*;
 import mchorse.bbs_mod.ui.UIKeys;
 
 import java.util.Arrays;
@@ -28,8 +25,12 @@ public class ShaderFormSection extends FormSection {
         shaderForm.addForm(compositeShaderForm);
         GBufferShaderForm gBufferShaderForm = new GBufferShaderForm();
         shaderForm.addForm(gBufferShaderForm);
+        ComputeShaderForm computeShaderForm = new ComputeShaderForm();
+        shaderForm.addForm(computeShaderForm);
         BufferFlipperForm bufferFlipperForm = new BufferFlipperForm();
         shaderForm.addForm(bufferFlipperForm);
+        SSBOForm ssboForm = new SSBOForm();
+        shaderForm.addForm(ssboForm);
 
         this.categories = Arrays.asList(shaderForm);
     }

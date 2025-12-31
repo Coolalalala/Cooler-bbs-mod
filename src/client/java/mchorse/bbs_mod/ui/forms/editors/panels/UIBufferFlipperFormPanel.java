@@ -51,7 +51,7 @@ public class UIBufferFlipperFormPanel extends UIFormPanel<BufferFlipperForm> {
         this.renderStage.addLabel(UIKeys.FORMS_EDITOR_SHADER_RENDER_STAGE_DEFERRED);
         this.renderStage.addLabel(UIKeys.FORMS_EDITOR_SHADER_RENDER_STAGE_COMPOSITE);
         this.renderStage.addLabel(UIKeys.FORMS_EDITOR_SHADER_RENDER_STAGE_END);
-        this.recompileAll = new UIButton(UIKeys.FORMS_EDITOR_SHADER_RECOMPILE, (b) -> ShaderManager.reCompile());
+        this.recompileAll = new UIButton(UIKeys.FORMS_EDITOR_SHADER_RECOMPILE, (b) -> ShaderManager.recompile());
 
         this.options.add(UI.label(UIKeys.FORMS_EDITOR_SHADER_NAME), this.name);
         this.options.add(this.flip0, this.flip1, this.flip2, this.flip3, this.flip4, this.flip5, this.flip6, this.flip7);

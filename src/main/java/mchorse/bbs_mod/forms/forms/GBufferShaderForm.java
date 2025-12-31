@@ -4,12 +4,14 @@ package mchorse.bbs_mod.forms.forms;
 import mchorse.bbs_mod.settings.values.numeric.ValueBoolean;
 
 public class GBufferShaderForm extends ShaderForm {
+    public final ValueBoolean culling = new ValueBoolean("culling", true);
     public final ValueBoolean renderChildren = new ValueBoolean("renderChildren", false);
     public final ValueBoolean pingpong = new ValueBoolean("pingpong", false);
 
     public GBufferShaderForm() {
         super();
 
+        this.add(this.culling);
         this.add(this.renderChildren);
         this.add(this.pingpong);
     }

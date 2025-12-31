@@ -1,7 +1,7 @@
 package mchorse.bbs_mod.ui.forms.editors.panels;
 
 import mchorse.bbs_mod.forms.ShaderManager;
-import mchorse.bbs_mod.forms.forms.ShaderForm;
+import mchorse.bbs_mod.forms.forms.ComputeShaderForm;
 import mchorse.bbs_mod.ui.UIKeys;
 import mchorse.bbs_mod.ui.forms.editors.forms.UIForm;
 import mchorse.bbs_mod.ui.framework.elements.buttons.UIButton;
@@ -15,20 +15,15 @@ import mchorse.bbs_mod.ui.utils.icons.Icons;
 
 import java.util.function.Consumer;
 
-public class UIShaderFormPanel<T extends ShaderForm> extends UIFormPanel<T> {
+public class UIComputeShaderFormPanel extends UIFormPanel<ComputeShaderForm> {
     public UITextEditor textEditor;
     public UITextbox name;
-    public UIButton vertex;
-    public UIButton fragment;
-    public UIButton geometry;
-//    public UIButton tessellationControl;
-//    public UIButton tessellationEvaluation;
-//    public UIButton compute;
+    public UIButton source;
     public UITrackpad priority;
     public UICirculate renderStage;
     public UIButton recompileAll;
 
-    public UIShaderFormPanel(UIForm<T> editor) {
+    public UIComputeShaderFormPanel(UIForm<ComputeShaderForm> editor) {
         super(editor);
 
         // Create text editor
@@ -36,15 +31,13 @@ public class UIShaderFormPanel<T extends ShaderForm> extends UIFormPanel<T> {
         this.textEditor.background().relative(editor).y(1F, -200).w(1F).h(200).setVisible(false);
         editor.add(this.textEditor);
         // Add close button to editor
-        UIIcon close = new UIIcon(Icons.CLOSE, (b) -> this.editProgramSrc(null, null));
+        UIIcon close = new UIIcon(Icons.CLOSE, (b) -> this.editProgramSrc(null));
         close.relative(this.textEditor).x(1F, -20);
         this.textEditor.add(close);
 
         // Create options
         this.name = new UITextbox(1024, (str) -> this.form.name.set(str));
-        this.vertex = new UIButton(UIKeys.FORMS_EDITOR_SHADER_VERTEX, (v) -> this.editProgramSrc(this::setVertex, this.form.vertex.toString()));
-        this.fragment = new UIButton(UIKeys.FORMS_EDITOR_SHADER_FRAGMENT, (v) -> this.editProgramSrc(this::setFragment, this.form.fragment.toString()));
-        this.geometry = new UIButton(UIKeys.FORMS_EDITOR_SHADER_GEOMETRY, (v) -> this.editProgramSrc(this::setGeometry, this.form.geometry.toString()));
+        this.source = new UIButton(UIKeys.FORMS_EDITOR_SHADER_COMPUTE, (v) -> this.editProgramSrc(this::setSource));
         this.priority = new UITrackpad((v) -> this.form.priority.set(v.intValue()));
         this.priority.integer().limit(1);
         this.priority.tooltip(UIKeys.FORMS_EDITOR_SHADER_PRIORITY_TOOLTIP);
@@ -58,14 +51,14 @@ public class UIShaderFormPanel<T extends ShaderForm> extends UIFormPanel<T> {
         this.recompileAll = new UIButton(UIKeys.FORMS_EDITOR_SHADER_RECOMPILE, (b) -> ShaderManager.recompile());
 
         this.options.add(UI.label(UIKeys.FORMS_EDITOR_SHADER_NAME), this.name);
-        this.options.add(this.vertex, this.geometry, this.fragment);
+        this.options.add(this.source);
         this.options.add(UI.label(UIKeys.FORMS_EDITOR_SHADER_PRIORITY), this.priority);
         this.options.add(UI.label(UIKeys.FORMS_EDITOR_SHADER_RENDER_STAGE), this.renderStage);
         this.options.add(this.recompileAll);
     }
 
     @Override
-    public void startEdit(T form) {
+    public void startEdit(ComputeShaderForm form) {
         super.startEdit(form);
 
         this.name.setText(form.name.toString());
@@ -73,23 +66,15 @@ public class UIShaderFormPanel<T extends ShaderForm> extends UIFormPanel<T> {
         this.renderStage.setValue(form.renderStage.get());
     }
 
-    private void setVertex(String str) {
-        this.form.vertex.set(str);
-        this.form.markDirty();
-    }
-    private void setFragment(String str) {
-        this.form.fragment.set(str);
-        this.form.markDirty();
-    }
-    private void setGeometry(String str) {
-        this.form.geometry.set(str);
+    private void setSource(String str) {
+        this.form.computeSource.set(str);
         this.form.markDirty();
     }
 
-    public void editProgramSrc(Consumer<String> callback, String src)
+    public void editProgramSrc(Consumer<String> callback)
     {
         this.textEditor.callback = callback;
-        this.textEditor.setText(src == null ? "" : src);
+        this.textEditor.setText(this.form.computeSource.get());
         this.textEditor.setVisible(callback != null);
 
         if (callback != null)
@@ -103,5 +88,4 @@ public class UIShaderFormPanel<T extends ShaderForm> extends UIFormPanel<T> {
 
         this.options.resize();
     }
-
 }

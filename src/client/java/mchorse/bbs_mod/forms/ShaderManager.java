@@ -7,13 +7,12 @@ import com.mojang.logging.LogUtils;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMaps;
 import mchorse.bbs_mod.cubic.render.vao.ModelVAO;
-import mchorse.bbs_mod.forms.forms.BufferFlipperForm;
-import mchorse.bbs_mod.forms.forms.CompositeShaderForm;
-import mchorse.bbs_mod.forms.forms.GBufferShaderForm;
-import mchorse.bbs_mod.forms.forms.ShaderForm;
+import mchorse.bbs_mod.forms.forms.*;
 import mchorse.bbs_mod.graphics.texture.Texture;
 import net.irisshaders.iris.Iris;
+import net.irisshaders.iris.gl.IrisRenderSystem;
 import net.irisshaders.iris.gl.image.GlImage;
+import net.irisshaders.iris.gl.program.ComputeProgram;
 import net.irisshaders.iris.gl.program.Program;
 import net.irisshaders.iris.gl.program.ProgramBuilder;
 import net.irisshaders.iris.gl.program.ProgramSamplers;
@@ -38,6 +37,8 @@ import net.irisshaders.iris.pipeline.transform.TransformPatcher;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.VertexFormats;
 import org.joml.Matrix4f;
+import org.joml.Vector2f;
+import org.joml.Vector3i;
 import org.lwjgl.opengl.GL13;
 
 import java.lang.reflect.Field;
@@ -59,6 +60,7 @@ public class ShaderManager {
     private static BufferFlipperForm compositeFlipper;
     private static BufferFlipperForm deferredFlipper;
     private static boolean isFullScreen = false;
+    private static boolean culling = true;
 
     private static IrisRenderingPipeline pipeline = null;
     private static RenderTargets renderTargets = null;
@@ -162,6 +164,9 @@ public class ShaderManager {
         }
     }
 
+    public static void addCompute(ComputeShaderForm program) {
+    }
+
     public static void remove(ShaderForm program) {
         activeCompositeShaders.remove(program);
         activeDeferredShaders.remove(program);
@@ -182,6 +187,15 @@ public class ShaderManager {
         if (isFullScreen) {
             FullScreenQuadRenderer.INSTANCE.end();
             isFullScreen = false;
+        }
+        if (culling != shaderForm.culling.get()) {
+            if (culling) {
+                RenderSystem.disableCull();
+                culling = false;
+            } else {
+                RenderSystem.enableCull();
+                culling = true;
+            }
         }
         try {
             // Get or create the shader program
@@ -313,13 +327,53 @@ public class ShaderManager {
             // Render fullscreen quad
             FullScreenQuadRenderer.INSTANCE.renderQuad();
         } catch (Exception e) {
-            LogUtils.getLogger().error("Failed to render shader form: " + shaderForm.getName(), e);
+            LogUtils.getLogger().error("Failed to render composite shader form: {}", shaderForm.getName(), e);
+        }
+    }
+
+    private static void renderCompute(ComputeShaderForm shaderForm) {
+
+        try {
+            // Get or create the shader program using Iris integration
+            ComputeProgram program;
+            if (shaderForm.isDirty()) { // Recompile if dirty
+                shaderForm.destroyProgram();
+                // Try to create Iris-integrated program
+                program = createComputeProgram(shaderForm);
+                shaderForm.setComputeProgram(program);
+                if (program == null) {
+                    LogUtils.getLogger().warn("Compute shader program is null for form: {}", shaderForm.getName());
+                    return;
+                }
+            }
+            else program = shaderForm.getComputeProgram();
+            if (program == null) return;
+
+            // Unbind any previous program
+            Program.unbind();
+
+            // Find viewport size
+            RenderTarget target = renderTargets.get(0);
+            // Use the program
+            program.use();
+            // Dispatch compute shader
+            program.dispatch(target.getWidth(), target.getHeight());
+
+            // Push custom uniforms
+            customUniforms.push(program);
+
+            // Ensure calculations finish
+            IrisRenderSystem.memoryBarrier(8232);
+        }
+        catch (Exception e) {
+            LogUtils.getLogger().error("Failed to render compute shader form: {}", shaderForm.getName(), e);
         }
     }
 
     private static void renderShaderForm(ShaderForm shaderForm) {
         if (shaderForm instanceof GBufferShaderForm) renderGeometry((GBufferShaderForm) shaderForm, activeGBufferShaders.get(shaderForm));
-        else renderFullScreenQuad((CompositeShaderForm) shaderForm);
+        else if (shaderForm instanceof CompositeShaderForm) renderFullScreenQuad((CompositeShaderForm) shaderForm);
+        else if (shaderForm instanceof ComputeShaderForm) renderCompute((ComputeShaderForm) shaderForm);
     }
 
     /**
@@ -352,6 +406,8 @@ public class ShaderManager {
         RenderSystem.disableBlend();
         FullScreenQuadRenderer.INSTANCE.begin();
         isFullScreen = true;
+        RenderSystem.enableCull();
+        culling = true;
 
         // Initialize flip state
         // Find the buffer set required for that stage
@@ -409,14 +465,13 @@ public class ShaderManager {
         return createProgramInternal(shaderForm, false, IrisSamplers.WORLD_RESERVED_TEXTURE_UNITS, FogMode.PER_VERTEX);
     }
 
-
-    private static Program createProgramInternal(ShaderForm shaderForm, boolean isComposite, ImmutableSet<java.lang.Integer> reservedTextureUnits, FogMode fogMode) {
+    public static ComputeProgram createComputeProgram(ComputeShaderForm shaderForm) {
         if (isPipelineNuhuh()) return null;
 
         try {
-            LogUtils.getLogger().debug("Creating Iris-integrated program for: {}", shaderForm.getName());
+            LogUtils.getLogger().debug("Creating compute program for: {}", shaderForm.getName());
 
-            // Transform shaders using Iris's TransformPatcher (like CompositeRenderer does)
+            String computeSource = shaderForm.getComputeSource();
 
             // Use appropriate texture stage based on render stage
             TextureStage textureStage = switch (shaderForm.renderStage.get()) {
@@ -427,6 +482,114 @@ public class ShaderManager {
                 default -> throw new IllegalArgumentException("Invalid render stage: " + shaderForm.renderStage.get());
             };
 
+            // Transform the compute shader using Iris's TransformPatcher
+            String transformed = TransformPatcher.patchCompute(
+                    shaderForm.getName(),
+                    computeSource,
+                    textureStage, // or appropriate stage
+                    pipeline.getTextureMap()
+            );
+
+            // Create program builder
+            ProgramBuilder builder = ProgramBuilder.beginCompute(
+                    shaderForm.getName(),
+                    transformed,
+                    IrisSamplers.COMPOSITE_RESERVED_TEXTURE_UNITS // or appropriate units
+            );
+
+            // Add dynamic uniforms (time, view matrix, etc.)
+            NamespacedId dimension = new NamespacedId("minecraft:overworld");
+            ProgramSet currentSet = currentPack.getProgramSet(dimension).getPack().getProgramSet(dimension);
+            CommonUniforms.addCommonUniforms(builder, currentPack.getIdMap(), currentSet.getPackDirectives(), updateNotifier, FogMode.OFF);
+
+            // Assign uniforms
+            customUniforms.assignTo(builder);
+
+            // Set up samplers
+            // Use CustomTextureManager to get the actual texture maps for the appropriate stage
+            Object2ObjectMap<String, TextureAccess> textureIds = customTextureManager != null
+                    ? customTextureManager.getCustomTextureIdMap(textureStage)
+                    : customTextureIds;
+            Object2ObjectMap<String, TextureAccess> irisTextures = customTextureManager != null
+                    ? customTextureManager.getIrisCustomTextures()
+                    : irisCustomTextures;
+
+            // Setup samplers and images similar to other programs
+            ProgramSamplers.CustomTextureSamplerInterceptor interceptor =
+                    ProgramSamplers.customTextureSamplerInterceptor(builder, textureIds, ImmutableSet.of());
+
+            // Add render target samplers
+            IrisSamplers.addRenderTargetSamplers(
+                    interceptor,
+                    ImmutableSet::of, // Empty set for compute
+                    renderTargets,
+                    true,
+                    pipeline
+            );
+
+            // Add custom textures from shader pack
+            IrisSamplers.addCustomTextures(builder, irisTextures);
+
+            // Add custom images
+            IrisSamplers.addCustomImages(interceptor, customImages);
+
+            // Add render target images
+            IrisImages.addRenderTargetImages(builder, shaderForm::getFlippedBuffers, renderTargets);
+
+            // Add custom images
+            IrisImages.addCustomImages(builder, customImages);
+
+            // Add noise sampler
+            TextureAccess noiseTexture = customTextureManager.getNoiseTexture();
+            IrisSamplers.addNoiseSampler(interceptor, noiseTexture);
+
+            // Add composite samplers
+            IrisSamplers.addCompositeSamplers(interceptor, renderTargets);
+
+            // Add center depth sampler
+            if (centerDepthSampler != null) {
+                centerDepthSampler.setUsage(
+                        builder.addDynamicSampler(
+                                centerDepthSampler::getCenterDepthTexture,
+                                "iris_centerDepthSmooth"
+                        )
+                );
+            }
+
+            // Build compute program
+            ComputeProgram computeProgram = builder.buildCompute();
+
+            // Set work group info
+            computeProgram.setWorkGroupInfo(new Vector2f(shaderForm.relativeX.get()), new Vector3i(shaderForm.workGroupsX.get(), shaderForm.workGroupsY.get(), shaderForm.workGroupsZ.get()), null);
+
+            LogUtils.getLogger().info("Successfully created compute shader program for: {}", shaderForm.getName());
+            return computeProgram;
+        } catch (Exception e) {
+            LogUtils.getLogger().error("Failed to create compute program for: {}", shaderForm.getName(), e);
+            return null;
+        }
+    }
+
+
+
+
+    private static Program createProgramInternal(ShaderForm shaderForm, boolean isComposite, ImmutableSet<java.lang.Integer> reservedTextureUnits, FogMode fogMode) {
+        if (isPipelineNuhuh()) return null;
+
+        try {
+            LogUtils.getLogger().debug("Creating Iris-integrated program for: {}", shaderForm.getName());
+
+
+            // Use appropriate texture stage based on render stage
+            TextureStage textureStage = switch (shaderForm.renderStage.get()) {
+                case BEGIN_STAGE -> TextureStage.BEGIN;
+                case PREPARE_STAGE -> TextureStage.PREPARE;
+                case DEFERRED_STAGE -> TextureStage.DEFERRED;
+                case COMPOSITE_STAGE, FINAL_STAGE -> TextureStage.COMPOSITE_AND_FINAL;
+                default -> throw new IllegalArgumentException("Invalid render stage: " + shaderForm.renderStage.get());
+            };
+
+            // Transform shaders using Iris's TransformPatcher (like CompositeRenderer does)
             Map<PatchShaderType, String> transformed = TransformPatcher.patchComposite(
                 shaderForm.getName(),
                 shaderForm.getVertexSource(),
@@ -502,7 +665,7 @@ public class ShaderManager {
             // Add custom images
             IrisImages.addCustomImages(builder, customImages);
 
-            // Add noise sampler - try to get the actual noise texture
+            // Add noise sampler
             TextureAccess noiseTexture = customTextureManager.getNoiseTexture();
             IrisSamplers.addNoiseSampler(interceptor, noiseTexture);
 
@@ -539,7 +702,7 @@ public class ShaderManager {
     }
 
 
-    public static void reCompile() {
+    public static void recompile() {
         LogUtils.getLogger().info("Recompiling shader forms...");
         activeCompositeShaders.keySet().forEach(ShaderForm::markDirty);
         activeDeferredShaders.keySet().forEach(ShaderForm::markDirty);
@@ -577,7 +740,6 @@ public class ShaderManager {
                 .boxed()
                 .collect(ImmutableSet.toImmutableSet());
     }
-
 
     /**
      * Find written buffer locations in the given glsl source code

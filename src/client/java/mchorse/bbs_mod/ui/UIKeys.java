@@ -436,6 +436,8 @@ public class UIKeys
     public static final IKey FORMS_EDITOR_SHADER_VERTEX = L10n.lang("bbs.ui.forms.editor.shader.vertex");
     public static final IKey FORMS_EDITOR_SHADER_GEOMETRY = L10n.lang("bbs.ui.forms.editor.shader.geometry");
     public static final IKey FORMS_EDITOR_SHADER_FRAGMENT = L10n.lang("bbs.ui.forms.editor.shader.fragment");
+    public static final IKey FORMS_EDITOR_SHADER_COMPUTE = L10n.lang("bbs.ui.forms.editor.shader.compute");
+    public static final IKey FORMS_EDITOR_SHADER_CULLING = L10n.lang("bbs.ui.forms.editor.shader.culling");
     public static final IKey FORMS_EDITOR_SHADER_SEND_CHILDREN = L10n.lang("bbs.ui.forms.editor.shader.send_children");
     public static final IKey FORMS_EDITOR_SHADER_PINGPONG = L10n.lang("bbs.ui.forms.editor.shader.pingpong");
     public static final IKey FORMS_EDITOR_SHADER_PRIORITY = L10n.lang("bbs.ui.forms.editor.shader.priority");
@@ -450,6 +452,7 @@ public class UIKeys
     public static final IKey FORMS_EDITOR_SHADER_RECOMPILE = L10n.lang("bbs.ui.forms.editor.shader.recompile");
     public static final IKey FORMS_EDITOR_SHADER_COMPOSITE_TITLE = L10n.lang("bbs.ui.forms.editor.shader.composite.title");
     public static final IKey FORMS_EDITOR_SHADER_GBUFFER_TITLE = L10n.lang("bbs.ui.forms.editor.shader.gbuffer.title");
+    public static final IKey FORMS_EDITOR_SHADER_COMPUTE_TITLE = L10n.lang("bbs.ui.forms.editor.shader.compute.title");
     public static final IKey FORMS_EDITOR_SHADER_BUFFERFLIPPER_TITLE = L10n.lang("bbs.ui.forms.editor.shader.bufferflipper.title");
     public static final IKey FORMS_EDITOR_SHADER_FLIP_0 = L10n.lang("bbs.ui.forms.editor.shader.flip0");
     public static final IKey FORMS_EDITOR_SHADER_FLIP_1 = L10n.lang("bbs.ui.forms.editor.shader.flip1");
@@ -459,6 +462,19 @@ public class UIKeys
     public static final IKey FORMS_EDITOR_SHADER_FLIP_5 = L10n.lang("bbs.ui.forms.editor.shader.flip5");
     public static final IKey FORMS_EDITOR_SHADER_FLIP_6 = L10n.lang("bbs.ui.forms.editor.shader.flip6");
     public static final IKey FORMS_EDITOR_SHADER_FLIP_7 = L10n.lang("bbs.ui.forms.editor.shader.flip7");
+    public static final IKey FORMS_EDITOR_SSBO_TITLE = L10n.lang("bbs.ui.forms.editor.shader.ssbo.title");
+    public static final IKey FORMS_EDITOR_SSBO_NAME = L10n.lang("bbs.ui.forms.editor.ssbo.name");
+    public static final IKey FORMS_EDITOR_SSBO_BINDING = L10n.lang("bbs.ui.forms.editor.ssbo.binding");
+    public static final IKey FORMS_EDITOR_SSBO_DYNAMIC = L10n.lang("bbs.ui.forms.editor.ssbo.dynamic");
+    public static final IKey FORMS_EDITOR_SSBO_SCALE = L10n.lang("bbs.ui.forms.editor.ssbo.scale");
+    public static final IKey FORMS_EDITOR_SSBO_SIZE = L10n.lang("bbs.ui.forms.editor.ssbo.size");
+    public static final IKey FORMS_EDITOR_SSBO_CAPACITY = L10n.lang("bbs.ui.forms.editor.ssbo.capacity");
+    public static final IKey FORMS_EDITOR_SSBO_CLEARTYPE = L10n.lang("bbs.ui.forms.editor.ssbo.type");
+    public static final IKey FORMS_EDITOR_SSBO_CLEARTYPE_TOOLTIP = L10n.lang("bbs.ui.forms.editor.ssbo.type-tooltip");
+    public static final IKey FORMS_EDITOR_SSBO_CLEARTYPE_NONE = L10n.lang("bbs.ui.forms.editor.ssbo.type.none");
+    public static final IKey FORMS_EDITOR_SSBO_CLEARTYPE_FRAME = L10n.lang("bbs.ui.forms.editor.ssbo.type.frame");
+    public static final IKey FORMS_EDITOR_SSBO_CLEARTYPE_DISPATCH = L10n.lang("bbs.ui.forms.editor.ssbo.type.dispatch");
+    public static final IKey FORMS_EDITOR_SSBO_CLEARVALUE = L10n.lang("bbs.ui.forms.editor.ssbo.clear-value");
     public static final IKey FORMS_EDITOR_SLIM = L10n.lang("bbs.ui.forms.editor.slim");
     public static final IKey FORMS_EDITOR_SLIM_TOOLTIP = L10n.lang("bbs.ui.forms.editor.slim-tooltip");
     public static final IKey FORMS_EDITOR_STATES_MANAGER_CONTEXT_ADD = L10n.lang("bbs.ui.forms.editor.states.manager.context.add");

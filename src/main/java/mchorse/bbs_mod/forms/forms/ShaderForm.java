@@ -9,6 +9,8 @@ import net.irisshaders.iris.gl.program.Program;
 import javax.annotation.Nullable;
 
 public class ShaderForm extends Form {
+    public static final int TYPE = 3;
+
     public static final int BEGIN_STAGE = 0;
     public static final int PREPARE_STAGE = 1;
     public static final int DEFERRED_STAGE = 2;
@@ -17,7 +19,7 @@ public class ShaderForm extends Form {
 
     private Program shaderProgram = null;
     private ImmutableSet<Integer> flippedBuffers = ImmutableSet.of();
-    private boolean shaderDirty = true;
+    boolean shaderDirty = true;
     private int[] drawBuffers = new int[]{};
     private GlFramebuffer framebuffer = null;
 

@@ -41,7 +41,7 @@ public class SSBOUtils {
         try {
             return SamplerLimits.get().getMaxShaderStorageUnits();
         } catch (NoClassDefFoundError | Exception e) {
-            return 0;
+            return -1;
         }
     }
 
