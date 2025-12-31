@@ -395,7 +395,10 @@ public class BBSMod implements ModInitializer
             .register(Link.bbs("light"), LightForm.class, null) // Coolaa extras
             .register(Link.bbs("composite_shader"), CompositeShaderForm.class)
             .register(Link.bbs("gbuffer_shader"), GBufferShaderForm.class)
-            .register(Link.bbs("buffer_flipper"), BufferFlipperForm.class);
+            .register(Link.bbs("compute_shader"), ComputeShaderForm.class)
+            .register(Link.bbs("buffer_flipper"), BufferFlipperForm.class)
+            .register(Link.bbs("ssbo"), SSBOForm.class);
+
 
         films = new FilmManager(() -> new File(worldFolder, "bbs/films"));
 
