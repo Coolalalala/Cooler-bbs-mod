@@ -31,6 +31,8 @@ public class ShaderFormSection extends FormSection {
         shaderForm.addForm(bufferFlipperForm);
         SSBOForm ssboForm = new SSBOForm();
         shaderForm.addForm(ssboForm);
+        GLVertexForm glVertexForm = new GLVertexForm();
+        shaderForm.addForm(glVertexForm);
 
         this.categories = Arrays.asList(shaderForm);
     }

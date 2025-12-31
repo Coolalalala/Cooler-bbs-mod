@@ -437,6 +437,9 @@ public class UIKeys
     public static final IKey FORMS_EDITOR_SHADER_GEOMETRY = L10n.lang("bbs.ui.forms.editor.shader.geometry");
     public static final IKey FORMS_EDITOR_SHADER_FRAGMENT = L10n.lang("bbs.ui.forms.editor.shader.fragment");
     public static final IKey FORMS_EDITOR_SHADER_COMPUTE = L10n.lang("bbs.ui.forms.editor.shader.compute");
+    public static final IKey FORMS_EDITOR_SHADER_RELATIVE = L10n.lang("bbs.ui.forms.editor.shader.relative");
+    public static final IKey FORMS_EDITOR_SHADER_RELATIVE_SCALE = L10n.lang("bbs.ui.forms.editor.shader.relative-scale");
+    public static final IKey FORMS_EDITOR_SHADER_WORKGROUPS = L10n.lang("bbs.ui.forms.editor.shader.workgroups");
     public static final IKey FORMS_EDITOR_SHADER_CULLING = L10n.lang("bbs.ui.forms.editor.shader.culling");
     public static final IKey FORMS_EDITOR_SHADER_SEND_CHILDREN = L10n.lang("bbs.ui.forms.editor.shader.send_children");
     public static final IKey FORMS_EDITOR_SHADER_PINGPONG = L10n.lang("bbs.ui.forms.editor.shader.pingpong");
@@ -475,6 +478,10 @@ public class UIKeys
     public static final IKey FORMS_EDITOR_SSBO_CLEARTYPE_FRAME = L10n.lang("bbs.ui.forms.editor.ssbo.type.frame");
     public static final IKey FORMS_EDITOR_SSBO_CLEARTYPE_DISPATCH = L10n.lang("bbs.ui.forms.editor.ssbo.type.dispatch");
     public static final IKey FORMS_EDITOR_SSBO_CLEARVALUE = L10n.lang("bbs.ui.forms.editor.ssbo.clear-value");
+    public static final IKey FORMS_EDITOR_VERTEX_TITLE = L10n.lang("bbs.ui.forms.editor.vertex.title");
+    public static final IKey FORMS_EDITOR_VERTEX_COLOR = L10n.lang("bbs.ui.forms.editor.vertex.color");
+    public static final IKey FORMS_EDITOR_VERTEX_COUNT = L10n.lang("bbs.ui.forms.editor.vertex.count");
+    public static final IKey FORMS_EDITOR_VERTEX_SIZE = L10n.lang("bbs.ui.forms.editor.vertex.size");
     public static final IKey FORMS_EDITOR_SLIM = L10n.lang("bbs.ui.forms.editor.slim");
     public static final IKey FORMS_EDITOR_SLIM_TOOLTIP = L10n.lang("bbs.ui.forms.editor.slim-tooltip");
     public static final IKey FORMS_EDITOR_STATES_MANAGER_CONTEXT_ADD = L10n.lang("bbs.ui.forms.editor.states.manager.context.add");

@@ -69,6 +69,7 @@ public class FormUtilsClient
         register(ComputeShaderForm.class, ComputeShaderFormRenderer::new);
         register(BufferFlipperForm.class, BufferFlipperFormRenderer::new);
         register(SSBOForm.class, SSBOFormRenderer::new);
+        register(GLVertexForm.class, GLVertexFormRenderer::new);
     }
 
     private static void assignBufferBuilder(Object2ObjectLinkedOpenHashMap<RenderLayer, BufferBuilder> builderStorage, RenderLayer layer)

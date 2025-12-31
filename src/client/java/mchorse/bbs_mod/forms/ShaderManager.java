@@ -565,7 +565,7 @@ public class ShaderManager {
             LogUtils.getLogger().info("Successfully created compute shader program for: {}", shaderForm.getName());
             return computeProgram;
         } catch (Exception e) {
-            LogUtils.getLogger().error("Failed to create compute program for: {}", shaderForm.getName(), e);
+            LogUtils.getLogger().error("Failed to create compute program for: {}\n{}", shaderForm.getName(), e.getMessage());
             return null;
         }
     }
