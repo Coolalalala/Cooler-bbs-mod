@@ -24,7 +24,7 @@ public class LightManager {
 
     private void initializeBuffer() {
         try {
-            lightsSSBO = SSBOUtils.setupRelativeBuffer(8, 13, 1, 1); // max index 96
+            lightsSSBO = SSBOUtils.setupRelativeBuffer(8, 13, 1, 1);
         } catch (Throwable e) {
             // Handle case where buffer creation fails
             lightsSSBO = null;
