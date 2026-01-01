@@ -441,6 +441,7 @@ public class UIKeys
     public static final IKey FORMS_EDITOR_SHADER_RELATIVE_SCALE = L10n.lang("bbs.ui.forms.editor.shader.relative-scale");
     public static final IKey FORMS_EDITOR_SHADER_WORKGROUPS = L10n.lang("bbs.ui.forms.editor.shader.workgroups");
     public static final IKey FORMS_EDITOR_SHADER_CULLING = L10n.lang("bbs.ui.forms.editor.shader.culling");
+    public static final IKey FORMS_EDITOR_SHADER_DEPTHTEST = L10n.lang("bbs.ui.forms.editor.shader.depth-test");
     public static final IKey FORMS_EDITOR_SHADER_SEND_CHILDREN = L10n.lang("bbs.ui.forms.editor.shader.send_children");
     public static final IKey FORMS_EDITOR_SHADER_PINGPONG = L10n.lang("bbs.ui.forms.editor.shader.pingpong");
     public static final IKey FORMS_EDITOR_SHADER_PRIORITY = L10n.lang("bbs.ui.forms.editor.shader.priority");
@@ -481,6 +482,7 @@ public class UIKeys
     public static final IKey FORMS_EDITOR_VERTEX_TITLE = L10n.lang("bbs.ui.forms.editor.vertex.title");
     public static final IKey FORMS_EDITOR_VERTEX_COLOR = L10n.lang("bbs.ui.forms.editor.vertex.color");
     public static final IKey FORMS_EDITOR_VERTEX_COUNT = L10n.lang("bbs.ui.forms.editor.vertex.count");
+    public static final IKey FORMS_EDITOR_VERTEX_INSTANCES = L10n.lang("bbs.ui.forms.editor.vertex.instances");
     public static final IKey FORMS_EDITOR_VERTEX_SIZE = L10n.lang("bbs.ui.forms.editor.vertex.size");
     public static final IKey FORMS_EDITOR_SLIM = L10n.lang("bbs.ui.forms.editor.slim");
     public static final IKey FORMS_EDITOR_SLIM_TOOLTIP = L10n.lang("bbs.ui.forms.editor.slim-tooltip");
