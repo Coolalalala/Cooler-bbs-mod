@@ -6,9 +6,11 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.logging.LogUtils;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMaps;
+import mchorse.bbs_mod.cubic.render.vao.Attributes;
 import mchorse.bbs_mod.cubic.render.vao.ModelVAO;
 import mchorse.bbs_mod.forms.forms.*;
 import mchorse.bbs_mod.graphics.texture.Texture;
+import mchorse.bbs_mod.utils.colors.Color;
 import net.irisshaders.iris.Iris;
 import net.irisshaders.iris.gl.IrisRenderSystem;
 import net.irisshaders.iris.gl.image.GlImage;
@@ -35,11 +37,14 @@ import net.irisshaders.iris.shaderpack.texture.TextureStage;
 import net.irisshaders.iris.pipeline.transform.PatchShaderType;
 import net.irisshaders.iris.pipeline.transform.TransformPatcher;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.render.VertexFormat;
 import net.minecraft.client.render.VertexFormats;
 import org.joml.Matrix4f;
 import org.joml.Vector2f;
 import org.joml.Vector3i;
 import org.lwjgl.opengl.GL13;
+import org.lwjgl.opengl.GL30;
+import org.lwjgl.opengl.GL43;
 
 import java.lang.reflect.Field;
 import java.nio.FloatBuffer;
@@ -61,6 +66,7 @@ public class ShaderManager {
     private static BufferFlipperForm deferredFlipper;
     private static boolean isFullScreen = false;
     private static boolean culling = true;
+    private static boolean depthTest = false;
 
     private static IrisRenderingPipeline pipeline = null;
     private static RenderTargets renderTargets = null;
@@ -163,6 +169,14 @@ public class ShaderManager {
             activeGBufferShaders.get(program).add(data);
         }
     }
+    public static void addGLVertex(GBufferShaderForm program, GLVertexForm vertexForm, Matrix4f transform, Texture texture) {
+        if (isPipelineNuhuh()) return;
+        activeGBufferShaders.putIfAbsent(program, new ArrayList<>());
+        GBufferGroupData data = new GBufferGroupData(vertexForm, transform, texture);
+        if (!activeGBufferShaders.get(program).contains(data)) {
+            activeGBufferShaders.get(program).add(data);
+        }
+    }
 
     public static void addCompute(ComputeShaderForm program) {
     }
@@ -195,6 +209,15 @@ public class ShaderManager {
             } else {
                 RenderSystem.enableCull();
                 culling = true;
+            }
+        }
+        if (depthTest != shaderForm.depthTest.get()) {
+            if (depthTest) {
+                RenderSystem.disableDepthTest();
+                depthTest = false;
+            } else {
+                RenderSystem.enableDepthTest();
+                depthTest = true;
             }
         }
         try {
@@ -263,7 +286,7 @@ public class ShaderManager {
                 data.texture.bind(GL13.GL_TEXTURE0 + modelTextureUnit);
                 
                 // Draw group
-                data.vao.render(VertexFormats.POSITION_COLOR_TEXTURE_OVERLAY_LIGHT_NORMAL, 1, 0, 1, 1, 0, 0); // TODO: get light level
+                data.modelVao.render(VertexFormats.POSITION_COLOR_TEXTURE_OVERLAY_LIGHT_NORMAL, 1, 0, 1, 1, 0, 0); // TODO: get light level
             }
 
             // Clean up
@@ -281,6 +304,7 @@ public class ShaderManager {
         if (!isFullScreen) {
             FullScreenQuadRenderer.INSTANCE.begin();
             isFullScreen = true;
+            depthTest = false;
         }
         try {
             // Get or create the shader program using Iris integration
@@ -406,8 +430,9 @@ public class ShaderManager {
         RenderSystem.disableBlend();
         FullScreenQuadRenderer.INSTANCE.begin();
         isFullScreen = true;
-        RenderSystem.enableCull();
-        culling = true;
+        depthTest = false;
+        boolean initCulling = GL43.glGetBoolean(GL43.GL_CULL_FACE);
+        culling = initCulling;
 
         // Initialize flip state
         // Find the buffer set required for that stage
@@ -438,6 +463,15 @@ public class ShaderManager {
         if (isFullScreen) {
             FullScreenQuadRenderer.INSTANCE.end();
             isFullScreen = false;
+            depthTest = true;
+        }
+        // Restore states
+        if (initCulling != culling) {
+            if (initCulling) GL43.glEnable(GL43.GL_CULL_FACE);
+            else GL43.glDisable(GL43.GL_CULL_FACE);
+        }
+        if (!depthTest) {
+            RenderSystem.enableDepthTest();
         }
 
         // Clean up state
@@ -696,7 +730,7 @@ public class ShaderManager {
             destroy();
         } catch (Exception e) {
             LogUtils.getLogger().error("Failed to create {} program for: {}\n{}",
-                    isComposite ? "composite" : "geometry", shaderForm.getName(), e.getMessage());
+                    isComposite ? "composite" : "gbuffer", shaderForm.getName(), e.getMessage());
         }
         return null;
     }
@@ -778,14 +812,56 @@ public class ShaderManager {
 
 
     public static class GBufferGroupData {
-        public ModelVAO vao;
+        public GBufferVAO modelVao;
         public Matrix4f poseTransform;
         public Texture texture;
 
         public GBufferGroupData(ModelVAO modelVAO, Matrix4f transform, Texture texture) {
-            this.vao = modelVAO;
+            this.modelVao = new GBufferVAO(modelVAO);
             this.poseTransform = transform;
             this.texture = texture;
+        }
+
+        public GBufferGroupData(GLVertexForm vertexForm, Matrix4f transform, Texture texture) {
+            this.modelVao = new GBufferVAO(vertexForm);
+            this.poseTransform = transform;
+            this.texture = texture;
+        }
+    }
+    public static class GBufferVAO {
+        public ModelVAO modelVao;
+        public GLVertexForm vertexForm;
+
+        public GBufferVAO(ModelVAO modelVao) {
+            this.modelVao = modelVao;
+            this.vertexForm = null;
+        }
+
+        public GBufferVAO(GLVertexForm vertexForm) {
+            this.modelVao = null;
+            this.vertexForm = vertexForm;
+        }
+
+        public void render(VertexFormat format, float r, float g, float b, float a, int light, int overlay) {
+
+            if (this.modelVao != null) {
+                this.modelVao.render(format, r, g, b, a, light, overlay);
+            }
+            if (this.vertexForm != null) {
+                this.vertexForm.bind();
+                GL43.glEnableVertexAttribArray(Attributes.POSITION);
+                GL43.glDisableVertexAttribArray(Attributes.POSITION); // position
+                GL30.glVertexAttrib4f(Attributes.POSITION, 0, 0, 0, 1);
+                Color color = this.vertexForm.color.get();
+                GL43.glEnableVertexAttribArray(Attributes.COLOR);
+                GL43.glDisableVertexAttribArray(Attributes.COLOR); // color
+                GL30.glVertexAttrib4f(Attributes.COLOR, color.r, color.g, color.b, color.a);
+                GL43.glDrawArraysInstanced(GL43.GL_POINTS, 0, this.vertexForm.count.get(), this.vertexForm.instances.get());
+
+                // Unbind
+                GL43.glBindBuffer(GL43.GL_ARRAY_BUFFER, 0);
+                GL43.glBindVertexArray(0);
+            }
         }
     }
 }
