@@ -16,18 +16,15 @@ public class UIGLVertexFormPanel extends UIFormPanel<GLVertexForm> {
     public UIColor color;
     public UITrackpad count;
     public UITrackpad instances;
-    public UITrackpad size;
 
     public UIGLVertexFormPanel(UIForm<GLVertexForm> editor) {
         super(editor);
 
         this.color = new UIColor((c) -> this.form.color.set(Color.rgba(c))).withAlpha();
         this.count = new UITrackpad((v) -> this.setCount(v.intValue()));
-        this.count.limit(0, Integer.MAX_VALUE);
+        this.count.limit(0, Integer.MAX_VALUE, true);
         this.instances = new UITrackpad((v) -> this.setInstances(v.intValue()));
-        this.instances.limit(0, Integer.MAX_VALUE);
-        this.size = new UITrackpad((v) -> this.form.size.set(v.floatValue()));
-        this.size.limit(0, Float.MAX_VALUE);
+        this.instances.limit(0, Integer.MAX_VALUE, true);
     }
 
     @Override
@@ -39,16 +36,14 @@ public class UIGLVertexFormPanel extends UIFormPanel<GLVertexForm> {
             Link link = this.form.texture.get();
             UITexturePicker.open(this.getContext(), link, (l) -> this.form.texture.set(l));
         });
-        this.color.withAlpha().setColor(form.color.get().getRGBAColor());
+        this.color.withAlpha().setColor(form.color.get().getARGBColor());
         this.count.setValue(form.count.get());
         this.instances.setValue(form.instances.get());
-        this.size.setValue(form.size.get());
 
         this.options.add(this.texture);
         this.options.add(UI.label(UIKeys.FORMS_EDITOR_VERTEX_COLOR), this.color);
         this.options.add(UI.label(UIKeys.FORMS_EDITOR_VERTEX_COUNT), this.count);
         this.options.add(UI.label(UIKeys.FORMS_EDITOR_VERTEX_INSTANCES), this.instances);
-        this.options.add(UI.label(UIKeys.FORMS_EDITOR_VERTEX_SIZE), this.size);
     }
 
     private void setCount(int count) {

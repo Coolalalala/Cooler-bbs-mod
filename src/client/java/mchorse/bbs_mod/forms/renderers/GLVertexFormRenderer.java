@@ -1,7 +1,5 @@
 package mchorse.bbs_mod.forms.renderers;
 
-import mchorse.bbs_mod.forms.ShaderManager;
-import mchorse.bbs_mod.forms.forms.CompositeShaderForm;
 import mchorse.bbs_mod.forms.forms.GLVertexForm;
 import mchorse.bbs_mod.graphics.texture.Texture;
 import mchorse.bbs_mod.resources.Link;
@@ -24,8 +22,5 @@ public class GLVertexFormRenderer extends FormRenderer<GLVertexForm> {
         int y = (y1 + y2) / 2;
 
         context.batcher.fullTexturedBox(texture, x - w / 2f, y - h / 2f, w, h);
-    }
-
-    protected void render3D(FormRenderingContext context) {
     }
 }

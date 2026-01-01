@@ -483,7 +483,6 @@ public class UIKeys
     public static final IKey FORMS_EDITOR_VERTEX_COLOR = L10n.lang("bbs.ui.forms.editor.vertex.color");
     public static final IKey FORMS_EDITOR_VERTEX_COUNT = L10n.lang("bbs.ui.forms.editor.vertex.count");
     public static final IKey FORMS_EDITOR_VERTEX_INSTANCES = L10n.lang("bbs.ui.forms.editor.vertex.instances");
-    public static final IKey FORMS_EDITOR_VERTEX_SIZE = L10n.lang("bbs.ui.forms.editor.vertex.size");
     public static final IKey FORMS_EDITOR_SLIM = L10n.lang("bbs.ui.forms.editor.slim");
     public static final IKey FORMS_EDITOR_SLIM_TOOLTIP = L10n.lang("bbs.ui.forms.editor.slim-tooltip");
     public static final IKey FORMS_EDITOR_STATES_MANAGER_CONTEXT_ADD = L10n.lang("bbs.ui.forms.editor.states.manager.context.add");

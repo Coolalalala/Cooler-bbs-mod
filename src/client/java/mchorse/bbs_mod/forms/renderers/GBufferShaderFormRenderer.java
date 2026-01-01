@@ -75,11 +75,20 @@ public class GBufferShaderFormRenderer extends FormRenderer<GBufferShaderForm> {
                         texture = BBSModClient.getTextures().getTexture(textureLink);
                     }
 
-                    if (texture == null) return;
-
-                    for (ModelGroup topGroup : model.topGroups) {
-                        registerVAORecursive(context.stack, vaos, topGroup, RenderSystem.getProjectionMatrix(), context, texture);
+                    if (texture != null) {
+                        for (ModelGroup topGroup : model.topGroups) {
+                            registerVAORecursive(context.stack, vaos, topGroup, RenderSystem.getProjectionMatrix(), context, texture);
+                        }
                     }
+                }
+            } else if (childrenForm instanceof GLVertexForm vertexForm) {
+                Link textureLink = vertexForm.texture.get();
+                Texture texture = null;
+                if (textureLink != null) {
+                    texture = BBSModClient.getTextures().getTexture(textureLink);
+                }
+                if  (texture != null) {
+                    ShaderManager.addGLVertex(this.form, vertexForm, RenderSystem.getProjectionMatrix().get(new Matrix4f()).mul(context.stack.peek().getPositionMatrix()).scale(-1, 1, -1), texture);
                 }
             }
 
