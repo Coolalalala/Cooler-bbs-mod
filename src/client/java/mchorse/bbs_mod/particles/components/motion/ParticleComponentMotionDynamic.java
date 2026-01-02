@@ -51,22 +51,32 @@ public class ParticleComponentMotionDynamic extends ParticleComponentMotion impl
         return super.fromData(map, parser);
     }
 
-    @Override
-    public void update(ParticleEmitter emitter, Particle particle)
-    {
-        float dt = 0.05F;
-        float halfdt = 0.025F;
-        float halfdt2 = 0.00125F;
-
-        /* rotation */
-        float rotationAcceleration = particle.rotationAcceleration * dt - particle.rotationDrag * particle.rotationVelocity;
-
-        particle.rotationVelocity += rotationAcceleration * dt;
-        particle.rotation = particle.initialRotation + particle.rotationVelocity * particle.age;
-
-        /* Position */
+    private static final float dt = 0.05F;
+    private static final float halfdt = dt/2;
+    private void halfStepVelocity(Particle particle, Vector3f temp) {
+        temp.set(particle.acceleration);
+        temp.mul(halfdt);
+        particle.speed.add(temp);
+    }
+    private void stepPosition(Particle particle, Vector3f temp) {
+        getVelocity(particle, temp);
+        temp.mul(dt);
+        particle.position.add(temp);
+    }
+    private void stepAcceleration(Particle particle, Vector3f temp) {
+        // Calculate new acceleration
+        particle.acceleration.x = (float) this.motionAcceleration[0].get();
+        particle.acceleration.y = (float) this.motionAcceleration[1].get();
+        particle.acceleration.z = (float) this.motionAcceleration[2].get();
+        // Calculate drag
+        getVelocity(particle, temp);
+        temp.mul(-(particle.drag + particle.dragFactor)); // drag factor = drag added after collision
+        // Apply drag
+        particle.acceleration.add(temp);
+    }
+    private void getVelocity(Particle particle, Vector3f velocity) {
+        velocity.set(particle.speed);
         // Transform velocity into desired space
-        Vector3f vecTemp = new Vector3f(particle.speed);
         if (particle.relativeVelocity)
         {
             if (particle.age == 0)
@@ -76,41 +86,38 @@ public class ParticleComponentMotionDynamic extends ParticleComponentMotion impl
         }
         else if (particle.relativePosition || particle.relativeRotation)
         {
-            particle.matrix.transform(vecTemp);
+            particle.matrix.transform(velocity);
         }
 
         if (particle.age == 0)
         {
-            vecTemp.mul(1F + particle.offset);
+            velocity.mul(1F + particle.offset);
         }
+    }
 
-        // if (!relativePosition && relativeRotation) vecTemp.mul(emitter.rotation);
+    @Override
+    public void update(ParticleEmitter emitter, Particle particle)
+    {
+        /* rotation */
+        float rotationAcceleration = particle.rotationAcceleration * dt - particle.rotationDrag * particle.rotationVelocity;
 
-        // Verlet: x(t+dt) = x(t) + v(t)*dt + 0.5*a(t)*dt²
-        particle.position.x += vecTemp.x * dt + particle.acceleration.x * halfdt2;
-        particle.position.y += vecTemp.y * dt + particle.acceleration.x * halfdt2;
-        particle.position.z += vecTemp.z * dt + particle.acceleration.x * halfdt2;
+        particle.rotationVelocity += rotationAcceleration * dt;
+        particle.rotation = particle.initialRotation + particle.rotationVelocity * particle.age;
 
-        // Store previous acceleration
-        Vector3f prevAccel = new Vector3f(particle.acceleration);
-        // Calculate new acceleration
-        particle.acceleration.x = (float) this.motionAcceleration[0].get();
-        particle.acceleration.y = (float) this.motionAcceleration[1].get();
-        particle.acceleration.z = (float) this.motionAcceleration[2].get();
-        // Calculate drag
-        vecTemp.set(particle.speed);
-        vecTemp.mul(-(particle.drag + particle.dragFactor)); // drag factor means drag added after collision
-        // Apply drag
-        particle.acceleration.add(vecTemp);
+        /* Position */
+        // Velocity verlet integration
+        Vector3f temp = new Vector3f();
+        // v(t+dt/2) = v(t) + a(t)dt/2
+        halfStepVelocity(particle, temp);
+        // x(t+dt) = x(t) + v(t+dt/2)dt
+        stepPosition(particle, temp);
+        // calculate a(t+dt)
+        stepAcceleration(particle, temp);
+        // v(t+dt) = v(t+dt/2) + a(t+dt)dt/2
+        halfStepVelocity(particle, temp);
 
-        // Verlet: v(t+dt) = v(t) + 0.5*(a(t) + a(t+dt))*dt
-        prevAccel.add(particle.acceleration);
-        prevAccel.mul(halfdt);
-        particle.speed.add(prevAccel);
-
-
+        // Update particle properties
         particle.drag = (float) this.motionDrag.get();
-
         particle.rotationAcceleration += (float) this.rotationAcceleration.get() * dt;
         particle.rotationDrag = (float) this.rotationDrag.get();
     }
