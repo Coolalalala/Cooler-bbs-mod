@@ -42,8 +42,6 @@ import net.minecraft.client.render.VertexFormats;
 import org.joml.Matrix4f;
 import org.joml.Vector2f;
 import org.joml.Vector3i;
-import org.lwjgl.opengl.GL13;
-import org.lwjgl.opengl.GL30;
 import org.lwjgl.opengl.GL43;
 
 import java.lang.reflect.Field;
@@ -161,24 +159,21 @@ public class ShaderManager {
         }
     }
 
-    public static void addModelGroup(GBufferShaderForm program, ModelVAO modelVAO, Matrix4f transform, Texture texture) {
+    public static void addModelGroup(GBufferShaderForm program, ModelVAO modelVAO, Matrix4f transform, Texture texture, Color color, int light, int overlay) {
         if (isPipelineNuhuh()) return;
         activeGBufferShaders.putIfAbsent(program, new ArrayList<>());
-        GBufferGroupData data = new GBufferGroupData(modelVAO, transform, texture);
+        GBufferGroupData data = new GBufferGroupData(modelVAO, transform, texture, color, light, overlay);
         if (!activeGBufferShaders.get(program).contains(data)) {
             activeGBufferShaders.get(program).add(data);
         }
     }
-    public static void addGLVertex(GBufferShaderForm program, GLVertexForm vertexForm, Matrix4f transform, Texture texture) {
+    public static void addGLVertex(GBufferShaderForm program, GLVertexForm vertexForm, Matrix4f transform, Texture texture, int light, int overlay) {
         if (isPipelineNuhuh()) return;
         activeGBufferShaders.putIfAbsent(program, new ArrayList<>());
-        GBufferGroupData data = new GBufferGroupData(vertexForm, transform, texture);
+        GBufferGroupData data = new GBufferGroupData(vertexForm, transform, texture, light, overlay);
         if (!activeGBufferShaders.get(program).contains(data)) {
             activeGBufferShaders.get(program).add(data);
         }
-    }
-
-    public static void addCompute(ComputeShaderForm program) {
     }
 
     public static void remove(ShaderForm program) {
@@ -283,10 +278,11 @@ public class ShaderManager {
                 RenderSystem.glUniformMatrix4(poseLocation, false, buffer);
                 
                 // Upload texture to the assigned texture unit
-                data.texture.bind(GL13.GL_TEXTURE0 + modelTextureUnit);
+                data.texture.bind(GL43.GL_TEXTURE0 + modelTextureUnit);
                 
                 // Draw group
-                data.modelVao.render(VertexFormats.POSITION_COLOR_TEXTURE_OVERLAY_LIGHT_NORMAL, 1, 0, 1, 1, 0, 0); // TODO: get light level
+                // TODO: get light and biome
+                data.modelVao.render(VertexFormats.POSITION_COLOR_TEXTURE_OVERLAY_LIGHT_NORMAL, 1, 1, 1, 1, 0, 0);
             }
 
             // Clean up
@@ -816,14 +812,14 @@ public class ShaderManager {
         public Matrix4f poseTransform;
         public Texture texture;
 
-        public GBufferGroupData(ModelVAO modelVAO, Matrix4f transform, Texture texture) {
-            this.modelVao = new GBufferVAO(modelVAO);
+        public GBufferGroupData(ModelVAO modelVAO, Matrix4f transform, Texture texture, Color color, int light, int overlay) {
+            this.modelVao = new GBufferVAO(modelVAO, color, light, overlay);
             this.poseTransform = transform;
             this.texture = texture;
         }
 
-        public GBufferGroupData(GLVertexForm vertexForm, Matrix4f transform, Texture texture) {
-            this.modelVao = new GBufferVAO(vertexForm);
+        public GBufferGroupData(GLVertexForm vertexForm, Matrix4f transform, Texture texture, int light, int overlay) {
+            this.modelVao = new GBufferVAO(vertexForm, light, overlay);
             this.poseTransform = transform;
             this.texture = texture;
         }
@@ -831,31 +827,41 @@ public class ShaderManager {
     public static class GBufferVAO {
         public ModelVAO modelVao;
         public GLVertexForm vertexForm;
+        public Color color;
+        public int light;
+        public int overlay;
 
-        public GBufferVAO(ModelVAO modelVao) {
+        public GBufferVAO(ModelVAO modelVao, Color color, int light, int overlay) {
             this.modelVao = modelVao;
             this.vertexForm = null;
+            this.color = color;
+            this.light = light;
+            this.overlay = overlay;
         }
 
-        public GBufferVAO(GLVertexForm vertexForm) {
+        public GBufferVAO(GLVertexForm vertexForm, int light, int overlay) {
             this.modelVao = null;
             this.vertexForm = vertexForm;
+            this.color = vertexForm.color.get();
+            this.light = light;
+            this.overlay = overlay;
+        }
+
+        public void render() {
+            this.render(VertexFormats.POSITION_COLOR_TEXTURE_OVERLAY_LIGHT_NORMAL, color.r, color.g, color.b, color.a, light, overlay);
         }
 
         public void render(VertexFormat format, float r, float g, float b, float a, int light, int overlay) {
-
             if (this.modelVao != null) {
                 this.modelVao.render(format, r, g, b, a, light, overlay);
             }
             if (this.vertexForm != null) {
                 this.vertexForm.bind();
-                GL43.glEnableVertexAttribArray(Attributes.POSITION);
-                GL43.glDisableVertexAttribArray(Attributes.POSITION); // position
-                GL30.glVertexAttrib4f(Attributes.POSITION, 0, 0, 0, 1);
-                Color color = this.vertexForm.color.get();
-                GL43.glEnableVertexAttribArray(Attributes.COLOR);
-                GL43.glDisableVertexAttribArray(Attributes.COLOR); // color
-                GL30.glVertexAttrib4f(Attributes.COLOR, color.r, color.g, color.b, color.a);
+                GL43.glVertexAttrib4f(Attributes.POSITION, 0, 0, 0, 1);
+                GL43.glVertexAttrib4f(Attributes.COLOR, r, g, b, a);
+                GL43.glVertexAttribI2i(Attributes.OVERLAY_UV, overlay & '\uffff', overlay >> 16 & '\uffff');
+                GL43.glVertexAttribI2i(Attributes.LIGHTMAP_UV, light & '\uffff', light >> 16 & '\uffff');
+                // Draw points
                 GL43.glDrawArraysInstanced(GL43.GL_POINTS, 0, this.vertexForm.count.get(), this.vertexForm.instances.get());
 
                 // Unbind

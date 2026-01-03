@@ -88,7 +88,7 @@ public class GBufferShaderFormRenderer extends FormRenderer<GBufferShaderForm> {
                     texture = BBSModClient.getTextures().getTexture(textureLink);
                 }
                 if  (texture != null) {
-                    ShaderManager.addGLVertex(this.form, vertexForm, RenderSystem.getProjectionMatrix().get(new Matrix4f()).mul(context.stack.peek().getPositionMatrix()).scale(-1, 1, -1), texture);
+                    ShaderManager.addGLVertex(this.form, vertexForm, RenderSystem.getProjectionMatrix().get(new Matrix4f()).mul(context.stack.peek().getPositionMatrix()).scale(-1, 1, -1), texture, context.light, context.overlay);
                 }
             }
 
@@ -113,7 +113,7 @@ public class GBufferShaderFormRenderer extends FormRenderer<GBufferShaderForm> {
         stack.push();
         applyGroupTransformations(stack, group);
         ModelVAO vao = vaos.get(group);
-        if (vao != null) ShaderManager.addModelGroup(this.form, vao, projMatrix.get(new Matrix4f()).mul(context.stack.peek().getPositionMatrix()).scale(-1,1,-1), texture);
+        if (vao != null) ShaderManager.addModelGroup(this.form, vao, projMatrix.get(new Matrix4f()).mul(context.stack.peek().getPositionMatrix()).scale(-1,1,-1), texture, group.color, context.light, context.overlay);
 
         for (ModelGroup childGroup : group.children) {
             registerVAORecursive(stack, vaos, childGroup, projMatrix, context, texture);
