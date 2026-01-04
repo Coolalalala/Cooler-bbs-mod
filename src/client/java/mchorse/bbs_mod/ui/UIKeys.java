@@ -442,6 +442,7 @@ public class UIKeys
     public static final IKey FORMS_EDITOR_SHADER_WORKGROUPS = L10n.lang("bbs.ui.forms.editor.shader.workgroups");
     public static final IKey FORMS_EDITOR_SHADER_CULLING = L10n.lang("bbs.ui.forms.editor.shader.culling");
     public static final IKey FORMS_EDITOR_SHADER_DEPTHTEST = L10n.lang("bbs.ui.forms.editor.shader.depth-test");
+    public static final IKey FORMS_EDITOR_SHADER_DEPTHWRITE = L10n.lang("bbs.ui.forms.editor.shader.depth-write");
     public static final IKey FORMS_EDITOR_SHADER_SEND_CHILDREN = L10n.lang("bbs.ui.forms.editor.shader.send_children");
     public static final IKey FORMS_EDITOR_SHADER_PINGPONG = L10n.lang("bbs.ui.forms.editor.shader.pingpong");
     public static final IKey FORMS_EDITOR_SHADER_PRIORITY = L10n.lang("bbs.ui.forms.editor.shader.priority");
