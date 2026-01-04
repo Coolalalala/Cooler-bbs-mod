@@ -81,6 +81,10 @@ public class GBufferShaderFormRenderer extends FormRenderer<GBufferShaderForm> {
                         }
                     }
                 }
+                if (this.form.renderChildren.get()) {
+                    // Render normally
+                    FormUtilsClient.render(childrenForm, context);
+                }
             } else if (childrenForm instanceof GLVertexForm vertexForm) {
                 Link textureLink = vertexForm.texture.get();
                 Texture texture = null;
@@ -90,12 +94,16 @@ public class GBufferShaderFormRenderer extends FormRenderer<GBufferShaderForm> {
                 if  (texture != null) {
                     ShaderManager.addGLVertex(this.form, vertexForm, RenderSystem.getProjectionMatrix().get(new Matrix4f()).mul(context.stack.peek().getPositionMatrix()).scale(-1, 1, -1), texture, context.light, context.overlay);
                 }
-            }
-
-            if (this.form.renderChildren.get()) {
-                // Regular rendering as usual
+                if (this.form.renderChildren.get()) {
+                    // Render normally
+                    FormUtilsClient.render(childrenForm, context);
+                }
+            } else {
+                // Render normally
                 FormUtilsClient.render(childrenForm, context);
             }
+
+
 
             context.stack.pop();
         }
