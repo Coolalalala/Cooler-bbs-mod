@@ -56,6 +56,7 @@ import static mchorse.bbs_mod.client.BBSRendering.isIrisShadersEnabled;
 import static mchorse.bbs_mod.forms.forms.ShaderForm.*;
 
 public class ShaderManager {
+    public static Map<ShaderForm, Integer> activePrepareShaders = new HashMap<>();
     public static Map<ShaderForm, Integer> activeDeferredShaders = new HashMap<>();
     public static Map<ShaderForm, Integer> activeCompositeShaders = new HashMap<>();
     public static Map<GBufferShaderForm, List<GBufferGroupData>> activeGBufferShaders = new HashMap<>();
@@ -65,6 +66,7 @@ public class ShaderManager {
     private static boolean isFullScreen = false;
     private static boolean culling = true;
     private static boolean depthTest = false;
+    private static boolean depthWrite = true;
 
     private static IrisRenderingPipeline pipeline = null;
     private static RenderTargets renderTargets = null;
@@ -148,6 +150,9 @@ public class ShaderManager {
     public static void register(ShaderForm program, int type) {
         if (isPipelineNuhuh()) return;
         switch (type) {
+            case 1:
+                activePrepareShaders.put(program, program.priority.get());
+                break;
             case 2:
                 activeDeferredShaders.put(program, program.priority.get());
                 break;
@@ -215,6 +220,10 @@ public class ShaderManager {
                 depthTest = true;
             }
         }
+        if (depthWrite != shaderForm.depthWrite.get()) {
+            GL43.glDepthMask(!depthWrite);
+            depthWrite = !depthWrite;
+        }
         try {
             // Get or create the shader program
             Program program;
@@ -244,7 +253,12 @@ public class ShaderManager {
 
             // Bind framebuffer
             if (!shaderForm.bindFramebuffer()) {
-                if (shaderForm.pingpong.get()) {
+                if (!shaderForm.depthTest.get() && !shaderForm.depthWrite.get()) {
+                    shaderForm.setFramebuffer(renderTargets.createColorFramebuffer(
+                            shaderForm.getFlippedBuffers(),
+                            drawBuffers
+                    ));
+                } else if (shaderForm.pingpong.get()) {
                     shaderForm.setFramebuffer(renderTargets.createColorFramebufferWithDepth(
                             shaderForm.getFlippedBuffers(),
                             drawBuffers
@@ -299,8 +313,10 @@ public class ShaderManager {
 
         if (!isFullScreen) {
             FullScreenQuadRenderer.INSTANCE.begin();
+            GL43.glDepthMask(true);
             isFullScreen = true;
             depthTest = false;
+            depthWrite = true;
         }
         try {
             // Get or create the shader program using Iris integration
@@ -425,8 +441,9 @@ public class ShaderManager {
         // Begin full screen quad rendering
         RenderSystem.disableBlend();
         FullScreenQuadRenderer.INSTANCE.begin();
-        isFullScreen = true;
         depthTest = false;
+        isFullScreen = true;
+        depthWrite = GL43.glGetBoolean(GL43.GL_DEPTH_WRITEMASK);
         boolean initCulling = GL43.glGetBoolean(GL43.GL_CULL_FACE);
         culling = initCulling;
 
@@ -468,6 +485,11 @@ public class ShaderManager {
         }
         if (!depthTest) {
             RenderSystem.enableDepthTest();
+            depthTest = true;
+        }
+        if (!depthWrite) {
+            GL43.glDepthMask(true);
+            depthWrite = true;
         }
 
         // Clean up state
@@ -476,6 +498,10 @@ public class ShaderManager {
         
         // Restore main framebuffer
         MinecraftClient.getInstance().getFramebuffer().beginWrite(true);
+    }
+
+    public static void renderPrepareStage() {
+        renderPrograms(activePrepareShaders, compositeFlipper, PREPARE_STAGE);
     }
 
     public static void renderCompositeStage() {
