@@ -103,22 +103,36 @@ public class UIReplaysEditorUtils
                 type = id.substring(index);
             }
         }
+        else
+        {
+            UIKeyframeSheet lastSheet = keyframeEditor.view.getGraph().getLastSheet();
+
+            if (lastSheet != null && lastSheet.property != null)
+            {
+                if (FormUtils.getPath((Form) lastSheet.property.getParent()).equals(FormUtils.getPath(form)) && lastSheet.property.getId().startsWith("pose") && !lastSheet.channel.isEmpty())
+                {
+                    type = lastSheet.id;
+                }
+            }
+        }
+
+        UIKeyframeSheet sheet = keyframeEditor.view.getGraph().getSheet(StringUtils.combinePaths(path, type));
+
+        if (sheet != null && sheet.channel.isEmpty())
+        {
+            type = "pose";
+        }
 
         pickProperty(keyframeEditor, cursor, bone, StringUtils.combinePaths(path, type), false);
     }
 
     private static void pickProperty(UIKeyframeEditor keyframeEditor, ICursor cursor, String bone, String key, boolean insert)
     {
-        for (UIKeyframeSheet sheet : keyframeEditor.view.getGraph().getSheets())
+        UIKeyframeSheet sheet = keyframeEditor.view.getGraph().getSheet(key);
+
+        if (sheet != null)
         {
-            BaseValueBasic property = sheet.property;
-
-            if (property != null && FormUtils.getPropertyPath(property).equals(key))
-            {
-                pickProperty(keyframeEditor, cursor, bone, sheet, insert);
-
-                break;
-            }
+            pickProperty(keyframeEditor, cursor, bone, sheet, insert);
         }
     }
 

@@ -20,6 +20,8 @@ public interface IUIKeyframeGraph
 
     public void resetView();
 
+    public UIKeyframeSheet getLastSheet();
+
     public List<UIKeyframeSheet> getSheets();
 
     /* Selection */
@@ -77,11 +79,29 @@ public interface IUIKeyframeGraph
 
     public default UIKeyframeSheet getSheet(Keyframe keyframe)
     {
+        if (keyframe == null)
+        {
+            return null;
+        }
+
         KeyframeChannel channel = (KeyframeChannel) keyframe.getParent();
 
         for (UIKeyframeSheet sheet : this.getSheets())
         {
             if (sheet.channel == channel)
+            {
+                return sheet;
+            }
+        }
+
+        return null;
+    }
+
+    public default UIKeyframeSheet getSheet(String id)
+    {
+        for (UIKeyframeSheet sheet : this.getSheets())
+        {
+            if (sheet.id.equals(id))
             {
                 return sheet;
             }
@@ -157,6 +177,9 @@ public interface IUIKeyframeGraph
     {
         this.pickKeyframe(this.getSelected());
     }
+
+    public default void onCallback(Keyframe keyframe)
+    {}
 
     public void pickKeyframe(Keyframe keyframe);
 
