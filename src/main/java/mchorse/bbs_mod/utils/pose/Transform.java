@@ -11,8 +11,6 @@ import org.joml.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.lang.Math.abs;
-
 public class Transform implements IMapSerializable
 {
     private static final Vector3f DEFAULT_SCALE = new Vector3f(1F, 1F, 1F);
@@ -71,25 +69,6 @@ public class Transform implements IMapSerializable
 
         // Return the rotation
         output.set(-(float) rotation.x, (float) rotation.y, (float) rotation.z);
-    }
-
-    private void lerpQuat(Vector3f target, Vector3f preA, Vector3f a, Vector3f b, Vector3f postB, IInterp interp, float x) {
-        // Convert to quaternions (minecraft uses left-handed system!!)
-        Quaterniond startQuad = new Quaterniond().rotateXYZ(-a.x, a.y, a.z);
-        Quaterniond endQuad = new Quaterniond().rotateXYZ(-b.x, b.y, b.z);
-        Quaterniond preQuad = new Quaterniond().rotateXYZ(preA.x, preA.y, preA.z);
-        Quaterniond postQuad = new Quaterniond().rotateXYZ(postB.x, postB.y, postB.z);
-        Quaterniond result = new Quaterniond();
-
-        result.x = interp.interpolate(IInterp.context.set(preQuad.x, startQuad.x, endQuad.x, postQuad.x, x));
-        result.y = interp.interpolate(IInterp.context.set(preQuad.y, startQuad.y, endQuad.y, postQuad.y, x));
-        result.z = interp.interpolate(IInterp.context.set(preQuad.z, startQuad.z, endQuad.z, postQuad.z, x));
-        result.w = interp.interpolate(IInterp.context.set(preQuad.w, startQuad.w, endQuad.w, postQuad.w, x));
-
-        // Conver back to Euler
-        Vector3d rotation = new Vector3d();
-        result.getEulerAnglesXYZ(rotation);
-        target.set(-(float) rotation.x, (float) rotation.y, (float) rotation.z);
     }
 
     private void lerp(Vector3f target, Vector3f preA, Vector3f a, Vector3f b, Vector3f postB, IInterp interp, float x)
