@@ -75,6 +75,8 @@ public class ShaderForm extends Form {
         if (this.shaderProgram != null) {
             this.shaderProgram.destroy();
             this.shaderProgram = null;
+            // For some reason you cant destroy the buffer or else it crashes
+            this.framebuffer = null;
         }
         this.flippedBuffers = ImmutableSet.of();
     }
