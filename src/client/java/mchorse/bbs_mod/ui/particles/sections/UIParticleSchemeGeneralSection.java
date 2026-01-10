@@ -12,6 +12,7 @@ import mchorse.bbs_mod.ui.framework.elements.buttons.UIButton;
 import mchorse.bbs_mod.ui.framework.elements.buttons.UICirculate;
 import mchorse.bbs_mod.ui.framework.elements.buttons.UIToggle;
 import mchorse.bbs_mod.ui.framework.elements.input.UITexturePicker;
+import mchorse.bbs_mod.ui.framework.elements.input.UITrackpad;
 import mchorse.bbs_mod.ui.framework.elements.input.text.UITextbox;
 import mchorse.bbs_mod.ui.particles.UIParticleSchemePanel;
 import mchorse.bbs_mod.ui.utils.UI;
@@ -22,6 +23,8 @@ public class UIParticleSchemeGeneralSection extends UIParticleSchemeSection
     public UIButton pick;
     public UICirculate material;
     public UIToggle parallel;
+    public UICirculate integrator;
+    public UITrackpad timeScale;
 
     public UIParticleSchemeGeneralSection(UIParticleSchemePanel parent)
     {
@@ -60,13 +63,28 @@ public class UIParticleSchemeGeneralSection extends UIParticleSchemeSection
 
         this.fields.add(this.identifier, UI.row(5, 0, 20, this.pick, this.material));
 
-        this.parallel = new UIToggle(UIKeys.SNOWSTORM_PARALLEL_PROCESSING, (b) ->
+        this.parallel = new UIToggle(UIKeys.SNOWSTORM_MULTITHREADING, (b) ->
         {
             this.scheme.parallel = b.getValue();
             this.editor.dirty();
         });
-        this.parallel.tooltip(UIKeys.SNOWSTORM_PARALLEL_PROCESSING_TOOLTIP);
-        this.fields.add(this.parallel);
+        this.parallel.tooltip(UIKeys.SNOWSTORM_MULTITHREADING_TOOLTIP);
+
+        this.integrator = new UICirculate((b) -> {
+            this.scheme.integrator = b.getValue();
+            this.editor.dirty();
+        });
+        this.integrator.addLabel(UIKeys.SNOWSTORM_INTEGRATOR_VERLET);
+        this.integrator.addLabel(UIKeys.SNOWSTORM_INTEGRATOR_RK4);
+
+        this.timeScale = new UITrackpad((v) ->
+        {
+            this.scheme.timeScale = v.floatValue();
+            this.editor.dirty();
+        });
+        this.timeScale.limit(0.0F);
+        this.fields.add(this.parallel, this.integrator);
+        this.fields.add(UI.label(UIKeys.SNOWSTORM_GENERAL_TIME_SCALE), this.timeScale);
     }
 
     private void setTextureSize(Link link)
@@ -98,5 +116,7 @@ public class UIParticleSchemeGeneralSection extends UIParticleSchemeSection
         this.identifier.setText(scheme.identifier);
         this.material.setValue(scheme.material.ordinal());
         this.parallel.setValue(scheme.parallel);
+        this.integrator.setValue(scheme.integrator);
+        this.timeScale.setValue(scheme.timeScale);
     }
 }

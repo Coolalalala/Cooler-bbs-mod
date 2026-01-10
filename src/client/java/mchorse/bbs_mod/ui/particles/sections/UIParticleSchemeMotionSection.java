@@ -1,6 +1,7 @@
 package mchorse.bbs_mod.ui.particles.sections;
 
 import mchorse.bbs_mod.l10n.keys.IKey;
+import mchorse.bbs_mod.particles.components.meta.ParticleComponentSubsteps;
 import mchorse.bbs_mod.particles.components.motion.ParticleComponentInitialSpeed;
 import mchorse.bbs_mod.particles.components.motion.ParticleComponentInitialSpin;
 import mchorse.bbs_mod.particles.components.motion.ParticleComponentMotion;
@@ -15,6 +16,7 @@ import mchorse.bbs_mod.ui.utils.UI;
 
 public class UIParticleSchemeMotionSection extends UIParticleSchemeModeSection<ParticleComponentMotion>
 {
+    public UIElement integrationSubsteps;
     public UIElement position;
     public UIButton positionSpeed;
     public UIButton positionX;
@@ -28,12 +30,18 @@ public class UIParticleSchemeMotionSection extends UIParticleSchemeModeSection<P
     public UIButton rotationAcceleration;
     public UIButton rotationDrag;
 
+    private ParticleComponentSubsteps substeps;
     private ParticleComponentInitialSpeed speed;
     private ParticleComponentInitialSpin spin;
 
     public UIParticleSchemeMotionSection(UIParticleSchemePanel parent)
     {
         super(parent);
+
+        this.integrationSubsteps = new UIButton(UIKeys.SNOWSTORM_MOTION_INTEGRATION_SUBSTEPS, (b) ->
+        {
+            this.editMoLang("motion.substeps", (str) -> this.substeps.substeps = this.parse(str, this.substeps.substeps), this.substeps.substeps);
+        });
 
         this.positionSpeed = new UIButton(UIKeys.SNOWSTORM_MOTION_POSITION_SPEED, (b) ->
         {
@@ -89,6 +97,7 @@ public class UIParticleSchemeMotionSection extends UIParticleSchemeModeSection<P
         this.rotation.add(UI.label(UIKeys.SNOWSTORM_MOTION_ROTATION, 20).labelAnchor(0, 1F), this.rotationAngle, this.rotationRate);
         this.rotation.add(this.rotationAcceleration);
 
+        this.fields.add(this.integrationSubsteps);
         this.fields.add(this.position, this.rotation);
     }
 
@@ -148,6 +157,8 @@ public class UIParticleSchemeMotionSection extends UIParticleSchemeModeSection<P
     protected void fillData()
     {
         super.fillData();
+
+        this.substeps = this.scheme.getOrCreate(ParticleComponentSubsteps.class);
 
         this.speed = this.scheme.getOrCreate(ParticleComponentInitialSpeed.class);
         this.spin = this.scheme.getOrCreate(ParticleComponentInitialSpin.class);
