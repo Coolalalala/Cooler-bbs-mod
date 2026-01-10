@@ -17,6 +17,7 @@ public class Particle
     public float random4 = (float) Math.random();
 
     /* States */
+    public int substeps;
     public final int index;
     public final float offset;
     public int age;

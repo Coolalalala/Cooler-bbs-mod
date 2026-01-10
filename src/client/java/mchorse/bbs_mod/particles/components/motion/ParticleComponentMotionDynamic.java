@@ -5,12 +5,16 @@ import mchorse.bbs_mod.data.types.MapType;
 import mchorse.bbs_mod.math.molang.MolangException;
 import mchorse.bbs_mod.math.molang.MolangParser;
 import mchorse.bbs_mod.math.molang.expressions.MolangExpression;
+import mchorse.bbs_mod.particles.ParticleScheme;
 import mchorse.bbs_mod.particles.ParticleUtils;
 import mchorse.bbs_mod.particles.components.IComponentParticleUpdate;
 import mchorse.bbs_mod.particles.components.ParticleComponentBase;
+import mchorse.bbs_mod.particles.components.motion.integrator.ParticleRK4integrator;
+import mchorse.bbs_mod.particles.components.motion.integrator.ParticleVerletIntegrator;
 import mchorse.bbs_mod.particles.emitter.Particle;
 import mchorse.bbs_mod.particles.emitter.ParticleEmitter;
-import org.joml.Vector3f;
+
+import static mchorse.bbs_mod.particles.emitter.ParticleEmitter.dt;
 
 public class ParticleComponentMotionDynamic extends ParticleComponentMotion implements IComponentParticleUpdate
 {
@@ -51,50 +55,6 @@ public class ParticleComponentMotionDynamic extends ParticleComponentMotion impl
         return super.fromData(map, parser);
     }
 
-    private static final float dt = 0.05F;
-    private static final float halfdt = dt/2;
-    private void halfStepVelocity(Particle particle, Vector3f temp) {
-        temp.set(particle.acceleration);
-        temp.mul(halfdt);
-        particle.speed.add(temp);
-    }
-    private void stepPosition(Particle particle, Vector3f temp) {
-        getVelocity(particle, temp);
-        temp.mul(dt);
-        particle.position.add(temp);
-    }
-    private void stepAcceleration(Particle particle, Vector3f temp) {
-        // Calculate new acceleration
-        particle.acceleration.x = (float) this.motionAcceleration[0].get();
-        particle.acceleration.y = (float) this.motionAcceleration[1].get();
-        particle.acceleration.z = (float) this.motionAcceleration[2].get();
-        // Calculate drag
-        getVelocity(particle, temp);
-        temp.mul(-(particle.drag + particle.dragFactor)); // drag factor = drag added after collision
-        // Apply drag
-        particle.acceleration.add(temp);
-    }
-    private void getVelocity(Particle particle, Vector3f velocity) {
-        velocity.set(particle.speed);
-        // Transform velocity into desired space
-        if (particle.relativeVelocity)
-        {
-            if (particle.age == 0)
-            {
-                particle.matrix.transform(particle.speed);
-            }
-        }
-        else if (particle.relativePosition || particle.relativeRotation)
-        {
-            particle.matrix.transform(velocity);
-        }
-
-        if (particle.age == 0)
-        {
-            velocity.mul(1F + particle.offset);
-        }
-    }
-
     @Override
     public void update(ParticleEmitter emitter, Particle particle)
     {
@@ -105,16 +65,15 @@ public class ParticleComponentMotionDynamic extends ParticleComponentMotion impl
         particle.rotation = particle.initialRotation + particle.rotationVelocity * particle.age;
 
         /* Position */
-        // Velocity verlet integration
-        Vector3f temp = new Vector3f();
-        // v(t+dt/2) = v(t) + a(t)dt/2
-        halfStepVelocity(particle, temp);
-        // x(t+dt) = x(t) + v(t+dt/2)dt
-        stepPosition(particle, temp);
-        // calculate a(t+dt)
-        stepAcceleration(particle, temp);
-        // v(t+dt) = v(t+dt/2) + a(t+dt)dt/2
-        halfStepVelocity(particle, temp);
+        switch (emitter.scheme.integrator) {
+            case ParticleScheme.VERLET:
+                ParticleVerletIntegrator.update(emitter, particle, this.motionAcceleration);
+                break;
+            case ParticleScheme.RK4:
+                ParticleRK4integrator.sixthdt = dt/6;
+                ParticleRK4integrator.update(emitter, particle, this.motionAcceleration);
+                break;
+        }
 
         // Update particle properties
         particle.drag = (float) this.motionDrag.get();

@@ -17,6 +17,7 @@ import mchorse.bbs_mod.particles.components.lifetime.ParticleComponentLifetimeLo
 import mchorse.bbs_mod.particles.components.lifetime.ParticleComponentLifetimeOnce;
 import mchorse.bbs_mod.particles.components.meta.ParticleComponentInitialization;
 import mchorse.bbs_mod.particles.components.meta.ParticleComponentLocalSpace;
+import mchorse.bbs_mod.particles.components.meta.ParticleComponentSubsteps;
 import mchorse.bbs_mod.particles.components.motion.ParticleComponentInitialSpeed;
 import mchorse.bbs_mod.particles.components.motion.ParticleComponentInitialSpin;
 import mchorse.bbs_mod.particles.components.motion.ParticleComponentMotionCollision;
@@ -96,6 +97,7 @@ public class ParticleParser
         this.components.put("particle_appearance_tinting", ParticleComponentAppearanceTinting.class);
 
         /* Motion & Rotation */
+        this.components.put("particle_substeps", ParticleComponentSubsteps.class);
         this.components.put("particle_initial_speed", ParticleComponentInitialSpeed.class);
         this.components.put("particle_initial_spin", ParticleComponentInitialSpin.class);
         this.components.put("particle_motion_collision", ParticleComponentMotionCollision.class);
@@ -187,6 +189,12 @@ public class ParticleParser
 
         if (parameters.has("parallel")) {
             scheme.parallel = parameters.getBool("parallel");
+        }
+        if (parameters.has("integrator")) {
+            scheme.integrator = parameters.getInt("integrator");
+        }
+        if (parameters.has("time_scale")) {
+            scheme.timeScale = parameters.getFloat("time_scale");
         }
     }
 
@@ -281,6 +289,8 @@ public class ParticleParser
         render.putString("material", scheme.material.id);
         render.putString("texture", "textures/particle/particles");
         render.putBool("parallel", scheme.parallel);
+        render.putInt("integrator", scheme.integrator);
+        render.putFloat("time_scale", scheme.timeScale);
 
         if (scheme.texture != null && !scheme.texture.equals(ParticleScheme.DEFAULT_TEXTURE))
         {

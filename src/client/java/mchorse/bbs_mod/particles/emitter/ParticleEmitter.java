@@ -14,6 +14,7 @@ import mchorse.bbs_mod.particles.components.IComponentEmitterUpdate;
 import mchorse.bbs_mod.particles.components.IComponentParticleInitialize;
 import mchorse.bbs_mod.particles.components.IComponentParticleRender;
 import mchorse.bbs_mod.particles.components.IComponentParticleUpdate;
+import mchorse.bbs_mod.particles.components.motion.ParticleComponentMotion;
 import mchorse.bbs_mod.resources.Link;
 import mchorse.bbs_mod.utils.MathUtils;
 import mchorse.bbs_mod.utils.interps.Lerps;
@@ -40,6 +41,9 @@ import java.util.stream.Collectors;
 
 public class ParticleEmitter
 {
+    public static float dt = 0.05F;
+    public static float halfdt = dt / 2;
+
     public ParticleScheme scheme;
     public List<Particle> particles = new ArrayList<>();
     protected HashMap<Integer, Particle> particleIndexMap = new HashMap<>();
@@ -188,6 +192,35 @@ public class ParticleEmitter
     }
 
     /* Variable related code */
+    public void transformPositions(Particle particle, Vector3d prevPosition, Vector3d position) {
+        if (particle.age != 0 && !(particle.relativePosition && particle.relativeRotation)) {
+            prevPosition.sub(this.lastGlobal);
+            position.sub(this.lastGlobal);
+        }
+        if (!particle.relativePosition && particle.relativeRotation) {
+            Matrix3f inverseRotation = new Matrix3f(particle.matrix).invert();
+            Vector3f tempVec = new Vector3f();
+            tempVec.set(prevPosition);
+            inverseRotation.transform(tempVec);
+            prevPosition.set(tempVec);
+            tempVec.set(position);
+            inverseRotation.transform(tempVec);
+            position.set(tempVec);
+        }
+    }
+
+    public void transformPosition(Particle particle, Vector3d position) {
+        if (particle.age != 0 && !(particle.relativePosition && particle.relativeRotation)) {
+            position.sub(this.lastGlobal);
+        }
+        if (!particle.relativePosition && particle.relativeRotation) {
+            Matrix3f inverseRotation = new Matrix3f(particle.matrix).invert();
+            Vector3f tempVec = new Vector3f();
+            tempVec.set(position);
+            inverseRotation.transform(tempVec);
+            position.set(tempVec);
+        }
+    }
 
     public void setupVariables()
     {
@@ -254,20 +287,7 @@ public class ParticleEmitter
         // Transform
         Vector3d prevPosition = new Vector3d(particle.prevPosition);
         Vector3d position = new Vector3d(particle.position);
-        if (particle.age != 0 && !(particle.relativePosition && particle.relativeRotation)) {
-            prevPosition.sub(this.lastGlobal);
-            position.sub(this.lastGlobal);
-        }
-        if (!particle.relativePosition && particle.relativeRotation) {
-            Matrix3f inverseRotation = new Matrix3f(particle.matrix).invert();
-            Vector3f tempVec = new Vector3f();
-            tempVec.set(prevPosition);
-            inverseRotation.transform(tempVec);
-            prevPosition.set(tempVec);
-            tempVec.set(position);
-            inverseRotation.transform(tempVec);
-            position.set(tempVec);
-        }
+        this.transformPositions(particle, prevPosition, position);
         // Movements
         if (this.varInitX != null) this.varInitX.set(particle.initialPosition.x);
         if (this.varInitY != null) this.varInitY.set(particle.initialPosition.y);
@@ -286,6 +306,23 @@ public class ParticleEmitter
         if (this.varCollisions != null) this.varCollisions.set(particle.collisions);
 
         this.scheme.updateCurves();
+    }
+
+    public void motionUpdate(Vector3d pos, Vector3f vel) {
+        positionUpdate(pos);
+        velocityUpdate(vel);
+    }
+    public void positionUpdate(Vector3d pos) {
+        if (this.varPositionX != null) this.varPositionX.set(pos.x);
+        if (this.varPositionY != null) this.varPositionY.set(pos.y);
+        if (this.varPositionZ != null) this.varPositionZ.set(pos.z);
+        if (this.varDisplacement != null) this.varDisplacement.set(pos.length());
+    }
+    public void velocityUpdate(Vector3f vel) {
+        if (this.varVelocityX != null) this.varVelocityX.set(vel.x);
+        if (this.varVelocityY != null) this.varVelocityY.set(vel.y);
+        if (this.varVelocityZ != null) this.varVelocityZ.set(vel.z);
+        if (this.varVelocity != null) this.varVelocity.set(vel.length());
     }
 
     public void setEmitterVariables(float transition)
@@ -455,10 +492,7 @@ public class ParticleEmitter
         particle.update(this);
         this.setParticleVariables(particle, 0);
 
-        for (IComponentParticleUpdate component : this.scheme.particleUpdates)
-        {
-            component.update(this, particle);
-        }
+        this.updateComponents(particle);
     }
 
     public static final ThreadLocal<Particle> evaluationParticle = new ThreadLocal<>();
@@ -467,10 +501,21 @@ public class ParticleEmitter
 
         evaluationParticle.set(particle);
         scheme.updateCurves();
+        this.updateComponents(particle);
+        evaluationParticle.remove();
+    }
+
+    public void updateComponents(Particle particle) {
         for (IComponentParticleUpdate component : this.scheme.particleUpdates) {
+            if (component instanceof ParticleComponentMotion) {
+                // Process substeps for motion integration
+                dt = 0.05F * this.scheme.timeScale / particle.substeps;
+                halfdt = dt / 2;
+                for (int i = 1; i < particle.substeps; i++) component.update(this, particle);
+                this.motionUpdate(particle.position, particle.speed);
+            }
             component.update(this, particle);
         }
-        evaluationParticle.remove();
     }
 
     public Particle getParticleByIndex(int index)

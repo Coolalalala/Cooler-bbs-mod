@@ -27,6 +27,8 @@ import java.util.Map;
 public class ParticleScheme extends ValueGroup {
     public static final Link DEFAULT_TEXTURE = Link.assets("textures/default_atlas.png");
     public static final ParticleParser PARSER = new ParticleParser();
+    public static final int VERLET = 0;
+    public static final int RK4 = 1;
 
     /* Particles identifier */
     public String identifier = "";
@@ -35,6 +37,9 @@ public class ParticleScheme extends ValueGroup {
     public ParticleMaterial material = ParticleMaterial.OPAQUE;
     public Link texture = DEFAULT_TEXTURE;
     public boolean parallel = false;
+    public int integrator = 0;
+    public float timeScale = 1F;
+
 
     /* Particle's curves */
     public Map<String, ParticleCurve> curves = new HashMap<>();

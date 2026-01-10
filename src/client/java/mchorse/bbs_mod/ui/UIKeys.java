@@ -794,6 +794,7 @@ public class UIKeys
     public static final IKey SNOWSTORM_GENERAL_PARTICLES_OPAQUE = L10n.lang("bbs.ui.snowstorm.general.particles_opaque");
     public static final IKey SNOWSTORM_GENERAL_PICK = L10n.lang("bbs.ui.snowstorm.general.pick");
     public static final IKey SNOWSTORM_GENERAL_TITLE = L10n.lang("bbs.ui.snowstorm.general.title");
+    public static final IKey SNOWSTORM_GENERAL_TIME_SCALE = L10n.lang("bbs.ui.snowstorm.general.time_scale");
     public static final IKey SNOWSTORM_INITIALIZATION_CREATION = L10n.lang("bbs.ui.snowstorm.initialization.creation");
     public static final IKey SNOWSTORM_INITIALIZATION_CREATION_TOOLTIP = L10n.lang("bbs.ui.snowstorm.initialization.creation_tooltip");
     public static final IKey SNOWSTORM_INITIALIZATION_TITLE = L10n.lang("bbs.ui.snowstorm.initialization.title");
@@ -824,6 +825,7 @@ public class UIKeys
     public static final IKey SNOWSTORM_MODE = L10n.lang("bbs.ui.snowstorm.mode");
     public static final IKey SNOWSTORM_MOTION_DYNAMIC = L10n.lang("bbs.ui.snowstorm.motion.dynamic");
     public static final IKey SNOWSTORM_MOTION_PARAMETRIC = L10n.lang("bbs.ui.snowstorm.motion.parametric");
+    public static final IKey SNOWSTORM_MOTION_INTEGRATION_SUBSTEPS = L10n.lang("bbs.ui.snowstorm.motion.integrator.substeps");
     public static final IKey SNOWSTORM_MOTION_POSITION = L10n.lang("bbs.ui.snowstorm.motion.position");
     public static final IKey SNOWSTORM_MOTION_POSITION_DRAG = L10n.lang("bbs.ui.snowstorm.motion.position_drag");
     public static final IKey SNOWSTORM_MOTION_POSITION_SPEED = L10n.lang("bbs.ui.snowstorm.motion.position_speed");

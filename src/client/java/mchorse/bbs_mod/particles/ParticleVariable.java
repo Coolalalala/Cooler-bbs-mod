@@ -3,9 +3,7 @@ package mchorse.bbs_mod.particles;
 import mchorse.bbs_mod.math.Variable;
 import mchorse.bbs_mod.particles.emitter.Particle;
 import mchorse.bbs_mod.particles.emitter.ParticleEmitter;
-import org.joml.Matrix3f;
 import org.joml.Vector3d;
-import org.joml.Vector3f;
 
 public class ParticleVariable extends Variable {
     public static ParticleEmitter emitter;
@@ -25,18 +23,8 @@ public class ParticleVariable extends Variable {
         }
         name = name.replace("v.", "variable.");
         Vector3d prevPosition = new Vector3d(particle.prevPosition);
-        if (emitter != null) {
-            if (particle.age != 0 && !(particle.relativePosition && particle.relativeRotation)) {
-                Vector3d lastGlobal = emitter.lastGlobal;
-                prevPosition.sub(lastGlobal);
-            }
-            if (!particle.relativePosition && particle.relativeRotation) {
-                Matrix3f inverseRotation = new Matrix3f(particle.matrix).invert();
-                Vector3f tempVec = new Vector3f();
-                tempVec.set(prevPosition);
-                inverseRotation.transform(tempVec);
-                prevPosition.set(tempVec);
-            }
+        if (emitter != null && (name.equals("variable.particle_x") || name.equals("variable.particle_y") || name.equals("variable.particle_z") || name.equals("variable.particle_displacement"))) {
+            emitter.transformPosition(particle, prevPosition);
         }
         return switch (name) {
             case "variable.particle_init_x" -> particle.initialPosition.x;
