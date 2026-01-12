@@ -65,6 +65,14 @@ public class UIBufferFlipperFormPanel extends UIFormPanel<BufferFlipperForm> {
         super.startEdit(form);
 
         this.name.setText(form.name.toString());
+        this.flip0.setValue(form.get().contains(0));
+        this.flip1.setValue(form.get().contains(1));
+        this.flip2.setValue(form.get().contains(2));
+        this.flip3.setValue(form.get().contains(3));
+        this.flip4.setValue(form.get().contains(4));
+        this.flip5.setValue(form.get().contains(5));
+        this.flip6.setValue(form.get().contains(6));
+        this.flip7.setValue(form.get().contains(7));
         this.priority.setValue(form.priority.get());
         this.renderStage.setValue(form.renderStage.get());
     }
