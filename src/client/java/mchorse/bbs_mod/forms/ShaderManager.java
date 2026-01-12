@@ -26,6 +26,7 @@ import net.irisshaders.iris.pipeline.IrisRenderingPipeline;
 import net.irisshaders.iris.samplers.IrisImages;
 import net.irisshaders.iris.samplers.IrisSamplers;
 import net.irisshaders.iris.shaderpack.ShaderPack;
+import net.irisshaders.iris.shaderpack.include.AbsolutePackPath;
 import net.irisshaders.iris.shaderpack.materialmap.NamespacedId;
 import net.irisshaders.iris.shaderpack.programs.ProgramSet;
 import net.irisshaders.iris.targets.RenderTarget;
@@ -47,6 +48,7 @@ import org.lwjgl.opengl.GL43;
 import java.lang.reflect.Field;
 import java.nio.FloatBuffer;
 import java.util.*;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -56,6 +58,8 @@ import static mchorse.bbs_mod.client.BBSRendering.isIrisShadersEnabled;
 import static mchorse.bbs_mod.forms.forms.ShaderForm.*;
 
 public class ShaderManager {
+    public static final Pattern INCLUDE_PATTERN = Pattern.compile("^\\s*#include\\s+(\"([^\"]+)\"|<([^>]+)>)\\s*$");
+
     public static Map<ShaderForm, Integer> activePrepareShaders = new HashMap<>();
     public static Map<ShaderForm, Integer> activeDeferredShaders = new HashMap<>();
     public static Map<ShaderForm, Integer> activeCompositeShaders = new HashMap<>();
@@ -78,6 +82,7 @@ public class ShaderManager {
     private static CustomTextureManager customTextureManager = null;
     private static FrameUpdateNotifier updateNotifier = new FrameUpdateNotifier();
     private static ShaderPack currentPack = null;
+    private static Function<AbsolutePackPath, String> sourceProvider;
 
 
     @SuppressWarnings("unchecked")
@@ -126,6 +131,11 @@ public class ShaderManager {
             Field currentPackField = Iris.class.getDeclaredField("currentPack");
             currentPackField.setAccessible(true);
             currentPack = (ShaderPack) currentPackField.get(Iris.class);
+
+            // Get source provider
+            Field sourceProviderField = ShaderPack.class.getDeclaredField("sourceProvider");
+            sourceProviderField.setAccessible(true);
+            sourceProvider = (Function<AbsolutePackPath, String>) sourceProviderField.get(currentPack);
 
             LogUtils.getLogger().info("Successfully initialized ShaderManager with Iris pipeline access");
             LogUtils.getLogger().info("Render targets: {}", (renderTargets));
@@ -541,7 +551,7 @@ public class ShaderManager {
             // Transform the compute shader using Iris's TransformPatcher
             String transformed = TransformPatcher.patchCompute(
                     shaderForm.getName(),
-                    computeSource,
+                    resolveShaderIncludes(computeSource),
                     textureStage, // or appropriate stage
                     pipeline.getTextureMap()
             );
@@ -648,9 +658,9 @@ public class ShaderManager {
             // Transform shaders using Iris's TransformPatcher (like CompositeRenderer does)
             Map<PatchShaderType, String> transformed = TransformPatcher.patchComposite(
                 shaderForm.getName(),
-                shaderForm.getVertexSource(),
-                shaderForm.getGeometrySource(),
-                shaderForm.getFragmentSource(),
+                resolveShaderIncludes(shaderForm.getVertexSource()),
+                resolveShaderIncludes(shaderForm.getGeometrySource()),
+                resolveShaderIncludes(shaderForm.getFragmentSource()),
                 textureStage,
                 pipeline.getTextureMap()
             );
@@ -748,13 +758,30 @@ public class ShaderManager {
                         isComposite ? "composite" : "geometry", shaderForm.getName());
             return program;
 
-        } catch (IllegalStateException e) {
+        } catch (IllegalStateException e) { // Pipeline is destroyed
             destroy();
         } catch (Exception e) {
             LogUtils.getLogger().error("Failed to create {} program for: {}\n{}",
                     isComposite ? "composite" : "gbuffer", shaderForm.getName(), e.getMessage());
         }
         return null;
+    }
+
+    private static String resolveShaderIncludes(String source) {
+        if (source == null || source.isBlank()) return source;
+        // Use regex to extract every include statement
+        Matcher matcher = INCLUDE_PATTERN.matcher(source);
+        StringBuilder builder = new StringBuilder();
+        int start = 0;
+        while (matcher.find()) {
+            String lines = sourceProvider.apply(AbsolutePackPath.fromAbsolutePath(matcher.group(2)));
+            if (lines == null) LogUtils.getLogger().warn("Failed to load include: {}, ignoring", matcher.group(2));
+            builder.append(source, start, matcher.start());
+            builder.append(lines);
+            start = matcher.end();
+        }
+        builder.append(source, start, source.length());
+        return builder.toString();
     }
 
 
