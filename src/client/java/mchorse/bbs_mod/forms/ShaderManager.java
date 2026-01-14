@@ -44,6 +44,7 @@ import org.joml.Matrix4f;
 import org.joml.Vector2f;
 import org.joml.Vector3i;
 import org.lwjgl.opengl.GL43;
+import org.slf4j.Logger;
 
 import java.lang.reflect.Field;
 import java.nio.FloatBuffer;
@@ -58,12 +59,13 @@ import static mchorse.bbs_mod.client.BBSRendering.isIrisShadersEnabled;
 import static mchorse.bbs_mod.forms.forms.ShaderForm.*;
 
 public class ShaderManager {
+    public static final Logger LOGGER = LogUtils.getLogger();
     public static final Pattern INCLUDE_PATTERN = Pattern.compile("^\\s*#include\\s+(\"([^\"]+)\"|<([^>]+)>)\\s*$");
 
-    public static Map<ShaderForm, Integer> activePrepareShaders = new HashMap<>();
-    public static Map<ShaderForm, Integer> activeDeferredShaders = new HashMap<>();
-    public static Map<ShaderForm, Integer> activeCompositeShaders = new HashMap<>();
-    public static Map<GBufferShaderForm, List<GBufferGroupData>> activeGBufferShaders = new HashMap<>();
+    private static final Map<ShaderForm, Integer> activePrepareShaders = new HashMap<>();
+    private static final Map<ShaderForm, Integer> activeDeferredShaders = new HashMap<>();
+    private static final Map<ShaderForm, Integer> activeCompositeShaders = new HashMap<>();
+    private static final Map<GBufferShaderForm, List<GBufferGroupData>> activeGBufferShaders = new HashMap<>();
     private static ImmutableSet<Integer> flipState = ImmutableSet.of();
     private static BufferFlipperForm compositeFlipper;
     private static BufferFlipperForm deferredFlipper;
@@ -137,17 +139,17 @@ public class ShaderManager {
             sourceProviderField.setAccessible(true);
             sourceProvider = (Function<AbsolutePackPath, String>) sourceProviderField.get(currentPack);
 
-            LogUtils.getLogger().info("Successfully initialized ShaderManager with Iris pipeline access");
-            LogUtils.getLogger().info("Render targets: {}", (renderTargets));
-            LogUtils.getLogger().info("Custom uniforms: {}", (customUniforms));
-            LogUtils.getLogger().info("Custom images: {}", customImages.size());
-            LogUtils.getLogger().info("Custom texture manager: {}", (customTextureManager));
+            LOGGER.info("Successfully initialized ShaderManager with Iris pipeline access");
+            LOGGER.info("Render targets: {}", (renderTargets));
+            LOGGER.info("Custom uniforms: {}", (customUniforms));
+            LOGGER.info("Custom images: {}", customImages.size());
+            LOGGER.info("Custom texture manager: {}", (customTextureManager));
 
             // Set up flipper forms
             compositeFlipper = new BufferFlipperForm(COMPOSITE_STAGE, "composite_flipper");
             deferredFlipper = new BufferFlipperForm(DEFERRED_STAGE, "deferred_flipper");
         } catch (Exception e) {
-            LogUtils.getLogger().error("Failed to retrieve fields from Iris render pipeline: {}", e.toString());
+            LOGGER.error("Failed to retrieve fields from Iris render pipeline: {}", e.toString());
         }
     }
 
@@ -242,7 +244,7 @@ public class ShaderManager {
                 program = createGBufferProgram(shaderForm);
                 shaderForm.setProgram(program);
                 if (program == null) {
-                    LogUtils.getLogger().warn("Geometry shader program is null for form: {}", shaderForm.getName());
+                    LOGGER.warn("Geometry shader program is null for form: {}", shaderForm.getName());
                     return;
                 }
             } else {
@@ -305,8 +307,7 @@ public class ShaderManager {
                 data.texture.bind(GL43.GL_TEXTURE0 + modelTextureUnit);
                 
                 // Draw group
-                // TODO: get light and biome
-                data.modelVao.render(VertexFormats.POSITION_COLOR_TEXTURE_OVERLAY_LIGHT_NORMAL, 1, 1, 1, 1, 0, 0);
+                data.modelVao.render();
             }
 
             // Clean up
@@ -314,7 +315,7 @@ public class ShaderManager {
             activeGBufferShaders.remove(shaderForm);
 
         } catch (Exception e) {
-            LogUtils.getLogger().error("Failed to render geometry with shader: {}", shaderForm.getName(), e);
+            LOGGER.error("Failed to render geometry with shader: {}", shaderForm.getName(), e);
         }
     }
 
@@ -337,7 +338,7 @@ public class ShaderManager {
                 program = createCompositeProgram(shaderForm);
                 shaderForm.setProgram(program);
                 if (program == null) {
-                    LogUtils.getLogger().warn("Composite shader program is null for form: {}", shaderForm.getName());
+                    LOGGER.warn("Composite shader program is null for form: {}", shaderForm.getName());
                     return;
                 }
             }
@@ -373,7 +374,7 @@ public class ShaderManager {
             // Render fullscreen quad
             FullScreenQuadRenderer.INSTANCE.renderQuad();
         } catch (Exception e) {
-            LogUtils.getLogger().error("Failed to render composite shader form: {}", shaderForm.getName(), e);
+            LOGGER.error("Failed to render composite shader form: {}", shaderForm.getName(), e);
         }
     }
 
@@ -388,7 +389,7 @@ public class ShaderManager {
                 program = createComputeProgram(shaderForm);
                 shaderForm.setComputeProgram(program);
                 if (program == null) {
-                    LogUtils.getLogger().warn("Compute shader program is null for form: {}", shaderForm.getName());
+                    LOGGER.warn("Compute shader program is null for form: {}", shaderForm.getName());
                     return;
                 }
             }
@@ -412,7 +413,7 @@ public class ShaderManager {
             IrisRenderSystem.memoryBarrier(8232);
         }
         catch (Exception e) {
-            LogUtils.getLogger().error("Failed to render compute shader form: {}", shaderForm.getName(), e);
+            LOGGER.error("Failed to render compute shader form: {}", shaderForm.getName(), e);
         }
     }
 
@@ -535,7 +536,7 @@ public class ShaderManager {
         if (isPipelineNuhuh()) return null;
 
         try {
-            LogUtils.getLogger().debug("Creating compute program for: {}", shaderForm.getName());
+            LOGGER.debug("Creating compute program for: {}", shaderForm.getName());
 
             String computeSource = shaderForm.getComputeSource();
 
@@ -628,10 +629,10 @@ public class ShaderManager {
             // Set work group info
             computeProgram.setWorkGroupInfo(new Vector2f(shaderForm.relativeX.get()), new Vector3i(shaderForm.workGroupsX.get(), shaderForm.workGroupsY.get(), shaderForm.workGroupsZ.get()), null);
 
-            LogUtils.getLogger().info("Successfully created compute shader program for: {}", shaderForm.getName());
+            LOGGER.info("Successfully created compute shader program for: {}", shaderForm.getName());
             return computeProgram;
         } catch (Exception e) {
-            LogUtils.getLogger().error("Failed to create compute program for: {}\n{}", shaderForm.getName(), e.getMessage());
+            LOGGER.error("Failed to create compute program for: {}\n{}", shaderForm.getName(), e.getMessage());
             return null;
         }
     }
@@ -643,7 +644,7 @@ public class ShaderManager {
         if (isPipelineNuhuh()) return null;
 
         try {
-            LogUtils.getLogger().debug("Creating Iris-integrated program for: {}", shaderForm.getName());
+            LOGGER.debug("Creating Iris-integrated program for: {}", shaderForm.getName());
 
 
             // Use appropriate texture stage based on render stage
@@ -754,14 +755,14 @@ public class ShaderManager {
             // Map custom uniforms to this program
             customUniforms.mapholderToPass(builder, program);
 
-            LogUtils.getLogger().info("Successfully created {} shader program for: {}",
+            LOGGER.info("Successfully created {} shader program for: {}",
                         isComposite ? "composite" : "geometry", shaderForm.getName());
             return program;
 
         } catch (IllegalStateException e) { // Pipeline is destroyed
             destroy();
         } catch (Exception e) {
-            LogUtils.getLogger().error("Failed to create {} program for: {}\n{}",
+            LOGGER.error("Failed to create {} program for: {}\n{}",
                     isComposite ? "composite" : "gbuffer", shaderForm.getName(), e.getMessage());
         }
         return null;
@@ -775,7 +776,7 @@ public class ShaderManager {
         int start = 0;
         while (matcher.find()) {
             String lines = sourceProvider.apply(AbsolutePackPath.fromAbsolutePath(matcher.group(2)));
-            if (lines == null) LogUtils.getLogger().warn("Failed to load include: {}, ignoring", matcher.group(2));
+            if (lines == null) LOGGER.warn("Failed to load include: {}, ignoring", matcher.group(2));
             builder.append(source, start, matcher.start());
             builder.append(lines);
             start = matcher.end();
@@ -786,7 +787,7 @@ public class ShaderManager {
 
 
     public static void recompile() {
-        LogUtils.getLogger().info("Recompiling shader forms...");
+        LOGGER.info("Recompiling shader forms...");
         activeCompositeShaders.keySet().forEach(ShaderForm::markDirty);
         activeDeferredShaders.keySet().forEach(ShaderForm::markDirty);
         compositeFlipper.setBuffers(ImmutableSet.of());
@@ -851,7 +852,7 @@ public class ShaderManager {
                     locations.add(location);
                 }
             } catch (NumberFormatException e) {
-                LogUtils.getLogger().error("Failed to parse location, enabling all buffers");
+                LOGGER.error("Failed to parse location, enabling all buffers");
                 return new int[]{0,1,2,3,4,5,6,7};
             }
         }
