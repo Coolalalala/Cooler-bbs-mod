@@ -2,6 +2,8 @@ package mchorse.bbs_mod.forms.forms;
 
 
 public class CompositeShaderForm extends ShaderForm {
+    public static final int TYPE = 2;
+
     public CompositeShaderForm() {
         super();
     }

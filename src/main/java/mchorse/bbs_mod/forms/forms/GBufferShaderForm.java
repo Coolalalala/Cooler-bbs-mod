@@ -4,6 +4,8 @@ package mchorse.bbs_mod.forms.forms;
 import mchorse.bbs_mod.settings.values.numeric.ValueBoolean;
 
 public class GBufferShaderForm extends ShaderForm {
+    public static final int TYPE = 1;
+
     public final ValueBoolean culling = new ValueBoolean("culling", true);
     public final ValueBoolean depthTest = new ValueBoolean("depthTest", true);
     public final ValueBoolean depthWrite = new ValueBoolean("depthWrite", true);
