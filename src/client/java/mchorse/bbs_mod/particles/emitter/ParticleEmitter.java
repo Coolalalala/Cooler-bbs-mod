@@ -112,6 +112,7 @@ public class ParticleEmitter
     private Variable varVelocity;
     private Variable varOffset;
     private Variable varCollisions;
+    private Variable varSubsteps;
 
     private Variable varEmitterAge;
     private Variable varEmitterLifetime;
@@ -244,6 +245,7 @@ public class ParticleEmitter
         this.varVelocity = this.scheme.parser.variables.get("variable.particle_velocity");
         this.varOffset = this.scheme.parser.variables.get("variable.particle_offset");
         this.varCollisions = this.scheme.parser.variables.get("variable.particle_collisions");
+        this.varSubsteps = this.scheme.parser.variables.get("variable.particle_substeps");
 
         this.varEmitterAge = this.scheme.parser.variables.get("variable.emitter_age");
         this.varEmitterLifetime = this.scheme.parser.variables.get("variable.emitter_lifetime");
@@ -301,6 +303,7 @@ public class ParticleEmitter
         if (this.varVelocityZ != null) this.varVelocityZ.set(particle.speed.z);
         if (this.varVelocity != null) this.varVelocity.set(particle.speed.length());
         if (this.varOffset != null) this.varOffset.set(particle.offset);
+        if (this.varSubsteps != null) this.varSubsteps.set(particle.substeps);
 
         // Collisions
         if (this.varCollisions != null) this.varCollisions.set(particle.collisions);

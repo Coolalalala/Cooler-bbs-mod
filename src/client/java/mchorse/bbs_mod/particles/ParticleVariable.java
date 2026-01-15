@@ -47,6 +47,7 @@ public class ParticleVariable extends Variable {
             case "variable.particle_velocity" -> particle.speed.length();
             case "variable.particle_offset" -> particle.offset;
             case "variable.particle_collisions" -> particle.collisions;
+            case "variable.particle_substeps" -> particle.substeps;
             default -> 0.0;
         };
     }
