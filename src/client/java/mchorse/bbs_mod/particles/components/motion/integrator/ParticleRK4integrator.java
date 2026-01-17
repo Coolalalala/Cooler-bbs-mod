@@ -10,30 +10,7 @@ import static mchorse.bbs_mod.particles.emitter.ParticleEmitter.dt;
 import static mchorse.bbs_mod.particles.emitter.ParticleEmitter.halfdt;
 
 public class ParticleRK4integrator {
-     public static float sixthdt = dt/6;
-
-     private static Vector3f getVelocity(Particle particle) {
-        Vector3f velocity = new Vector3f(particle.speed);
-        // Transform velocity into desired space
-        if (particle.relativeVelocity)
-        {
-            if (particle.age == 0)
-            {
-                particle.matrix.transform(particle.speed);
-            }
-        }
-        else if (particle.relativePosition || particle.relativeRotation)
-        {
-            particle.matrix.transform(velocity);
-        }
-
-        if (particle.age == 0)
-        {
-            velocity.mul(1F + particle.offset);
-        }
-
-        return velocity;
-    }
+    public static float sixthdt = dt/6;
 
     private static Vector3f acceleration(Particle particle, MolangExpression[] motionAcceleration, Vector3f velocity) {
         return new Vector3f(
@@ -60,7 +37,7 @@ public class ParticleRK4integrator {
         Vector3d[] kx = new Vector3d[4];
         Vector3f[] kv = new Vector3f[4];
         Vector3d position = new Vector3d(particle.position);
-        Vector3f velocity = getVelocity(particle);
+        Vector3f velocity = particle.getVelocity();
         Vector3d tempd = new Vector3d();
         Vector3f tempf = new Vector3f(velocity);
 
@@ -70,17 +47,17 @@ public class ParticleRK4integrator {
         if (!emitter.scheme.parallel) updateState(emitter, position, velocity, kx[0], kv[0], tempd, tempf, halfdt);
         else updateStateParallel(particle, position, velocity, kx[0], kv[0], tempd, tempf, dt);
         // k2
-        kx[1] = new Vector3d(getVelocity(particle));
+        kx[1] = new Vector3d(particle.getVelocity());
         kv[1] = acceleration(particle, motionAcceleration, tempf);
         if (!emitter.scheme.parallel) updateState(emitter, position, velocity, kx[1], kv[1], tempd, tempf, halfdt);
         else updateStateParallel(particle, position, velocity, kx[1], kv[1], tempd, tempf, dt);
         // k3
-        kx[2] = new Vector3d(getVelocity(particle));
+        kx[2] = new Vector3d(particle.getVelocity());
         kv[2] = acceleration(particle, motionAcceleration, tempf);
         if (!emitter.scheme.parallel) updateState(emitter, position, velocity, kx[2], kv[2], tempd, tempf, halfdt);
         else updateStateParallel(particle, position, velocity, kx[2], kv[2], tempd, tempf, dt);
         // k4
-        kx[3] = new Vector3d(getVelocity(particle));
+        kx[3] = new Vector3d(particle.getVelocity());
         kv[3] = acceleration(particle, motionAcceleration, tempf);
         if (!emitter.scheme.parallel) updateState(emitter, position, velocity, kx[3], kv[3], tempd, tempf, dt);
         else updateStateParallel(particle, position, velocity, kx[3], kv[3], tempd, tempf, dt);

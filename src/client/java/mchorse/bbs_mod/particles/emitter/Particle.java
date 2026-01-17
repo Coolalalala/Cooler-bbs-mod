@@ -130,6 +130,34 @@ public class Particle
         this.age += 1;
     }
 
+    public Vector3f getVelocity() {
+        Vector3f velocity = new Vector3f();
+        this.getVelocity(velocity);
+        return velocity;
+    }
+
+    public void getVelocity(Vector3f velocity) {
+        velocity.set(this.speed);
+        // Transform velocity into desired space
+        if (this.relativeVelocity)
+        {
+            if (this.age == 0)
+            {
+                this.matrix.transform(this.speed);
+                velocity.set(this.speed);
+            }
+        }
+        else if (this.relativePosition || this.relativeRotation)
+        {
+            this.matrix.transform(velocity);
+        }
+
+        if (this.age == 0)
+        {
+            velocity.mul(1F + this.offset);
+        }
+    }
+
     public void setupMatrix(ParticleEmitter emitter)
     {
         if (this.relativePosition)
