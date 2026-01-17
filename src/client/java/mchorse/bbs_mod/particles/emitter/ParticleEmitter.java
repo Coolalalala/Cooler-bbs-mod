@@ -316,6 +316,9 @@ public class ParticleEmitter
         velocityUpdate(vel);
     }
     public void positionUpdate(Vector3d pos) {
+        if (this.scheme.parallel) return;
+        pos = new Vector3d(pos); // Copy to avoid modifying the original input
+        this.transformPosition(this.scheme.particle, pos);
         if (this.varPositionX != null) this.varPositionX.set(pos.x);
         if (this.varPositionY != null) this.varPositionY.set(pos.y);
         if (this.varPositionZ != null) this.varPositionZ.set(pos.z);
@@ -515,7 +518,6 @@ public class ParticleEmitter
                 dt = 0.05F * this.scheme.timeScale / particle.substeps;
                 halfdt = dt / 2;
                 for (int i = 1; i < particle.substeps; i++) component.update(this, particle);
-                this.motionUpdate(particle.position, particle.speed);
             }
             component.update(this, particle);
         }
