@@ -16,7 +16,7 @@ public class ParticleVerletIntegrator {
         emitter.velocityUpdate(particle.speed);
     }
     static private void stepPosition(ParticleEmitter emitter, Particle particle, Vector3f temp, Vector3f velocity) {
-        getVelocity(particle, velocity);
+        particle.getVelocity(velocity);
         temp.set(velocity);
         temp.mul(dt);
         particle.position.add(temp);
@@ -31,26 +31,6 @@ public class ParticleVerletIntegrator {
         velocity.mul(particle.drag + particle.dragFactor); // drag factor = drag added after collision
         // Apply drag
         particle.acceleration.sub(velocity);
-    }
-    static private void getVelocity(Particle particle, Vector3f velocity) {
-        velocity.set(particle.speed);
-        // Transform velocity into desired space
-        if (particle.relativeVelocity)
-        {
-            if (particle.age == 0)
-            {
-                particle.matrix.transform(particle.speed);
-            }
-        }
-        else if (particle.relativePosition || particle.relativeRotation)
-        {
-            particle.matrix.transform(velocity);
-        }
-
-        if (particle.age == 0)
-        {
-            velocity.mul(1F + particle.offset);
-        }
     }
 
     public static void update(ParticleEmitter emitter, Particle particle, MolangExpression[] motionAcceleration) {
