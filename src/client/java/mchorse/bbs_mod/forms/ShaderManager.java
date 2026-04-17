@@ -1,5 +1,6 @@
 package mchorse.bbs_mod.forms;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -12,14 +13,17 @@ import mchorse.bbs_mod.forms.forms.*;
 import mchorse.bbs_mod.graphics.texture.Texture;
 import mchorse.bbs_mod.utils.colors.Color;
 import net.irisshaders.iris.Iris;
+import net.irisshaders.iris.config.IrisConfig;
 import net.irisshaders.iris.gl.IrisRenderSystem;
 import net.irisshaders.iris.gl.image.GlImage;
 import net.irisshaders.iris.gl.program.ComputeProgram;
 import net.irisshaders.iris.gl.program.Program;
 import net.irisshaders.iris.gl.program.ProgramBuilder;
 import net.irisshaders.iris.gl.program.ProgramSamplers;
+import net.irisshaders.iris.gl.shader.StandardMacros;
 import net.irisshaders.iris.gl.state.FogMode;
 import net.irisshaders.iris.gl.texture.TextureAccess;
+import net.irisshaders.iris.helpers.StringPair;
 import net.irisshaders.iris.pathways.CenterDepthSampler;
 import net.irisshaders.iris.pathways.FullScreenQuadRenderer;
 import net.irisshaders.iris.pipeline.IrisRenderingPipeline;
@@ -28,6 +32,8 @@ import net.irisshaders.iris.samplers.IrisSamplers;
 import net.irisshaders.iris.shaderpack.ShaderPack;
 import net.irisshaders.iris.shaderpack.include.AbsolutePackPath;
 import net.irisshaders.iris.shaderpack.materialmap.NamespacedId;
+import net.irisshaders.iris.shaderpack.option.OptionAnnotatedSource;
+import net.irisshaders.iris.shaderpack.preprocessor.JcppProcessor;
 import net.irisshaders.iris.shaderpack.programs.ProgramSet;
 import net.irisshaders.iris.targets.RenderTarget;
 import net.irisshaders.iris.targets.RenderTargets;
@@ -46,10 +52,12 @@ import org.joml.Vector3i;
 import org.lwjgl.opengl.GL43;
 import org.slf4j.Logger;
 
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.FloatBuffer;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
-import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -60,7 +68,8 @@ import static mchorse.bbs_mod.forms.forms.ShaderForm.*;
 
 public class ShaderManager {
     public static final Logger LOGGER = LogUtils.getLogger();
-    public static final Pattern INCLUDE_PATTERN = Pattern.compile("^\\s*#include\\s+(\"([^\"]+)\"|<([^>]+)>)\\s*$");
+    public static final Pattern INCLUDE_PATTERN = Pattern.compile("#include\\s+(\"([^\"]+)\"|<([^>]+)>)");
+    public static final ImmutableList<StringPair> ENVIRONMENT_DEFINES = StandardMacros.createStandardEnvironmentDefines();
 
     private static final Map<ShaderForm, Integer> activePrepareShaders = new HashMap<>();
     private static final Map<ShaderForm, Integer> activeDeferredShaders = new HashMap<>();
@@ -84,7 +93,7 @@ public class ShaderManager {
     private static CustomTextureManager customTextureManager = null;
     private static FrameUpdateNotifier updateNotifier = new FrameUpdateNotifier();
     private static ShaderPack currentPack = null;
-    private static Function<AbsolutePackPath, String> sourceProvider;
+    private static String packName = null;
 
 
     @SuppressWarnings("unchecked")
@@ -134,16 +143,12 @@ public class ShaderManager {
             currentPackField.setAccessible(true);
             currentPack = (ShaderPack) currentPackField.get(Iris.class);
 
-            // Get source provider
-            Field sourceProviderField = ShaderPack.class.getDeclaredField("sourceProvider");
-            sourceProviderField.setAccessible(true);
-            sourceProvider = (Function<AbsolutePackPath, String>) sourceProviderField.get(currentPack);
-
-            LOGGER.info("Successfully initialized ShaderManager with Iris pipeline access");
-            LOGGER.info("Render targets: {}", (renderTargets));
-            LOGGER.info("Custom uniforms: {}", (customUniforms));
-            LOGGER.info("Custom images: {}", customImages.size());
-            LOGGER.info("Custom texture manager: {}", (customTextureManager));
+            // Get iris config
+            Field irisConfigField = Iris.class.getDeclaredField("irisConfig");
+            irisConfigField.setAccessible(true);
+            IrisConfig irisConfig = (IrisConfig) irisConfigField.get(Iris.class);
+            // Get pack name
+            packName = irisConfig.getShaderPackName().orElse(null);
 
             // Set up flipper forms
             compositeFlipper = new BufferFlipperForm(COMPOSITE_STAGE, "composite_flipper");
@@ -552,7 +557,7 @@ public class ShaderManager {
             // Transform the compute shader using Iris's TransformPatcher
             String transformed = TransformPatcher.patchCompute(
                     shaderForm.getName(),
-                    resolveShaderIncludes(computeSource),
+                    preprocessShader(computeSource),
                     textureStage, // or appropriate stage
                     pipeline.getTextureMap()
             );
@@ -659,9 +664,9 @@ public class ShaderManager {
             // Transform shaders using Iris's TransformPatcher (like CompositeRenderer does)
             Map<PatchShaderType, String> transformed = TransformPatcher.patchComposite(
                 shaderForm.getName(),
-                resolveShaderIncludes(shaderForm.getVertexSource()),
-                resolveShaderIncludes(shaderForm.getGeometrySource()),
-                resolveShaderIncludes(shaderForm.getFragmentSource()),
+                preprocessShader(shaderForm.getVertexSource()),
+                preprocessShader(shaderForm.getGeometrySource()),
+                preprocessShader(shaderForm.getFragmentSource()),
                 textureStage,
                 pipeline.getTextureMap()
             );
@@ -768,6 +773,17 @@ public class ShaderManager {
         return null;
     }
 
+    private static String preprocessShader(String source) {
+        if (source == null || source.isBlank()) return source;
+        source = resolveShaderIncludes(source);
+
+        // Apply shader options to the final source
+        OptionAnnotatedSource annotated = new OptionAnnotatedSource(source);
+        source = annotated.apply(currentPack.getShaderPackOptions().getOptionValues());
+
+        return JcppProcessor.glslPreprocessSource(source, ENVIRONMENT_DEFINES);
+    }
+
     private static String resolveShaderIncludes(String source) {
         if (source == null || source.isBlank()) return source;
         // Use regex to extract every include statement
@@ -775,8 +791,17 @@ public class ShaderManager {
         StringBuilder builder = new StringBuilder();
         int start = 0;
         while (matcher.find()) {
-            String lines = sourceProvider.apply(AbsolutePackPath.fromAbsolutePath(matcher.group(2)));
-            if (lines == null) LOGGER.warn("Failed to load include: {}, ignoring", matcher.group(2));
+            String lines;
+            Path path = AbsolutePackPath.fromAbsolutePath(matcher.group(2)).resolved(Iris.getShaderpacksDirectory().resolve(packName).resolve("shaders"));
+            try {
+                // Read from file
+                lines = Files.readString(path);
+                // Resolve dependency also from the file
+                lines = resolveShaderIncludes(lines);
+            } catch (IOException e) {
+                LOGGER.error("Failed to read include file (did you try to read from a zip?): {}\n{}", path, e.getCause());
+                throw new RuntimeException(e);
+            }
             builder.append(source, start, matcher.start());
             builder.append(lines);
             start = matcher.end();
