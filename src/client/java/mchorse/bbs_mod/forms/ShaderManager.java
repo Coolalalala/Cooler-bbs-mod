@@ -7,10 +7,16 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.logging.LogUtils;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMaps;
+import mchorse.bbs_mod.BBSModClient;
+import mchorse.bbs_mod.cubic.ModelInstance;
+import mchorse.bbs_mod.cubic.data.model.Model;
+import mchorse.bbs_mod.cubic.render.CubicCubeRenderer;
+import mchorse.bbs_mod.cubic.render.CubicRenderer;
 import mchorse.bbs_mod.cubic.render.vao.Attributes;
-import mchorse.bbs_mod.cubic.render.vao.ModelVAO;
 import mchorse.bbs_mod.forms.forms.*;
+import mchorse.bbs_mod.forms.renderers.FormRenderingContext;
 import mchorse.bbs_mod.graphics.texture.Texture;
+import mchorse.bbs_mod.resources.Link;
 import mchorse.bbs_mod.utils.colors.Color;
 import net.irisshaders.iris.Iris;
 import net.irisshaders.iris.config.IrisConfig;
@@ -44,17 +50,16 @@ import net.irisshaders.iris.shaderpack.texture.TextureStage;
 import net.irisshaders.iris.pipeline.transform.PatchShaderType;
 import net.irisshaders.iris.pipeline.transform.TransformPatcher;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.VertexFormat;
-import net.minecraft.client.render.VertexFormats;
-import org.joml.Matrix4f;
+import net.minecraft.client.render.*;
+import net.minecraft.client.util.math.MatrixStack;
 import org.joml.Vector2f;
 import org.joml.Vector3i;
+import org.joml.Vector4f;
 import org.lwjgl.opengl.GL43;
 import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
-import java.nio.FloatBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -181,18 +186,18 @@ public class ShaderManager {
         }
     }
 
-    public static void addModelGroup(GBufferShaderForm program, ModelVAO modelVAO, Matrix4f transform, Texture texture, Color color, int light, int overlay) {
+    public static void addModelGroup(GBufferShaderForm program, Form form, FormRenderingContext context) {
         if (isPipelineNuhuh()) return;
         activeGBufferShaders.putIfAbsent(program, new ArrayList<>());
-        GBufferGroupData data = new GBufferGroupData(modelVAO, transform, texture, color, light, overlay);
+        GBufferGroupData data = new GBufferGroupData(form, context);
         if (!activeGBufferShaders.get(program).contains(data)) {
             activeGBufferShaders.get(program).add(data);
         }
     }
-    public static void addGLVertex(GBufferShaderForm program, GLVertexForm vertexForm, Matrix4f transform, Texture texture, int light, int overlay) {
+    public static void addGLVertex(GBufferShaderForm program, GLVertexForm vertexForm, FormRenderingContext context) {
         if (isPipelineNuhuh()) return;
         activeGBufferShaders.putIfAbsent(program, new ArrayList<>());
-        GBufferGroupData data = new GBufferGroupData(vertexForm, transform, texture, light, overlay);
+        GBufferGroupData data = new GBufferGroupData(vertexForm, context);
         if (!activeGBufferShaders.get(program).contains(data)) {
             activeGBufferShaders.get(program).add(data);
         }
@@ -294,25 +299,9 @@ public class ShaderManager {
             // Push custom uniforms
             customUniforms.push(program);
 
-            // Render
-            int progID = program.getProgramId();
-            int poseLocation = GlStateManager._glGetUniformLocation(progID, "modelPoseMatrix");
-            int textureLocation = GlStateManager._glGetUniformLocation(progID, "modelTexture");
-            // Upload texture unit
-            int modelTextureUnit = 8; // TODO: properly manage texture units
-            RenderSystem.glUniform1i(textureLocation, modelTextureUnit);
-
             for (GBufferGroupData data : gBufferDatas) {
-                // Upload transform as an uniform
-                FloatBuffer buffer = org.lwjgl.BufferUtils.createFloatBuffer(16);
-                data.poseTransform.get(buffer);
-                RenderSystem.glUniformMatrix4(poseLocation, false, buffer);
-                
-                // Upload texture to the assigned texture unit
-                data.texture.bind(GL43.GL_TEXTURE0 + modelTextureUnit);
-                
-                // Draw group
-                data.modelVao.render();
+                // Draw model
+                data.render(program.getProgramId());
             }
 
             // Clean up
@@ -887,61 +876,69 @@ public class ShaderManager {
 
 
     public static class GBufferGroupData {
-        public GBufferVAO modelVao;
-        public Matrix4f poseTransform;
-        public Texture texture;
-
-        public GBufferGroupData(ModelVAO modelVAO, Matrix4f transform, Texture texture, Color color, int light, int overlay) {
-            this.modelVao = new GBufferVAO(modelVAO, color, light, overlay);
-            this.poseTransform = transform;
-            this.texture = texture;
-        }
-
-        public GBufferGroupData(GLVertexForm vertexForm, Matrix4f transform, Texture texture, int light, int overlay) {
-            this.modelVao = new GBufferVAO(vertexForm, light, overlay);
-            this.poseTransform = transform;
-            this.texture = texture;
-        }
-    }
-    public static class GBufferVAO {
-        public ModelVAO modelVao;
-        public GLVertexForm vertexForm;
-        public Color color;
+        public Form form;
         public int light;
         public int overlay;
+        public MatrixStack stack;
 
-        public GBufferVAO(ModelVAO modelVao, Color color, int light, int overlay) {
-            this.modelVao = modelVao;
-            this.vertexForm = null;
-            this.color = color;
-            this.light = light;
-            this.overlay = overlay;
+        public GBufferGroupData(Form form, FormRenderingContext context) {
+            this.form = form;
+            this.light = context.light;
+            this.overlay = context.overlay;
+
+            // Create a new stack that is persistent
+            this.stack = new MatrixStack();
+            stack.multiplyPositionMatrix(context.stack.peek().getPositionMatrix());
+            // I think the normal matrix doesn't matter, so we won't do anything about it
         }
 
-        public GBufferVAO(GLVertexForm vertexForm, int light, int overlay) {
-            this.modelVao = null;
-            this.vertexForm = vertexForm;
-            this.color = vertexForm.color.get();
-            this.light = light;
-            this.overlay = overlay;
-        }
+        public void render(int programID) {
+            // Upload texture unit
+            int modelTextureUnit = 8; // TODO: properly manage texture units
+            int textureLocation = GlStateManager._glGetUniformLocation(programID, "modelTexture");
+            RenderSystem.glUniform1i(textureLocation, modelTextureUnit);
 
-        public void render() {
-            this.render(VertexFormats.POSITION_COLOR_TEXTURE_OVERLAY_LIGHT_NORMAL, color.r, color.g, color.b, color.a, light, overlay);
-        }
+            if (form instanceof ModelForm modelForm) {
+                // Get model
+                ModelInstance modelInstance = BBSModClient.getModels().getModel(modelForm.model.get());
+                if (modelInstance == null || !(modelInstance.getModel() instanceof Model model)) return;
 
-        public void render(VertexFormat format, float r, float g, float b, float a, int light, int overlay) {
-            if (this.modelVao != null) {
-                this.modelVao.render(format, r, g, b, a, light, overlay);
+                // Get texture
+                Link textureLink = modelForm.texture.get(); // User defined texture
+                if (textureLink == null) {
+                    textureLink = modelInstance.texture; // Default texture
+                }
+                if (textureLink == null) return;
+
+                // Upload texture to the assigned texture unit
+                Texture texture = BBSModClient.getTextures().getTexture(textureLink);
+                if  (texture != null) {
+                    texture.bind(GL43.GL_TEXTURE0 + modelTextureUnit);
+                }
+
+                // Render the model, as in making draw calls
+                BufferBuilder builder = Tessellator.getInstance().getBuffer();
+                builder.begin(VertexFormat.DrawMode.TRIANGLES, VertexFormats.POSITION_COLOR_TEXTURE_OVERLAY_LIGHT_NORMAL);
+                CubicRenderer.processRenderModel(new CubicCubeRenderer(light, overlay, null, modelForm.shapeKeys.get()), builder, stack, model);
+                BufferRenderer.draw(builder.end());
             }
-            if (this.vertexForm != null) {
-                this.vertexForm.bind();
-                GL43.glVertexAttrib4f(Attributes.POSITION, 0, 0, 0, 1);
-                GL43.glVertexAttrib4f(Attributes.COLOR, r, g, b, a);
+            else if (form instanceof GLVertexForm vertexForm) {
+                // Upload texture to the assigned texture unit
+                Texture texture = BBSModClient.getTextures().getTexture(vertexForm.texture.get());
+                if  (texture != null) {
+                    texture.bind(GL43.GL_TEXTURE0 + modelTextureUnit);
+                }
+
+                // Render the model, as in making draw calls
+                vertexForm.bind();
+                Vector4f pos = stack.peek().getPositionMatrix().transform(new Vector4f(0, 0, 0, 1));
+                GL43.glVertexAttrib4f(Attributes.POSITION, pos.x, pos.y, pos.z, pos.w);
+                Color color = vertexForm.color.get();
+                GL43.glVertexAttrib4f(Attributes.COLOR, color.r, color.g, color.b, color.a);
                 GL43.glVertexAttribI2i(Attributes.OVERLAY_UV, overlay & '\uffff', overlay >> 16 & '\uffff');
                 GL43.glVertexAttribI2i(Attributes.LIGHTMAP_UV, light & '\uffff', light >> 16 & '\uffff');
                 // Draw points
-                GL43.glDrawArraysInstanced(GL43.GL_POINTS, 0, this.vertexForm.count.get(), this.vertexForm.instances.get());
+                GL43.glDrawArraysInstanced(GL43.GL_POINTS, 0, vertexForm.count.get(), vertexForm.instances.get());
 
                 // Unbind
                 GL43.glBindBuffer(GL43.GL_ARRAY_BUFFER, 0);
