@@ -852,7 +852,7 @@ public class ShaderManager {
                     locations.add(location);
                 }
             } catch (NumberFormatException e) {
-                LOGGER.error("Failed to parse location, enabling all buffers");
+                LOGGER.error("Failed to parse buffer location, enabling all buffers");
                 return new int[]{0,1,2,3,4,5,6,7};
             }
         }
