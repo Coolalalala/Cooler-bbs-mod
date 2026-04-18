@@ -451,6 +451,7 @@ public class UIKeys
     public static final IKey FORMS_EDITOR_SHADER_RENDER_STAGE_TOOLTIP = L10n.lang("bbs.ui.forms.editor.shader.render_stage-tooltip");
     public static final IKey FORMS_EDITOR_SHADER_RENDER_STAGE_BEGIN = L10n.lang("bbs.ui.forms.editor.shader.render_stage.begin");
     public static final IKey FORMS_EDITOR_SHADER_RENDER_STAGE_PREPARE = L10n.lang("bbs.ui.forms.editor.shader.render_stage.prepare");
+    public static final IKey FORMS_EDITOR_SHADER_RENDER_STAGE_GBUFFER = L10n.lang("bbs.ui.forms.editor.shader.render_stage.gbuffer");
     public static final IKey FORMS_EDITOR_SHADER_RENDER_STAGE_DEFERRED = L10n.lang("bbs.ui.forms.editor.shader.render_stage.deferred");
     public static final IKey FORMS_EDITOR_SHADER_RENDER_STAGE_COMPOSITE = L10n.lang("bbs.ui.forms.editor.shader.render_stage.composite");
     public static final IKey FORMS_EDITOR_SHADER_RENDER_STAGE_END = L10n.lang("bbs.ui.forms.editor.shader.render_stage.end");
