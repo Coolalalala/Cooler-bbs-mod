@@ -52,9 +52,8 @@ import net.irisshaders.iris.pipeline.transform.TransformPatcher;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.MatrixStack;
-import org.joml.Vector2f;
-import org.joml.Vector3i;
-import org.joml.Vector4f;
+import org.joml.*;
+import org.lwjgl.opengl.GL20;
 import org.lwjgl.opengl.GL43;
 import org.slf4j.Logger;
 
@@ -898,6 +897,13 @@ public class ShaderManager {
             int textureLocation = GlStateManager._glGetUniformLocation(programID, "modelTexture");
             RenderSystem.glUniform1i(textureLocation, modelTextureUnit);
 
+            // Upload stack as uniform
+            Matrix4f mat = stack.peek().getPositionMatrix();
+            int viewMatLocation = GlStateManager._glGetUniformLocation(programID, "modelPose");
+            GL20.glUniformMatrix4fv(viewMatLocation, false, mat.get(new float[16]));
+            int viewMatInvLocation = GlStateManager._glGetUniformLocation(programID, "modelPoseInverse");
+            GL20.glUniformMatrix4fv(viewMatInvLocation, false, mat.invert(new Matrix4f()).get(new float[16]));
+
             if (form instanceof ModelForm modelForm) {
                 // Get model
                 ModelInstance modelInstance = BBSModClient.getModels().getModel(modelForm.model.get());
@@ -931,8 +937,7 @@ public class ShaderManager {
 
                 // Render the model, as in making draw calls
                 vertexForm.bind();
-                Vector4f pos = stack.peek().getPositionMatrix().transform(new Vector4f(0, 0, 0, 1));
-                GL43.glVertexAttrib4f(Attributes.POSITION, pos.x, pos.y, pos.z, pos.w);
+                GL43.glVertexAttrib4f(Attributes.POSITION, mat.m30(), mat.m31(), mat.m32(), mat.m33()); // Transformed by stack
                 Color color = vertexForm.color.get();
                 GL43.glVertexAttrib4f(Attributes.COLOR, color.r, color.g, color.b, color.a);
                 GL43.glVertexAttribI2i(Attributes.OVERLAY_UV, overlay & '\uffff', overlay >> 16 & '\uffff');
