@@ -9,6 +9,7 @@ public class GBufferShaderForm extends ShaderForm {
     public final ValueBoolean culling = new ValueBoolean("culling", true);
     public final ValueBoolean depthTest = new ValueBoolean("depthTest", true);
     public final ValueBoolean depthWrite = new ValueBoolean("depthWrite", true);
+    public final ValueBoolean depthWriteTrans = new ValueBoolean("depthWriteTrans", true);
     public final ValueBoolean renderChildren = new ValueBoolean("renderChildren", false);
     public final ValueBoolean pingpong = new ValueBoolean("pingpong", false);
 
@@ -18,6 +19,7 @@ public class GBufferShaderForm extends ShaderForm {
         this.add(this.culling);
         this.add(this.depthTest);
         this.add(this.depthWrite);
+        this.add(this.depthWriteTrans);
         this.add(this.renderChildren);
         this.add(this.pingpong);
     }
