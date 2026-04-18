@@ -9,8 +9,6 @@ import net.irisshaders.iris.gl.program.Program;
 import javax.annotation.Nullable;
 
 public class ShaderForm extends Form {
-    public static final int TYPE = 3;
-
     public static final int BEGIN_STAGE = 0;
     public static final int PREPARE_STAGE = 1;
     public static final int GBUFFER_STAGE = 2;
