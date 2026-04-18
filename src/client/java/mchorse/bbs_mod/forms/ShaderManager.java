@@ -79,12 +79,14 @@ public class ShaderManager {
     private static final Map<ShaderForm, Integer> activeGBufferShaders = new HashMap<>();
     private static final Map<ShaderForm, Integer> activeDeferredShaders = new HashMap<>();
     private static final Map<ShaderForm, Integer> activeCompositeShaders = new HashMap<>();
+    private static final Map<ShaderForm, Integer> activeFinalShaders = new HashMap<>();
     private static final Map<GBufferShaderForm, List<GBufferGroupData>> activeGBufferForms = new HashMap<>();
     private static ImmutableSet<Integer> flipState = ImmutableSet.of();
     private static BufferFlipperForm prepareFlipper;
     private static BufferFlipperForm gbufferFlipper;
     private static BufferFlipperForm deferredFlipper;
     private static BufferFlipperForm compositeFlipper;
+    private static BufferFlipperForm finalFlipper;
     private static boolean isFullScreen = false;
     private static boolean culling = true;
     private static boolean depthTest = false;
@@ -162,6 +164,7 @@ public class ShaderManager {
             gbufferFlipper = new BufferFlipperForm(GBUFFER_STAGE, "gbuffer_flipper");
             compositeFlipper = new BufferFlipperForm(COMPOSITE_STAGE, "composite_flipper");
             deferredFlipper = new BufferFlipperForm(DEFERRED_STAGE, "deferred_flipper");
+            finalFlipper = new BufferFlipperForm(FINAL_STAGE, "final_flipper");
         } catch (Exception e) {
             LOGGER.error("Failed to retrieve fields from Iris render pipeline: {}", e.toString());
         }
@@ -176,14 +179,20 @@ public class ShaderManager {
     public static void register(ShaderForm program, int type) {
         if (isPipelineNuhuh()) return;
         switch (type) {
-            case 1:
+            case PREPARE_STAGE:
                 activePrepareShaders.put(program, program.priority.get());
                 break;
-            case 2:
+            case GBUFFER_STAGE:
+                activeGBufferShaders.put(program, program.priority.get());
+                break;
+            case DEFERRED_STAGE:
                 activeDeferredShaders.put(program, program.priority.get());
                 break;
-            case 3:
+            case COMPOSITE_STAGE:
                 activeCompositeShaders.put(program, program.priority.get());
+                break;
+            case FINAL_STAGE:
+                activeFinalShaders.put(program, program.priority.get());
                 break;
             default:
                 break;
@@ -523,6 +532,10 @@ public class ShaderManager {
 
     public static void renderCompositeStage() {
         renderPrograms(activeCompositeShaders, compositeFlipper, COMPOSITE_STAGE);
+    }
+
+    public static void renderFinalStage() {
+        renderPrograms(activeFinalShaders, finalFlipper, FINAL_STAGE);
     }
 
 
