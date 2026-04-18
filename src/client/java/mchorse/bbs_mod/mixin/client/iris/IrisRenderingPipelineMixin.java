@@ -2,6 +2,7 @@ package mchorse.bbs_mod.mixin.client.iris;
 
 import mchorse.bbs_mod.forms.ShaderManager;
 import net.irisshaders.iris.pipeline.IrisRenderingPipeline;
+import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -76,16 +77,32 @@ public class IrisRenderingPipelineMixin
     @Inject(
         method = "finalizeLevelRendering()V",
         at = @At(
-            value = "INVOKE",
-            target = "Lnet/irisshaders/iris/pipeline/CompositeRenderer;renderAll()V",
-            shift = At.Shift.BEFORE
-        ),
+            value = "FIELD",
+            target = "Lnet/irisshaders/iris/pipeline/IrisRenderingPipeline;isRenderingWorld:Z",
+            shift = At.Shift.AFTER,
+            opcode = Opcodes.PUTFIELD),
         remap = false
     )
     private void bbs$injectCustomComposite(CallbackInfo ci)
     {
         // Render custom shaders in the composite stage
         ShaderManager.renderCompositeStage();
+    }
+
+    /**
+     * Inject custom shader rendering after final passes
+     */
+    @Inject(
+            method = "finalizeLevelRendering()V",
+            at = @At(
+                    value = "TAIL"
+            ),
+            remap = false
+    )
+    private void bbs$injectCustomFinal(CallbackInfo ci)
+    {
+        // Render custom shaders in the composite stage
+        ShaderManager.renderFinalStage();
     }
 
     /**
