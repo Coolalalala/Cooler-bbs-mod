@@ -109,6 +109,7 @@ public class UIFormEditor extends UIElement implements IUIFormList, ICursor
         register(ComputeShaderForm.class, UIComputeShaderForm::new);
         register(BufferFlipperForm.class, UIBufferFlipperForm::new);
         register(SSBOForm.class, UISSBOForm::new);
+        register(ImageTextureForm.class, UIImageTextureForm::new);
         register(GLVertexForm.class, UIGLVertexForm::new);
     }
 

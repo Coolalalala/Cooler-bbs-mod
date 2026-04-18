@@ -93,12 +93,12 @@ public class ShaderManager {
     private static boolean depthWrite = true;
 
     private static IrisRenderingPipeline pipeline = null;
-    private static RenderTargets renderTargets = null;
+    public static RenderTargets renderTargets = null;
     private static CustomUniforms customUniforms = null;
     private static CenterDepthSampler centerDepthSampler = null;
     private static Object2ObjectMap<String, TextureAccess> customTextureIds = Object2ObjectMaps.emptyMap();
     private static Object2ObjectMap<String, TextureAccess> irisCustomTextures = Object2ObjectMaps.emptyMap();
-    private static Set<GlImage> customImages = Collections.emptySet();
+    public static Set<GlImage> customImages = Collections.emptySet();
     private static CustomTextureManager customTextureManager = null;
     private static FrameUpdateNotifier updateNotifier = new FrameUpdateNotifier();
     private static ShaderPack currentPack = null;
@@ -356,17 +356,24 @@ public class ShaderManager {
             Program.unbind();
 
             // Get draw buffers from shader form or default to colortex0
-            int[] drawBuffers = shaderForm.getDrawBuffers();
+            int[] drawBuffers = shaderForm.getDrawBuffersForReal();
             if (drawBuffers == null || drawBuffers.length == 0) {
                 drawBuffers = new int[]{0};
             }
 
             // Bind framebuffer
             if (!shaderForm.bindFramebuffer()) {
-                shaderForm.setFramebuffer(renderTargets.createColorFramebuffer(
-                        shaderForm.getFlippedBuffers(),
-                        drawBuffers
-                ));
+                if (shaderForm.pingpong.get()) {
+                    shaderForm.setFramebuffer(renderTargets.createColorFramebuffer(
+                            shaderForm.getFlippedBuffers(),
+                            drawBuffers
+                    ));
+                } else {
+                    shaderForm.setFramebuffer(renderTargets.createGbufferFramebuffer(
+                            shaderForm.getFlippedBuffers(),
+                            drawBuffers
+                    ));
+                }
             }
 
             // Calculate viewport based on first draw buffer
@@ -467,7 +474,7 @@ public class ShaderManager {
 
         // Initialize flip state
         // Find the buffer set required for that stage
-        flipState = switch (renderStage) {
+        ImmutableSet<Integer> baseState = flipState = switch (renderStage) {
             case BEGIN_STAGE, PREPARE_STAGE -> pipeline.getFlippedBeforeShadow();
             case GBUFFER_STAGE, DEFERRED_STAGE -> pipeline.getFlippedAfterPrepare();
             case COMPOSITE_STAGE, FINAL_STAGE -> pipeline.getFlippedAfterTranslucent();
@@ -485,8 +492,9 @@ public class ShaderManager {
             flipState = getFlipped(flipState, Arrays.stream(shaderForm.getDrawBuffers()).boxed().collect(Collectors.toSet()));
         }
         // Flip the buffers so that it matches the expected input from iris
-        if (!flipState.equals(ImmutableSet.of())) { // If the flip state is not empty
-            bufferFlipper.set(flipState);
+        baseState = getFlipped(baseState, flipState);
+        if (!baseState.equals(ImmutableSet.of())) { // If the difference is not empty
+            bufferFlipper.set(baseState);
             renderFullScreenQuad(bufferFlipper);
         }
 
@@ -726,7 +734,7 @@ public class ShaderManager {
                 case COMPOSITE_STAGE, FINAL_STAGE -> pipeline.getFlippedAfterTranslucent();
                 default -> throw new IllegalArgumentException("Invalid render stage: " + shaderForm.renderStage.get());
             };
-            shaderForm.setFlippedBuffers(getFlipped(flippedBuffers, flipState));
+            shaderForm.setFlippedBuffers(getFlipped(getFlipped(flippedBuffers, flipState), Arrays.stream(shaderForm.getDrawBuffers()).boxed().collect(Collectors.toSet())));
 
             // Add render target samplers (colortex0-7, depth, etc.)
             IrisSamplers.addRenderTargetSamplers(

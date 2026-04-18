@@ -406,6 +406,7 @@ public class BBSMod implements ModInitializer
             .register(Link.bbs("compute_shader"), ComputeShaderForm.class)
             .register(Link.bbs("buffer_flipper"), BufferFlipperForm.class)
             .register(Link.bbs("ssbo"), SSBOForm.class)
+            .register(Link.bbs("image_texture"), ImageTextureForm.class)
             .register(Link.bbs("gl_vertex"), GLVertexForm.class);
 
 
