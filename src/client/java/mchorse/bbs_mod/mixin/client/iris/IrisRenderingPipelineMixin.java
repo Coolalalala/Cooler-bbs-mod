@@ -41,9 +41,10 @@ public class IrisRenderingPipelineMixin
     @Inject(
             method = "beginTranslucents()V",
             at = @At(
-                    value = "INVOKE",
-                    target = "Lnet/irisshaders/iris/targets/RenderTargets;copyPreTranslucentDepth()V",
-                    shift = At.Shift.BEFORE
+                    value = "FIELD",
+                    target = "Lnet/irisshaders/iris/pipeline/IrisRenderingPipeline;isBeforeTranslucent:Z",
+                    shift = At.Shift.AFTER,
+                    opcode = Opcodes.PUTFIELD
             ),
             remap = false
     )
@@ -75,13 +76,14 @@ public class IrisRenderingPipelineMixin
      * Inject custom shader rendering after composite passes but before final pass
      */
     @Inject(
-        method = "finalizeLevelRendering()V",
-        at = @At(
-            value = "FIELD",
-            target = "Lnet/irisshaders/iris/pipeline/IrisRenderingPipeline;isRenderingWorld:Z",
-            shift = At.Shift.AFTER,
-            opcode = Opcodes.PUTFIELD),
-        remap = false
+            method = "finalizeLevelRendering()V",
+            at = @At(
+                value = "FIELD",
+                target = "Lnet/irisshaders/iris/pipeline/IrisRenderingPipeline;isRenderingWorld:Z",
+                shift = At.Shift.AFTER,
+                opcode = Opcodes.PUTFIELD
+            ),
+            remap = false
     )
     private void bbs$injectCustomComposite(CallbackInfo ci)
     {
