@@ -9,7 +9,6 @@ public class UIGBufferShaderFormPanel extends UIShaderFormPanel<GBufferShaderFor
     public UIToggle culling;
     public UIToggle depthTest;
     public UIToggle depthWrite;
-    public UIToggle depthWriteTrans;
     public UIToggle sendChildren;
     public UIToggle pingpong;
 
@@ -18,7 +17,6 @@ public class UIGBufferShaderFormPanel extends UIShaderFormPanel<GBufferShaderFor
         this.culling = new UIToggle(UIKeys.FORMS_EDITOR_SHADER_CULLING, (t) -> this.form.culling.set(t.getValue()));
         this.depthTest = new UIToggle(UIKeys.FORMS_EDITOR_SHADER_DEPTHTEST, (t) -> this.form.depthTest.set(t.getValue()));
         this.depthWrite = new UIToggle(UIKeys.FORMS_EDITOR_SHADER_DEPTHWRITE, (t) -> this.setDepthWrite(t.getValue()));
-        this.depthWriteTrans = new UIToggle(UIKeys.FORMS_EDITOR_SHADER_DEPTHWRITETRANS, (t) -> this.setDepthWriteTrans(t.getValue()));
         this.sendChildren = new UIToggle(UIKeys.FORMS_EDITOR_SHADER_SEND_CHILDREN, (t) -> this.form.renderChildren.set(t.getValue()));
         this.pingpong = new UIToggle(UIKeys.FORMS_EDITOR_SHADER_PINGPONG, (t) -> this.setPingpong(t.getValue()));
 
@@ -27,11 +25,6 @@ public class UIGBufferShaderFormPanel extends UIShaderFormPanel<GBufferShaderFor
 
     private void setDepthWrite(boolean value) {
         this.form.depthWrite.set(value);
-        this.form.markDirty();
-    }
-
-    private void setDepthWriteTrans(boolean value) {
-        this.form.depthWriteTrans.set(value);
         this.form.markDirty();
     }
 

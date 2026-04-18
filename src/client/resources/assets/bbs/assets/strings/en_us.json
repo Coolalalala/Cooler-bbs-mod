@@ -563,7 +563,6 @@
     "bbs.ui.forms.editor.shader.culling": "Culling",
     "bbs.ui.forms.editor.shader.depth-test": "Depth test",
     "bbs.ui.forms.editor.shader.depth-write": "Depth write",
-    "bbs.ui.forms.editor.shader.depth-write-trans": "Translucent write",
     "bbs.ui.forms.editor.shader.send_children": "Render children",
     "bbs.ui.forms.editor.shader.pingpong": "Flip buffers",
     "bbs.ui.forms.editor.shader.priority": "Index",

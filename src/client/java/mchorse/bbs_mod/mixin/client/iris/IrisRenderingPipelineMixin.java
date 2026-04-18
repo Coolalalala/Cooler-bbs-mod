@@ -17,6 +17,24 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class IrisRenderingPipelineMixin
 {
     /**
+     * Inject custom shader rendering after prepare passes
+     */
+    @Inject(
+            method = "renderShadows",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/irisshaders/iris/pipeline/CompositeRenderer;renderAll()V",
+                    shift = At.Shift.AFTER
+            ),
+            remap = false
+    )
+    private void bbs$injectCustomPrepare(CallbackInfo ci)
+    {
+        // Render custom shaders in the prepare stage
+        ShaderManager.renderPrepareStage();
+    }
+
+    /**
      * Inject custom shader rendering after composite passes but before final pass
      */
     @Inject(
