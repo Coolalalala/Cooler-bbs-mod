@@ -13,9 +13,10 @@ public class ShaderForm extends Form {
 
     public static final int BEGIN_STAGE = 0;
     public static final int PREPARE_STAGE = 1;
-    public static final int DEFERRED_STAGE = 2;
-    public static final int COMPOSITE_STAGE = 3;
-    public static final int FINAL_STAGE = 4;
+    public static final int GBUFFER_STAGE = 2;
+    public static final int DEFERRED_STAGE = 3;
+    public static final int COMPOSITE_STAGE = 4;
+    public static final int FINAL_STAGE = 5;
 
     private Program shaderProgram = null;
     private ImmutableSet<Integer> flippedBuffers = ImmutableSet.of();

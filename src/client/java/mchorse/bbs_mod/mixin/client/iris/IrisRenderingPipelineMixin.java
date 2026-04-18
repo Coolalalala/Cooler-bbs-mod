@@ -35,6 +35,42 @@ public class IrisRenderingPipelineMixin
     }
 
     /**
+     * Inject custom shader rendering after Gbuffer passes but before deferred passes
+     */
+    @Inject(
+            method = "beginTranslucents()V",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/irisshaders/iris/targets/RenderTargets;copyPreTranslucentDepth()V",
+                    shift = At.Shift.BEFORE
+            ),
+            remap = false
+    )
+    private void bbs$injectCustomGBuffer(CallbackInfo ci)
+    {
+        // Render custom shaders in the opaque stage
+        ShaderManager.renderGBufferStage();
+    }
+
+    /**
+     * Inject custom shader rendering after deferred passes
+     */
+    @Inject(
+            method = "beginTranslucents()V",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/irisshaders/iris/targets/RenderTargets;copyPreTranslucentDepth()V",
+                    shift = At.Shift.AFTER
+            ),
+            remap = false
+    )
+    private void bbs$injectCustomDeferred(CallbackInfo ci)
+    {
+        // Render custom shaders in the translucent stage
+        ShaderManager.renderDeferredStage();
+    }
+
+    /**
      * Inject custom shader rendering after composite passes but before final pass
      */
     @Inject(
@@ -50,24 +86,6 @@ public class IrisRenderingPipelineMixin
     {
         // Render custom shaders in the composite stage
         ShaderManager.renderCompositeStage();
-    }
-
-    /**
-     * Inject custom shader rendering after deferred passes
-     */
-    @Inject(
-            method = "beginTranslucents()V",
-            at = @At(
-                    value = "INVOKE",
-                    target = "Lnet/irisshaders/iris/pipeline/CompositeRenderer;renderAll()V",
-                    shift = At.Shift.BEFORE
-            ),
-            remap = false
-    )
-    private void bbs$injectCustomDeferred(CallbackInfo ci)
-    {
-        // Render custom shaders in the translucent stage
-        ShaderManager.renderDeferredStage();
     }
 
     /**

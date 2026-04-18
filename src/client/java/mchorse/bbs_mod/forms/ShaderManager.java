@@ -76,12 +76,15 @@ public class ShaderManager {
     public static final ImmutableList<StringPair> ENVIRONMENT_DEFINES = StandardMacros.createStandardEnvironmentDefines();
 
     private static final Map<ShaderForm, Integer> activePrepareShaders = new HashMap<>();
+    private static final Map<ShaderForm, Integer> activeGBufferShaders = new HashMap<>();
     private static final Map<ShaderForm, Integer> activeDeferredShaders = new HashMap<>();
     private static final Map<ShaderForm, Integer> activeCompositeShaders = new HashMap<>();
-    private static final Map<GBufferShaderForm, List<GBufferGroupData>> activeGBufferShaders = new HashMap<>();
+    private static final Map<GBufferShaderForm, List<GBufferGroupData>> activeGBufferForms = new HashMap<>();
     private static ImmutableSet<Integer> flipState = ImmutableSet.of();
-    private static BufferFlipperForm compositeFlipper;
+    private static BufferFlipperForm prepareFlipper;
+    private static BufferFlipperForm gbufferFlipper;
     private static BufferFlipperForm deferredFlipper;
+    private static BufferFlipperForm compositeFlipper;
     private static boolean isFullScreen = false;
     private static boolean culling = true;
     private static boolean depthTest = false;
@@ -155,6 +158,8 @@ public class ShaderManager {
             packName = irisConfig.getShaderPackName().orElse(null);
 
             // Set up flipper forms
+            prepareFlipper = new BufferFlipperForm(PREPARE_STAGE, "prepare_flipper");
+            gbufferFlipper = new BufferFlipperForm(GBUFFER_STAGE, "gbuffer_flipper");
             compositeFlipper = new BufferFlipperForm(COMPOSITE_STAGE, "composite_flipper");
             deferredFlipper = new BufferFlipperForm(DEFERRED_STAGE, "deferred_flipper");
         } catch (Exception e) {
@@ -187,18 +192,18 @@ public class ShaderManager {
 
     public static void addModelGroup(GBufferShaderForm program, Form form, FormRenderingContext context) {
         if (isPipelineNuhuh()) return;
-        activeGBufferShaders.putIfAbsent(program, new ArrayList<>());
+        activeGBufferForms.putIfAbsent(program, new ArrayList<>());
         GBufferGroupData data = new GBufferGroupData(form, context);
-        if (!activeGBufferShaders.get(program).contains(data)) {
-            activeGBufferShaders.get(program).add(data);
+        if (!activeGBufferForms.get(program).contains(data)) {
+            activeGBufferForms.get(program).add(data);
         }
     }
     public static void addGLVertex(GBufferShaderForm program, GLVertexForm vertexForm, FormRenderingContext context) {
         if (isPipelineNuhuh()) return;
-        activeGBufferShaders.putIfAbsent(program, new ArrayList<>());
+        activeGBufferForms.putIfAbsent(program, new ArrayList<>());
         GBufferGroupData data = new GBufferGroupData(vertexForm, context);
-        if (!activeGBufferShaders.get(program).contains(data)) {
-            activeGBufferShaders.get(program).add(data);
+        if (!activeGBufferForms.get(program).contains(data)) {
+            activeGBufferForms.get(program).add(data);
         }
     }
 
@@ -210,7 +215,7 @@ public class ShaderManager {
     public static void clear() {
         activeCompositeShaders.clear();
         activeDeferredShaders.clear();
-        activeGBufferShaders.clear();
+        activeGBufferForms.clear();
     }
 
     /**
@@ -305,7 +310,7 @@ public class ShaderManager {
 
             // Clean up
             Program.unbind();
-            activeGBufferShaders.remove(shaderForm);
+            activeGBufferForms.remove(shaderForm);
 
         } catch (Exception e) {
             LOGGER.error("Failed to render geometry with shader: {}", shaderForm.getName(), e);
@@ -411,7 +416,7 @@ public class ShaderManager {
     }
 
     private static void renderShaderForm(ShaderForm shaderForm) {
-        if (shaderForm instanceof GBufferShaderForm) renderGeometry((GBufferShaderForm) shaderForm, activeGBufferShaders.get(shaderForm));
+        if (shaderForm instanceof GBufferShaderForm) renderGeometry((GBufferShaderForm) shaderForm, activeGBufferForms.get(shaderForm));
         else if (shaderForm instanceof CompositeShaderForm) renderFullScreenQuad((CompositeShaderForm) shaderForm);
         else if (shaderForm instanceof ComputeShaderForm) renderCompute((ComputeShaderForm) shaderForm);
     }
@@ -455,7 +460,7 @@ public class ShaderManager {
         // Find the buffer set required for that stage
         flipState = switch (renderStage) {
             case BEGIN_STAGE, PREPARE_STAGE -> pipeline.getFlippedBeforeShadow();
-            case DEFERRED_STAGE -> pipeline.getFlippedAfterPrepare();
+            case GBUFFER_STAGE, DEFERRED_STAGE -> pipeline.getFlippedAfterPrepare();
             case COMPOSITE_STAGE, FINAL_STAGE -> pipeline.getFlippedAfterTranslucent();
             default ->
                     throw new IllegalArgumentException("Invalid render stage: " + renderStage);
@@ -505,15 +510,19 @@ public class ShaderManager {
     }
 
     public static void renderPrepareStage() {
-        renderPrograms(activePrepareShaders, compositeFlipper, PREPARE_STAGE);
+        renderPrograms(activePrepareShaders, prepareFlipper, PREPARE_STAGE);
     }
 
-    public static void renderCompositeStage() {
-        renderPrograms(activeCompositeShaders, compositeFlipper, COMPOSITE_STAGE);
+    public static void renderGBufferStage() {
+        renderPrograms(activeGBufferShaders, gbufferFlipper, GBUFFER_STAGE);
     }
 
     public static void renderDeferredStage() {
         renderPrograms(activeDeferredShaders, deferredFlipper, DEFERRED_STAGE);
+    }
+
+    public static void renderCompositeStage() {
+        renderPrograms(activeCompositeShaders, compositeFlipper, COMPOSITE_STAGE);
     }
 
 
@@ -536,6 +545,7 @@ public class ShaderManager {
             // Use appropriate texture stage based on render stage
             TextureStage textureStage = switch (shaderForm.renderStage.get()) {
                 case BEGIN_STAGE -> TextureStage.BEGIN;
+                case GBUFFER_STAGE -> TextureStage.GBUFFERS_AND_SHADOW;
                 case PREPARE_STAGE -> TextureStage.PREPARE;
                 case DEFERRED_STAGE -> TextureStage.DEFERRED;
                 case COMPOSITE_STAGE, FINAL_STAGE -> TextureStage.COMPOSITE_AND_FINAL;
@@ -643,6 +653,7 @@ public class ShaderManager {
             // Use appropriate texture stage based on render stage
             TextureStage textureStage = switch (shaderForm.renderStage.get()) {
                 case BEGIN_STAGE -> TextureStage.BEGIN;
+                case GBUFFER_STAGE -> TextureStage.GBUFFERS_AND_SHADOW;
                 case PREPARE_STAGE -> TextureStage.PREPARE;
                 case DEFERRED_STAGE -> TextureStage.DEFERRED;
                 case COMPOSITE_STAGE, FINAL_STAGE -> TextureStage.COMPOSITE_AND_FINAL;
@@ -698,7 +709,7 @@ public class ShaderManager {
             // Find the buffer set required for that stage
             ImmutableSet<Integer> flippedBuffers = switch (shaderForm.renderStage.get()) {
                 case BEGIN_STAGE, PREPARE_STAGE -> pipeline.getFlippedBeforeShadow();
-                case DEFERRED_STAGE -> pipeline.getFlippedAfterPrepare();
+                case GBUFFER_STAGE, DEFERRED_STAGE -> pipeline.getFlippedAfterPrepare();
                 case COMPOSITE_STAGE, FINAL_STAGE -> pipeline.getFlippedAfterTranslucent();
                 default -> throw new IllegalArgumentException("Invalid render stage: " + shaderForm.renderStage.get());
             };
@@ -803,6 +814,8 @@ public class ShaderManager {
         LOGGER.info("Recompiling shader forms...");
         activeCompositeShaders.keySet().forEach(ShaderForm::markDirty);
         activeDeferredShaders.keySet().forEach(ShaderForm::markDirty);
+        prepareFlipper.setBuffers(ImmutableSet.of());
+        gbufferFlipper.setBuffers(ImmutableSet.of());
         compositeFlipper.setBuffers(ImmutableSet.of());
         deferredFlipper.setBuffers(ImmutableSet.of());
     }
