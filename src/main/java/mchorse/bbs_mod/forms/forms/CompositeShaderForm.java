@@ -1,11 +1,24 @@
 package mchorse.bbs_mod.forms.forms;
 
 
-public class CompositeShaderForm extends ShaderForm {
-    public static final int TYPE = 2;
+import mchorse.bbs_mod.settings.values.numeric.ValueBoolean;
 
+public class CompositeShaderForm extends ShaderForm {
     public CompositeShaderForm() {
         super();
+
+        this.pingpong.set(true);
+        this.add(this.pingpong);
+    }
+
+    @Override
+    public int[] getDrawBuffers() {
+        if (pingpong.get()) return super.getDrawBuffers();
+        else return new int[]{};
+    }
+
+    public int[] getDrawBuffersForReal() {
+        return super.getDrawBuffers();
     }
 
     @Override

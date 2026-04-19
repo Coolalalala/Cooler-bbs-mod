@@ -2,6 +2,7 @@ package mchorse.bbs_mod.forms.forms;
 
 import com.google.common.collect.ImmutableSet;
 import mchorse.bbs_mod.settings.values.core.ValueString;
+import mchorse.bbs_mod.settings.values.numeric.ValueBoolean;
 import mchorse.bbs_mod.settings.values.numeric.ValueInt;
 import net.irisshaders.iris.gl.framebuffer.GlFramebuffer;
 import net.irisshaders.iris.gl.program.Program;
@@ -15,6 +16,8 @@ public class ShaderForm extends Form {
     public static final int DEFERRED_STAGE = 3;
     public static final int COMPOSITE_STAGE = 4;
     public static final int FINAL_STAGE = 5;
+
+    public final ValueBoolean pingpong = new ValueBoolean("pingpong", false);
 
     private Program shaderProgram = null;
     private ImmutableSet<Integer> flippedBuffers = ImmutableSet.of();

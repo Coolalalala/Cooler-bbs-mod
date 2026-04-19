@@ -8,7 +8,6 @@ public class GBufferShaderForm extends ShaderForm {
     public final ValueBoolean depthTest = new ValueBoolean("depthTest", true);
     public final ValueBoolean depthWrite = new ValueBoolean("depthWrite", true);
     public final ValueBoolean renderChildren = new ValueBoolean("renderChildren", false);
-    public final ValueBoolean pingpong = new ValueBoolean("pingpong", false);
 
     public GBufferShaderForm() {
         super();
