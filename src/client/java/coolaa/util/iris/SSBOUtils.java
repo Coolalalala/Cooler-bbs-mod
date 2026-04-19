@@ -45,7 +45,7 @@ public class SSBOUtils {
         }
     }
 
-    private static ShaderStorageInfo generateInfo(int size, boolean screenSized, float scaleX, float scaleY) {
-        return new ShaderStorageInfo(size, screenSized, scaleX, scaleY);
+    private static ShaderStorageInfo generateInfo(int size, boolean relative, float scaleX, float scaleY) {
+        return new ShaderStorageInfo(size, relative, scaleX, scaleY);
     }
 }

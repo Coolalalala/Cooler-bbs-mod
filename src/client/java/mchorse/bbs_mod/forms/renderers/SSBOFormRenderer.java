@@ -1,7 +1,6 @@
 package mchorse.bbs_mod.forms.renderers;
 
 import coolaa.util.iris.SSBOUtils;
-import mchorse.bbs_mod.forms.forms.CompositeShaderForm;
 import mchorse.bbs_mod.forms.forms.SSBOForm;
 import mchorse.bbs_mod.graphics.texture.Texture;
 import mchorse.bbs_mod.resources.Link;
