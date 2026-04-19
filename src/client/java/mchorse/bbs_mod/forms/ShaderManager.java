@@ -217,14 +217,19 @@ public class ShaderManager {
     }
 
     public static void remove(ShaderForm program) {
-        activeCompositeShaders.remove(program);
+        activePrepareShaders.remove(program);
+        activeGBufferShaders.remove(program);
         activeDeferredShaders.remove(program);
+        activeCompositeShaders.remove(program);
+        activeFinalShaders.remove(program);
     }
 
     public static void clear() {
+        activePrepareShaders.clear();
+        activeGBufferShaders.clear();
         activeCompositeShaders.clear();
         activeDeferredShaders.clear();
-        activeGBufferForms.clear();
+        activeFinalShaders.clear();
     }
 
     /**
