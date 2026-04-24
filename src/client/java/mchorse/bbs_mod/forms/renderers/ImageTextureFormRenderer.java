@@ -35,7 +35,7 @@ public class ImageTextureFormRenderer extends FormRenderer<ImageTextureForm> {
 
     @Override
     protected void render3D(FormRenderingContext context) {
-        if (form.image == null) {
+        if (form.image == null || form.isDirty()) {
             initializeImage();
         }
     }

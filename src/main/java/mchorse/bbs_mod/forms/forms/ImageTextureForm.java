@@ -8,6 +8,7 @@ import mchorse.bbs_mod.settings.values.numeric.ValueInt;
 import net.irisshaders.iris.gl.image.GlImage;
 
 public class ImageTextureForm extends Form {
+    private boolean dirty = false;
 
     public final ValueString name = new ValueString("name", "");
     public final ValueString format = new ValueString("format", "RGBA8");
@@ -37,6 +38,16 @@ public class ImageTextureForm extends Form {
         this.add(this.height);
         this.add(this.depth);
         this.add(this.clear);
+    }
+
+    public void markDirty() {
+        this.dirty = true;
+    }
+
+    public boolean isDirty() {
+        if (!this.dirty) return false;
+        this.dirty = false;
+        return true;
     }
 
     @Override

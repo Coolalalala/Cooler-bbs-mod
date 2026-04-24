@@ -1,6 +1,8 @@
 package mchorse.bbs_mod.ui.forms.editors.panels;
 
 import mchorse.bbs_mod.forms.forms.ImageTextureForm;
+import mchorse.bbs_mod.settings.values.base.BaseValue;
+import mchorse.bbs_mod.settings.values.base.BaseValueBasic;
 import mchorse.bbs_mod.ui.UIKeys;
 import mchorse.bbs_mod.ui.forms.editors.forms.UIForm;
 import mchorse.bbs_mod.ui.framework.elements.buttons.UICirculate;
@@ -25,23 +27,23 @@ public class UIImageTextureFormPanel extends UIFormPanel<ImageTextureForm> {
     public UIImageTextureFormPanel(UIForm<ImageTextureForm> editor) {
         super(editor);
 
-        this.name = new UITextbox(10000, (t) -> this.form.name.set(t));
-        this.format = new UITextbox(10000, (t) -> this.form.format.set(t));
-        this.pixelType = new UITextbox(10000, (t) -> this.form.pixelType.set(t));
-        this.dynamic = new UIToggle(UIKeys.FORMS_EDITOR_IMAGETEXTURE_DYNAMIC, (b) -> this.form.dynamic.set(b.getValue()));
-        this.scaleX = new UITrackpad((value) -> this.form.scaleX.set(value.floatValue()));
-        this.scaleY = new UITrackpad((value) -> this.form.scaleY.set(value.floatValue()));
-        this.type = new UICirculate((b) -> this.form.type.set(b.getValue()));
+        this.name = new UITextbox(10000, (t) -> {this.form.name.set(t);this.form.markDirty();});
+        this.format = new UITextbox(10000, (t) -> {this.form.format.set(t);this.form.markDirty();});
+        this.pixelType = new UITextbox(10000, (t) -> {this.form.pixelType.set(t);this.form.markDirty();});
+        this.dynamic = new UIToggle(UIKeys.FORMS_EDITOR_IMAGETEXTURE_DYNAMIC, (b) -> {this.form.dynamic.set(b.getValue());this.form.markDirty();});
+        this.scaleX = new UITrackpad((value) -> {this.form.scaleX.set(value.floatValue());this.form.markDirty();});
+        this.scaleY = new UITrackpad((value) -> {this.form.scaleY.set(value.floatValue());this.form.markDirty();});
+        this.type = new UICirculate((b) -> {this.form.type.set(b.getValue());this.form.markDirty();});
         this.type.addLabel(UIKeys.FORMS_EDITOR_IMAGETEXTURE_TYPE_1D);
         this.type.addLabel(UIKeys.FORMS_EDITOR_IMAGETEXTURE_TYPE_2D);
         this.type.addLabel(UIKeys.FORMS_EDITOR_IMAGETEXTURE_TYPE_3D);
-        this.width = new UITrackpad((value) -> this.form.width.set(value.intValue()));
+        this.width = new UITrackpad((value) -> {this.form.width.set(value.intValue());this.form.markDirty();});
         this.width.limit(1, Integer.MAX_VALUE, true).increment(1);
-        this.height = new UITrackpad((value) -> this.form.height.set(value.intValue()));
+        this.height = new UITrackpad((value) -> {this.form.height.set(value.intValue());this.form.markDirty();});
         this.height.limit(1, Integer.MAX_VALUE, true).increment(1);
-        this.depth = new UITrackpad((value) -> this.form.depth.set(value.intValue()));
+        this.depth = new UITrackpad((value) -> {this.form.depth.set(value.intValue());this.form.markDirty();});
         this.depth.limit(1, Integer.MAX_VALUE, true).increment(1);
-        this.clear = new UIToggle(UIKeys.FORMS_EDITOR_IMAGETEXTURE_CLEAR, (b) -> this.form.clear.set(b.getValue()));
+        this.clear = new UIToggle(UIKeys.FORMS_EDITOR_IMAGETEXTURE_CLEAR, (b) -> {this.form.clear.set(b.getValue());this.form.markDirty();});
         this.clear.tooltip(UIKeys.FORMS_EDITOR_IMAGETEXTURE_CLEAR_TOOLTIP);
 
         this.options.add(UI.label(UIKeys.FORMS_EDITOR_IMAGETEXTURE_NAME), this.name);
