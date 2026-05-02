@@ -6,7 +6,7 @@ Generally speaking, this fork will contain a lot of cool (obscure) features, suc
 
 # Contacts
 
-If you want extra resources, need assistance or just want to chat, you can find me in these place!
+If you want extra resources, need assistance or just want to chat, you can find me in these places!
 
 Discord: https://discord.gg/38vQ7NWKC5
 
