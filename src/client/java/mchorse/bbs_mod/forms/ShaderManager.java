@@ -1,6 +1,7 @@
 package mchorse.bbs_mod.forms;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -18,6 +19,9 @@ import mchorse.bbs_mod.forms.renderers.FormRenderingContext;
 import mchorse.bbs_mod.graphics.texture.Texture;
 import mchorse.bbs_mod.resources.Link;
 import mchorse.bbs_mod.utils.colors.Color;
+import net.irisshaders.iris.pipeline.CompositeRenderer;
+import net.irisshaders.iris.shaderpack.properties.PackDirectives;
+import net.minecraft.client.MinecraftClient;
 import net.irisshaders.iris.Iris;
 import net.irisshaders.iris.config.IrisConfig;
 import net.irisshaders.iris.gl.IrisRenderSystem;
@@ -49,7 +53,6 @@ import net.irisshaders.iris.pipeline.CustomTextureManager;
 import net.irisshaders.iris.shaderpack.texture.TextureStage;
 import net.irisshaders.iris.pipeline.transform.PatchShaderType;
 import net.irisshaders.iris.pipeline.transform.TransformPatcher;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.*;
 import net.minecraft.client.util.math.MatrixStack;
 import org.joml.*;
@@ -69,11 +72,13 @@ import java.util.stream.IntStream;
 
 import static mchorse.bbs_mod.client.BBSRendering.isIrisShadersEnabled;
 import static mchorse.bbs_mod.forms.forms.ShaderForm.*;
+import static mchorse.bbs_mod.utils.MathUtils.PI;
 
 public class ShaderManager {
     public static final Logger LOGGER = LogUtils.getLogger();
     public static final Pattern INCLUDE_PATTERN = Pattern.compile("#include\\s+(\"([^\"]+)\"|<([^>]+)>)");
     public static final ImmutableList<StringPair> ENVIRONMENT_DEFINES = StandardMacros.createStandardEnvironmentDefines();
+    public static final ImmutableSet<Integer> ALL_BUFFERS = ImmutableSet.of(0, 1, 2, 3, 4, 5, 6, 7);
 
     private static final Map<ShaderForm, Integer> activePrepareShaders = new HashMap<>();
     private static final Map<ShaderForm, Integer> activeGBufferShaders = new HashMap<>();
@@ -95,6 +100,7 @@ public class ShaderManager {
     private static IrisRenderingPipeline pipeline = null;
     public static RenderTargets renderTargets = null;
     private static CustomUniforms customUniforms = null;
+    private static CompositeRenderer compositeRenderer;
     private static CenterDepthSampler centerDepthSampler = null;
     private static Object2ObjectMap<String, TextureAccess> customTextureIds = Object2ObjectMaps.emptyMap();
     private static Object2ObjectMap<String, TextureAccess> irisCustomTextures = Object2ObjectMaps.emptyMap();
@@ -102,6 +108,7 @@ public class ShaderManager {
     private static CustomTextureManager customTextureManager = null;
     private static FrameUpdateNotifier updateNotifier = new FrameUpdateNotifier();
     private static ShaderPack currentPack = null;
+    private static PackDirectives packDirectives = null;
     private static String packName = null;
 
 
@@ -127,6 +134,11 @@ public class ShaderManager {
             customUniformsField.setAccessible(true);
             customUniforms = (CustomUniforms) customUniformsField.get(pipeline);
 
+            // Get composite renderer
+            Field compositeRendererField = IrisRenderingPipeline.class.getDeclaredField("compositeRenderer");
+            compositeRendererField.setAccessible(true);
+            compositeRenderer = (CompositeRenderer) compositeRendererField.get(pipeline);
+
             // Get center depth sampler
             Field centerDepthSamplerField = IrisRenderingPipeline.class.getDeclaredField("centerDepthSampler");
             centerDepthSamplerField.setAccessible(true);
@@ -151,6 +163,11 @@ public class ShaderManager {
             Field currentPackField = Iris.class.getDeclaredField("currentPack");
             currentPackField.setAccessible(true);
             currentPack = (ShaderPack) currentPackField.get(Iris.class);
+
+            // Get pack directives
+            Field packDirectivesField = IrisRenderingPipeline.class.getDeclaredField("packDirectives");
+            packDirectivesField.setAccessible(true);
+            packDirectives = (PackDirectives) packDirectivesField.get(pipeline);
 
             // Get iris config
             Field irisConfigField = Iris.class.getDeclaredField("irisConfig");
@@ -339,7 +356,7 @@ public class ShaderManager {
             GL43.glDepthMask(true);
             isFullScreen = true;
             depthTest = false;
-            depthWrite = true;
+            depthWrite = false;
         }
         try {
             // Get or create the shader program using Iris integration
@@ -370,11 +387,11 @@ public class ShaderManager {
             if (!shaderForm.bindFramebuffer()) {
                 if (shaderForm.pingpong.get()) {
                     shaderForm.setFramebuffer(renderTargets.createColorFramebuffer(
-                            shaderForm.getFlippedBuffers(),
+                            getFlipped(shaderForm.getFlippedBuffers(), ALL_BUFFERS),
                             drawBuffers
                     ));
                 } else {
-                    shaderForm.setFramebuffer(renderTargets.createGbufferFramebuffer(
+                    shaderForm.setFramebuffer(renderTargets.createColorFramebuffer(
                             shaderForm.getFlippedBuffers(),
                             drawBuffers
                     ));
@@ -482,7 +499,8 @@ public class ShaderManager {
         ImmutableSet<Integer> baseState = flipState = switch (renderStage) {
             case BEGIN_STAGE, PREPARE_STAGE -> pipeline.getFlippedBeforeShadow();
             case GBUFFER_STAGE, DEFERRED_STAGE -> pipeline.getFlippedAfterPrepare();
-            case COMPOSITE_STAGE, FINAL_STAGE -> pipeline.getFlippedAfterTranslucent();
+            case COMPOSITE_STAGE -> pipeline.getFlippedAfterTranslucent();
+            case FINAL_STAGE -> getFlipped(pipeline.getFlippedAfterTranslucent(), packDirectives.getExplicitFlips("composite_pre"));
             default ->
                     throw new IllegalArgumentException("Invalid render stage: " + renderStage);
         };
@@ -594,9 +612,7 @@ public class ShaderManager {
             );
 
             // Add dynamic uniforms (time, view matrix, etc.)
-            NamespacedId dimension = new NamespacedId("minecraft:overworld");
-            ProgramSet currentSet = currentPack.getProgramSet(dimension).getPack().getProgramSet(dimension);
-            CommonUniforms.addCommonUniforms(builder, currentPack.getIdMap(), currentSet.getPackDirectives(), updateNotifier, FogMode.OFF);
+            CommonUniforms.addCommonUniforms(builder, currentPack.getIdMap(), packDirectives, updateNotifier, FogMode.OFF);
 
             // Assign uniforms
             customUniforms.assignTo(builder);
@@ -732,14 +748,8 @@ public class ShaderManager {
             ProgramSamplers.CustomTextureSamplerInterceptor interceptor =
                 ProgramSamplers.customTextureSamplerInterceptor(builder, textureIds, ImmutableSet.of());
 
-            // Find the buffer set required for that stage
-            ImmutableSet<Integer> flippedBuffers = switch (shaderForm.renderStage.get()) {
-                case BEGIN_STAGE, PREPARE_STAGE -> pipeline.getFlippedBeforeShadow();
-                case GBUFFER_STAGE, DEFERRED_STAGE -> pipeline.getFlippedAfterPrepare();
-                case COMPOSITE_STAGE, FINAL_STAGE -> pipeline.getFlippedAfterTranslucent();
-                default -> throw new IllegalArgumentException("Invalid render stage: " + shaderForm.renderStage.get());
-            };
-            shaderForm.setFlippedBuffers(getFlipped(getFlipped(flippedBuffers, flipState), Arrays.stream(shaderForm.getDrawBuffers()).boxed().collect(Collectors.toSet())));
+            // Find the buffer set required
+            shaderForm.setFlippedBuffers(flipState);
 
             // Add render target samplers (colortex0-7, depth, etc.)
             IrisSamplers.addRenderTargetSamplers(
@@ -877,6 +887,14 @@ public class ShaderManager {
                 .collect(ImmutableSet.toImmutableSet());
     }
 
+    public static ImmutableSet<Integer> getFlipped(Set<Integer> buffers, ImmutableMap<Integer, Boolean> toFlip) {
+        if (toFlip == null) return ImmutableSet.copyOf(buffers);
+        return IntStream.range(0, 8)
+                .filter(i -> Boolean.TRUE.equals(toFlip.get(i)) != buffers.contains(i))
+                .boxed()
+                .collect(ImmutableSet.toImmutableSet());
+    }
+
     /**
      * Find written buffer locations in the given glsl source code
      *
@@ -937,7 +955,7 @@ public class ShaderManager {
             RenderSystem.glUniform1i(textureLocation, modelTextureUnit);
 
             // Upload stack as uniform
-            Matrix4f mat = stack.peek().getPositionMatrix();
+            Matrix4f mat = stack.peek().getPositionMatrix().rotateY(PI); // Rotate for mchorse
             int viewMatLocation = GlStateManager._glGetUniformLocation(programID, "modelPose");
             GL20.glUniformMatrix4fv(viewMatLocation, false, mat.get(new float[16]));
             int viewMatInvLocation = GlStateManager._glGetUniformLocation(programID, "modelPoseInverse");
