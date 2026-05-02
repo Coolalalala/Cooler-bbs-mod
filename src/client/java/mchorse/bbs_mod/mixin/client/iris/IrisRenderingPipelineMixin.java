@@ -11,21 +11,21 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 /**
  * Mixin to inject custom shader rendering into the Iris pipeline
  * <p>
- * This injects after composite rendering but before the final pass,
- * allowing custom shaders to run with full access to Iris render targets.
+ * This injects before composite renderer writes to the screen,
+ * allowing custom shaders to run after the composite stage.
  */
 @Mixin(IrisRenderingPipeline.class)
 public class IrisRenderingPipelineMixin
 {
     /**
-     * Inject custom shader rendering after prepare passes
+     * Inject custom shader rendering before prepare passes
      */
     @Inject(
             method = "renderShadows",
             at = @At(
                     value = "INVOKE",
                     target = "Lnet/irisshaders/iris/pipeline/CompositeRenderer;renderAll()V",
-                    shift = At.Shift.AFTER
+                    shift = At.Shift.BEFORE
             ),
             remap = false
     )
@@ -36,7 +36,7 @@ public class IrisRenderingPipelineMixin
     }
 
     /**
-     * Inject custom shader rendering after Gbuffer passes but before deferred passes
+     * Inject custom shader rendering before Gbuffer passes
      */
     @Inject(
             method = "beginTranslucents()V",
@@ -55,7 +55,7 @@ public class IrisRenderingPipelineMixin
     }
 
     /**
-     * Inject custom shader rendering after deferred passes
+     * Inject custom shader rendering before deferred passes
      */
     @Inject(
             method = "beginTranslucents()V",
@@ -73,15 +73,15 @@ public class IrisRenderingPipelineMixin
     }
 
     /**
-     * Inject custom shader rendering after composite passes but before final pass
+     * Inject custom shader rendering before composite passes
      */
     @Inject(
             method = "finalizeLevelRendering()V",
             at = @At(
-                value = "FIELD",
-                target = "Lnet/irisshaders/iris/pipeline/IrisRenderingPipeline;isRenderingWorld:Z",
-                shift = At.Shift.AFTER,
-                opcode = Opcodes.PUTFIELD
+                    value = "FIELD",
+                    target = "Lnet/irisshaders/iris/pipeline/IrisRenderingPipeline;isRenderingWorld:Z",
+                    shift = At.Shift.AFTER,
+                    opcode = Opcodes.PUTFIELD
             ),
             remap = false
     )
@@ -92,19 +92,21 @@ public class IrisRenderingPipelineMixin
     }
 
     /**
-     * Inject custom shader rendering after final passes
+     * Inject custom shader rendering before final pass
      */
     @Inject(
             method = "finalizeLevelRendering()V",
             at = @At(
-                    value = "TAIL"
+                    value = "INVOKE",
+                    target = "Lnet/irisshaders/iris/pipeline/CompositeRenderer;renderAll()V",
+                    shift = At.Shift.AFTER
             ),
             remap = false
     )
     private void bbs$injectCustomFinal(CallbackInfo ci)
     {
-        // Render custom shaders in the composite stage
-        ShaderManager.renderFinalStage();
+        // Render custom shaders in the final stage
+         ShaderManager.renderFinalStage();
     }
 
     /**
