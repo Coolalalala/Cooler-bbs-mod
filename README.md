@@ -4,6 +4,18 @@ Cooler BBS was originally a standalone mod, aimed to make BBS cooler through byt
 
 Generally speaking, this fork will contain a lot of cool (obscure) features, such as more variables in the snowstorm particle engine, and shader related stuff.
 
+# Contacts
+
+If you want extra resources, need assistance or just want to chat, you can find me in these place!
+
+Discord: https://discord.gg/38vQ7NWKC5
+
+Youtube: https://www.youtube.com/@coolalalala
+
+Bilibili: https://space.bilibili.com/244809211
+
+Patreon: https://www.patreon.com/cw/coolaa
+
 
 # BBS mod (Original description)
 
